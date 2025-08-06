@@ -2419,10 +2419,10 @@
                     
                     // Set document properties
                     doc.setProperties({
-                        title: 'Rotaract Club Invoice Report',
+                        title: `Rotaract Club Invoice Estimate - January ${invoiceYearSelect.value}`,
                         subject: 'Invoice Calculation Report',
                         author: 'Rotaract South Asia MDIO',
-                        creator: 'Club Invoice Calculator'
+                        creator: 'Rotaract Club Invoice Calculator'
                     });
 
                     let yPosition = 25;
@@ -2997,7 +2997,7 @@
                     }
 
                     // Save the PDF
-                    const fileName = `Rotaract_Club_Invoice_${invoiceYearSelect.value}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    const fileName = `Rotaract Club Invoice Estimate - January ${invoiceYearSelect.value}.pdf`;
                     doc.save(fileName);
 
                     // Complete progress
