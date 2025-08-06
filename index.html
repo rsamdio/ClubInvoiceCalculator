@@ -739,12 +739,16 @@
         /* Mobile Responsive */
         @media (max-width: 640px) {
             .modal-overlay {
-                padding: 0.5rem;
+                padding: 1rem;
+                align-items: flex-start;
+                padding-top: 2rem;
+                padding-bottom: 2rem;
             }
             
             .modal-content {
-                max-height: 90vh;
+                max-height: calc(100vh - 4rem);
                 border-radius: 8px;
+                margin: auto 0;
             }
             
             .modal-header {
