@@ -1,6 +1,33 @@
 // Performance optimization: Use requestIdleCallback for non-critical operations
 const requestIdleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
 
+// Performance optimization: Debounce function for better performance
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Performance optimization: Throttle function for scroll/resize events
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
 // Global variables
 let parsedMembers = [];
 let lastSelectedClubBase = '';
@@ -143,18 +170,7 @@ class FormValidator {
 
 const formValidator = new FormValidator();
 
-// Utility functions
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+// Utility functions - debounce already defined above
 
 function preciseDecimal(value, decimals = 2) {
     return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -235,7 +251,7 @@ function formatDuesBreakdown(duesBreakdown) {
     return breakdown;
 }
 
-// UI update functions
+// UI update functions with performance optimizations
 function updateTotal() {
     requestIdleCallback(() => {
         let baseTotal = 0;
@@ -532,6 +548,70 @@ function initializeApp() {
     });
 }
 
+// Performance-optimized PDF generation
+async function generatePDFOptimized() {
+    try {
+        // Show loading overlay
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('active');
+        }
+        
+        // Load PDF libraries only when needed
+        if (typeof window.loadPDFLibraries === 'function') {
+            await window.loadPDFLibraries();
+        }
+        
+        // Use Web Worker for PDF generation to prevent blocking
+        const worker = new Worker('pdf-worker.js');
+        
+        return new Promise((resolve, reject) => {
+            // Prepare data for PDF generation
+            const memberData = allMemberRows.map(row => ({
+                name: row.querySelector('[data-field="name"]').textContent,
+                joinDate: row.querySelector('[data-field="joinDate"]').textContent,
+                clubBase: row.querySelector('[data-field="clubBase"]').textContent,
+                dues: row.querySelector('[data-field="dues"]').textContent
+            }));
+            
+            const summaryData = {
+                totalMembers: allMemberRows.length,
+                totalAmount: document.getElementById('total-invoice-amount')?.textContent || '$0.00',
+                invoiceYear: document.getElementById('invoice-year-select')?.value || new Date().getFullYear(),
+                taxPercentage: document.getElementById('tax-percentage')?.value || '0'
+            };
+            
+            worker.postMessage({
+                type: 'generatePDF',
+                data: { memberData, summaryData }
+            });
+            
+            worker.onmessage = (e) => {
+                if (e.data.type === 'success') {
+                    resolve(e.data.result);
+                } else {
+                    reject(new Error(e.data.error));
+                }
+                worker.terminate();
+            };
+            
+            worker.onerror = (error) => {
+                reject(error);
+                worker.terminate();
+            };
+        });
+    } catch (error) {
+        console.error('PDF generation error:', error);
+        throw error;
+    } finally {
+        // Hide loading overlay
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+    }
+}
+
 // Export functions for use in HTML
 window.appFunctions = {
     addMember,
@@ -542,5 +622,6 @@ window.appFunctions = {
     showFileUploadError,
     debouncedUpdateTotal,
     formValidator,
-    initializeApp
+    initializeApp,
+    generatePDFOptimized
 }; 

@@ -4,28 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rotaract Club Invoice Calculator | Rotaract South Asia MDIO</title>
-
-	    <meta name="description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
+    <meta name="description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
     <meta name="author" content="ZeoSpec">
-
-    <link rel="canonical" href="https://dues.rsamdio.org/"> 
-
+    <link rel="canonical" href="https://dues.rsamdio.org/">
+    
+    <!-- Essential Open Graph tags only -->
     <meta property="og:title" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://dues.rsamdio.org/">
-    <meta property="og:site_name" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO" />
-    <meta property="og:image" content="https://dues.rsamdio.org/calculatorogimg.png" />
+    <meta property="og:image" content="https://dues.rsamdio.org/calculatorogimg.png">
     <meta property="og:description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
     
-    <meta name="keywords" content="Rotaract, Rotary, Rotaract South Asia, Club Invoice, RSAMDIO, RI Dues" />
-
-    <meta name="subject" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO">
-
-    <meta name="url" content="https://dues.rsamdio.org/">
-    <meta name="identifier-URL" content="https://dues.rsamdio.org/">
-    
-    <meta http-equiv="cache-control" content="public" />
-    <meta http-equiv="Expires" content="0">
+    <!-- Cache optimization -->
+    <meta http-equiv="cache-control" content="public, max-age=31536000">
     
     <!-- Favicon -->
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
@@ -33,22 +24,33 @@
 	
 
     <!-- Preload critical resources -->
+    <link rel="preload" href="styles.css" as="style">
+    <link rel="preload" href="app.js" as="script">
+    <link rel="preload" href="rsamdio.png" as="image">
+    
+    <!-- Load fonts efficiently -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
     
-    <!-- External CSS for better performance -->
+    <!-- Critical CSS -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- Optimized Tailwind CSS with local fallback -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Defer Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com" defer></script>
     
-    <!-- Preload critical external scripts -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" as="script">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" as="script">
-    
-    <!-- Defer non-critical scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+    <!-- Lazy load non-critical libraries -->
+    <script>
+        // Lazy load utility libraries
+        function loadUtilityLibraries() {
+            return Promise.all([
+                import('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'),
+                import('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js')
+            ]);
+        }
+        
+        // Load libraries when needed
+        window.loadUtilityLibraries = loadUtilityLibraries;
+    </script>
     <!-- Critical CSS only - rest moved to external file -->
     <style>
         /* Critical above-the-fold styles only */
@@ -91,15 +93,36 @@
         gtag('js', new Date());
 
         gtag('config', 'G-Z4F8DL7KLQ');
+        
+        // Performance monitoring
+        if ('performance' in window) {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    const perfData = performance.getEntriesByType('navigation')[0];
+                    if (perfData) {
+                        gtag('event', 'timing_complete', {
+                            name: 'load',
+                            value: Math.round(perfData.loadEventEnd - perfData.loadEventStart)
+                        });
+                    }
+                }, 0);
+            });
+        }
     </script>
 
-    <!-- Preload PDF generation libraries -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" as="script">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js" as="script">
-    
-    <!-- jsPDF Library for PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <!-- Lazy load PDF libraries -->
+    <script>
+        // Lazy load PDF generation libraries
+        function loadPDFLibraries() {
+            return Promise.all([
+                import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+                import('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js')
+            ]);
+        }
+        
+        // Make available globally
+        window.loadPDFLibraries = loadPDFLibraries;
+    </script>
     
     <!-- External JavaScript for better performance -->
     <script src="app.js" defer></script>
@@ -143,7 +166,11 @@
         <!-- Header -->
         <header class="text-center mb-12">
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 mb-8 border border-blue-100">
-                <img src="rsamdio.png" alt="RSAMDIO Logo" class="mx-auto h-24 mb-6 drop-shadow-lg">
+                <picture>
+                    <source srcset="rsamdio.webp" type="image/webp">
+                    <source srcset="rsamdio.png" type="image/png">
+                    <img src="rsamdio.png" alt="RSAMDIO Logo" class="mx-auto h-24 mb-6 drop-shadow-lg" loading="eager">
+                </picture>
                 <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">Rotaract Club Invoice Calculator</h1>
                 <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">An interactive tool to help Rotaractors estimate their Club Invoices with precision and ease.</p>
                 <div class="flex items-center justify-center mt-6 space-x-4 text-sm text-gray-500">
@@ -2296,43 +2323,10 @@
                 }
             }
             
-            // Lightweight Instructions Modal
-            const instructionsModal = document.getElementById('instructions-modal');
-            const closeModalBtn = document.getElementById('close-modal-btn');
-            const gotItBtn = document.getElementById('got-it-btn');
-
-            function showModal() {
-                instructionsModal.classList.add('active');
-                document.body.classList.add('modal-open');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function hideModal() {
-                instructionsModal.classList.remove('active');
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-            }
-
-            // Simple event listeners
-            closeModalBtn.addEventListener('click', hideModal);
-            gotItBtn.addEventListener('click', hideModal);
-            
-            // Close on outside click
-            instructionsModal.addEventListener('click', (e) => {
-                if (e.target === instructionsModal) hideModal();
-            });
-            
-            // Close on Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && instructionsModal.classList.contains('active')) {
-                    hideModal();
-                }
-            });
-
-            // Show modal immediately
-            showModal();
+            // Modal functionality moved to inline-scripts.js for better performance
         });
     </script>
+    <script src="inline-scripts.js" defer></script>
     <!-- Lightweight Instructions Modal -->
     <div id="instructions-modal" class="modal-overlay">
         <div class="modal-content">
