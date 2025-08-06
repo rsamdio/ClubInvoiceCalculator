@@ -530,6 +530,250 @@
             align-items: center;
             gap: 0.75rem;
         }
+        
+        /* Lightweight Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+            padding: 1rem;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: translateY(20px);
+            transition: transform 0.2s ease;
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            background: #2563eb;
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .modal-title-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+            color: #374151;
+            line-height: 1.6;
+        }
+        
+        .modal-body p {
+            margin: 0 0 1rem 0;
+            color: #6b7280;
+        }
+        
+        .modal-body h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 1.5rem 0 0.75rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .modal-body h4:first-child {
+            margin-top: 0;
+        }
+        
+        .step-number {
+            width: 1.5rem;
+            height: 1.5rem;
+            background: #2563eb;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+        
+        .modal-body ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1rem 0;
+        }
+        
+        .modal-body li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.25rem;
+            position: relative;
+            color: #4b5563;
+        }
+        
+        .modal-body li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #2563eb;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .modal-body strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+        
+        .modal-tips {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .modal-tips h4 {
+            color: #0369a1;
+            margin: 0 0 0.75rem 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .modal-tips ul {
+            margin: 0;
+        }
+        
+        .modal-tips li {
+            color: #0369a1;
+            font-size: 0.9rem;
+        }
+        
+        .modal-footer {
+            padding: 1rem 1.5rem 1.5rem 1.5rem;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            border-radius: 0 0 12px 12px;
+            text-align: center;
+        }
+        
+        .modal-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .modal-btn:hover {
+            background: #1d4ed8;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 640px) {
+            .modal-overlay {
+                padding: 0.5rem;
+            }
+            
+            .modal-content {
+                max-height: 90vh;
+                border-radius: 8px;
+            }
+            
+            .modal-header {
+                padding: 1rem;
+                border-radius: 8px 8px 0 0;
+            }
+            
+            .modal-title {
+                font-size: 1.1rem;
+            }
+            
+            .modal-body {
+                padding: 1rem;
+            }
+            
+            .modal-body h4 {
+                font-size: 1rem;
+            }
+            
+            .modal-footer {
+                padding: 1rem;
+                border-radius: 0 0 8px 8px;
+            }
+            
+            .modal-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 
     <!-- Google tag (gtag.js) -->
@@ -2524,11 +2768,11 @@
 
                     // Summary table with enhanced styling and better number formatting
                     const summaryData = [
-                        ['(a) Base RI Dues', `$${baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                        ['  (a1) Full Year Dues', `$${totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                        ['  (a2) Prorated Dues', `$${totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                        [`(b) Tax (${taxPercentage}%)`, `$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-                        ['(c) Total with Tax', `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['(a) Base RI Dues', `${baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['  (a1) Full Year Dues', `${totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['  (a2) Prorated Dues', `${totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        [`(b) Tax (${taxPercentage}%)`, `${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['(c) Total with Tax', `${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
                         ['', ''], // Empty row for spacing
                         ['Members', totalMembers],
                         ['Prorated Months', totalProratedMonths]
@@ -2734,7 +2978,7 @@
                         const formattedTotalProrated = totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         const formattedTotalEstDue = totalEstDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                         
-                        const totalEstDueDisplay = `$${formattedTotalFullYear} + $${formattedTotalProrated} = $${formattedTotalEstDue}`;
+                        const totalEstDueDisplay = `${formattedTotalFullYear} + ${formattedTotalProrated} = ${formattedTotalEstDue}`;
                         
                         // All members processed successfully
                         
@@ -3035,7 +3279,112 @@
                     alert('Error generating Detailed Report. Please try again.');
                 }
             }
+            
+            // Lightweight Instructions Modal
+            const instructionsModal = document.getElementById('instructions-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const gotItBtn = document.getElementById('got-it-btn');
+
+            function showModal() {
+                instructionsModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideModal() {
+                instructionsModal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            // Simple event listeners
+            closeModalBtn.addEventListener('click', hideModal);
+            gotItBtn.addEventListener('click', hideModal);
+            
+            // Close on outside click
+            instructionsModal.addEventListener('click', (e) => {
+                if (e.target === instructionsModal) hideModal();
+            });
+            
+            // Close on Escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && instructionsModal.classList.contains('active')) {
+                    hideModal();
+                }
+            });
+
+            // Show modal immediately
+            showModal();
         });
     </script>
+    <!-- Lightweight Instructions Modal -->
+    <div id="instructions-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <div class="modal-title-icon">ℹ</div>
+                    How to Use the Calculator
+                </h3>
+                <button id="close-modal-btn" class="modal-close-btn">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <p>Welcome! This tool helps you calculate Rotaract Club invoices quickly and accurately.</p>
+                
+                <h4>
+                    <span class="step-number">1</span>
+                    Add Members
+                </h4>
+                <ul>
+                    <li><strong>Individual:</strong> Fill the form with member name, club base, and join date</li>
+                    <li><strong>Bulk Upload:</strong> Upload Excel or CSV files with your member roster</li>
+                    <li><strong>Template:</strong> Download our template for the correct file format</li>
+                </ul>
+
+                <h4>
+                    <span class="step-number">2</span>
+                    Manage Roster
+                </h4>
+                <ul>
+                    <li><strong>View:</strong> See all members in the organized table</li>
+                    <li><strong>Edit:</strong> Click edit to modify member information</li>
+                    <li><strong>Remove:</strong> Delete members as needed</li>
+                </ul>
+
+                <h4>
+                    <span class="step-number">3</span>
+                    Configure Settings
+                </h4>
+                <ul>
+                    <li><strong>Invoice Year:</strong> Select the calculation year</li>
+                    <li><strong>Tax Rate:</strong> Adjust tax percentage as applicable</li>
+                    <li><strong>Auto-update:</strong> Calculations update in real-time</li>
+                </ul>
+
+                <h4>
+                    <span class="step-number">4</span>
+                    Generate Report
+                </h4>
+                <ul>
+                    <li><strong>PDF Download:</strong> Get a detailed report with all calculations</li>
+                    <li><strong>Summary:</strong> Includes dues breakdown and tax calculations</li>
+                    <li><strong>Member Roster:</strong> Includes all members with their dues breakdown</li>
+                </ul>
+
+                <div class="modal-tips">
+                    <h4>💡 Quick Tips</h4>
+                    <ul>
+                        <li>Use CSV format for faster bulk uploads</li>
+                        <li>Verify join dates for accurate calculations</li>
+                        <li>Download the PDF to save your Estimates</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="got-it-btn" class="modal-btn">
+                    ✓ Got it! Start Calculating
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
