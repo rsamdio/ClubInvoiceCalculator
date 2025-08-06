@@ -940,6 +940,9 @@
                         <p class="text-xs text-gray-500 mt-3">Supports Excel (.xlsx, .xls) and <br><b>CSV (Recommended)</b> files </p>
                     </div>
                     
+                    <!-- File Upload Error Display -->
+                    <div id="file-upload-error" class="hidden mb-4"></div>
+                    
                     <!-- Upload Preview -->
                     <div id="upload-preview" class="hidden mb-6">
                         <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center">
@@ -989,12 +992,23 @@
                             </div>
                         </div>
                         <div class="mt-4 pt-3 border-t border-blue-200">
-                            <button type="button" id="download-template" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Download Template
-                            </button>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <button type="button" id="download-template" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Download CSV Template
+                                </button>
+                                <a href="https://docs.google.com/spreadsheets/d/1pn3XA_MQyHFYIA4rn1i77qes_ujE533Orw7_fC8VFc4/copy" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="text-sm text-green-600 hover:text-green-800 font-medium flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Make a Copy in Google Sheets
+                                </a>
+                            </div>
                         </div>
                     </div>
 
@@ -1527,6 +1541,18 @@
             }
 
             function showPreview(members) {
+                // Clear any existing file upload errors
+                const errorContainer = document.getElementById('file-upload-error');
+                if (errorContainer) {
+                    errorContainer.classList.add('hidden');
+                }
+                
+                // Clear any existing error timeout
+                if (currentErrorTimeout) {
+                    clearTimeout(currentErrorTimeout);
+                    currentErrorTimeout = null;
+                }
+                
                 const previewHTML = members.map((member, index) => {
                     const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
                     const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
@@ -1573,7 +1599,8 @@
                 } else if (['xlsx', 'xls'].includes(fileExtension)) {
                     parsePromise = parseExcelFile(file);
                 } else {
-                    showErrorMessage('Unsupported file format. Please upload a CSV or Excel file.');
+                    showFileUploadError('Unsupported file format. Please upload a CSV or Excel file.');
+                    fileInput.value = ''; // Clear the file input so the same file can be selected again
                     return;
                 }
 
@@ -1582,14 +1609,16 @@
                     
                     if (validation.errors.length > 0) {
                         const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
-                        showErrorMessage(errorMessage);
+                        showFileUploadError(errorMessage);
+                        fileInput.value = ''; // Clear the file input so the same file can be selected again
                         return;
                     }
 
                     parsedMembers = validation.validatedMembers;
                     showPreview(parsedMembers);
                 }).catch(error => {
-                    showErrorMessage('Error parsing file: ' + error.message);
+                    showFileUploadError('Error parsing file: ' + error.message);
+                    fileInput.value = ''; // Clear the file input so the same file can be selected again
                 }).finally(() => {
                     // Hide loading state
                     if (loadingOverlay) {
@@ -1655,6 +1684,18 @@
                 parsedMembers = [];
                 uploadPreview.classList.add('hidden');
                 fileInput.value = '';
+                
+                // Clear any file upload errors
+                const errorContainer = document.getElementById('file-upload-error');
+                if (errorContainer) {
+                    errorContainer.classList.add('hidden');
+                }
+                
+                // Clear any existing error timeout
+                if (currentErrorTimeout) {
+                    clearTimeout(currentErrorTimeout);
+                    currentErrorTimeout = null;
+                }
                 
                 // Return to upload area after a short delay
                 setTimeout(() => {
@@ -2116,6 +2157,36 @@
                 setTimeout(() => {
                     errorDiv.remove();
                 }, 5000);
+            }
+            
+            // Global variable to track the current error timeout
+            let currentErrorTimeout = null;
+            
+            function showFileUploadError(message) {
+                const errorContainer = document.getElementById('file-upload-error');
+                if (!errorContainer) return;
+                
+                // Clear any existing timeout to prevent conflicts
+                if (currentErrorTimeout) {
+                    clearTimeout(currentErrorTimeout);
+                    currentErrorTimeout = null;
+                }
+                
+                // Ensure the container is visible and properly styled
+                errorContainer.className = 'error-feedback fade-in mb-4';
+                errorContainer.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>${message}</span>
+                `;
+                errorContainer.classList.remove('hidden');
+                
+                // Set new timeout and store the reference
+                currentErrorTimeout = setTimeout(() => {
+                    errorContainer.classList.add('hidden');
+                    currentErrorTimeout = null;
+                }, 4000);
             }
             
             function addMember(e) {
@@ -3336,7 +3407,7 @@
                 <ul>
                     <li><strong>Individual:</strong> Fill the form with member name, club base, and join date</li>
                     <li><strong>Bulk Upload:</strong> Upload Excel or CSV files with your member roster</li>
-                    <li><strong>Template:</strong> Download our template for the correct file format</li>
+                    <li><strong>Templates:</strong> Use our CSV template or Google Sheets template for the correct format</li>
                 </ul>
 
                 <h4>
@@ -3372,9 +3443,10 @@
                 <div class="modal-tips">
                     <h4>💡 Quick Tips</h4>
                     <ul>
-                        <li>Use CSV format for faster bulk uploads</li>
+                        <li><strong>Google Sheets Template:</strong> Best for easy editing and collaboration - automatically creates a copy in your Google Drive</li>
+                        <li><strong>CSV Template:</strong> Best for quick downloads and offline editing</li>
                         <li>Verify join dates for accurate calculations</li>
-                        <li>Download the PDF to save your Estimates</li>
+                        <li>Download the PDF to save your estimates</li>
                     </ul>
                 </div>
             </div>
