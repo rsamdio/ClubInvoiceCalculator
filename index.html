@@ -38,9 +38,9 @@
     <!-- Defer Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com" defer></script>
     
-    <!-- Load utility libraries with defer for better performance -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+    <!-- Load utility libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Critical CSS only - rest moved to external file -->
     <style>
         /* Critical above-the-fold styles only */
@@ -100,9 +100,9 @@
         }
     </script>
 
-    <!-- Load PDF libraries with defer for better performance -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js" defer></script>
+    <!-- Load PDF libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     
     <!-- External JavaScript for better performance -->
     <script src="app.js" defer></script>
@@ -2049,25 +2049,10 @@
                 downloadPdfBtn.disabled = true;
                 pdfStatus.classList.remove('hidden');
                 
-                // Use the optimized PDF generation function
-                if (window.appFunctions && window.appFunctions.generatePDFOptimized) {
-                    window.appFunctions.generatePDFOptimized()
-                        .then(() => {
-                            downloadPdfBtn.disabled = false;
-                            pdfStatus.classList.add('hidden');
-                        })
-                        .catch((error) => {
-                            console.error('PDF generation error:', error);
-                            downloadPdfBtn.disabled = false;
-                            pdfStatus.classList.add('hidden');
-                            alert('Error generating PDF. Please try again.');
-                        });
-                } else {
-                    // Fallback to original method
-                    setTimeout(() => {
-                        generatePDFReportAsync();
-                    }, 100);
-                }
+                // Use setTimeout to allow UI to update before starting heavy processing
+                setTimeout(() => {
+                    generatePDFReportAsync();
+                }, 100);
             }
 
             async function generatePDFReportAsync() {

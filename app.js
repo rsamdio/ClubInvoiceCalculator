@@ -251,7 +251,7 @@ function formatDuesBreakdown(duesBreakdown) {
     return breakdown;
 }
 
-// UI update functions with performance optimizations
+// UI update functions
 function updateTotal() {
     requestIdleCallback(() => {
         let baseTotal = 0;
@@ -548,111 +548,7 @@ function initializeApp() {
     });
 }
 
-// Performance-optimized PDF generation
-async function generatePDFOptimized() {
-    try {
-        // Show loading overlay
-        const loadingOverlay = document.getElementById('loading-overlay');
-        if (loadingOverlay) {
-            loadingOverlay.classList.add('active');
-        }
-        
-        // PDF libraries are loaded with defer, so they should be available
-        if (typeof jsPDF === 'undefined') {
-            throw new Error('PDF libraries not loaded. Please refresh the page.');
-        }
-        
-        // Use Web Worker for PDF generation to prevent blocking
-        const worker = new Worker('pdf-worker.js');
-        
-        return new Promise((resolve, reject) => {
-            // Get member data from the DOM
-            const memberRows = document.getElementById('member-roster-body')?.querySelectorAll('tr') || [];
-            const memberData = Array.from(memberRows).map(row => {
-                const cells = row.querySelectorAll('td');
-                if (cells.length >= 7) {
-                    return {
-                        name: cells[0].textContent.trim(),
-                        joinDate: cells[1].textContent.trim(),
-                        leaveDate: cells[2].textContent.trim() || 'Active',
-                        clubBase: cells[3].textContent.trim(),
-                        dues: cells[4].textContent.trim(),
-                        activeMember: cells[5].textContent.trim(),
-                        proratedMonths: cells[6].textContent.trim()
-                    };
-                }
-                return null;
-            }).filter(Boolean);
-            
-            // Calculate summary data
-            const baseAmount = parseFloat(document.getElementById('base-invoice-amount')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
-            const taxAmount = parseFloat(document.getElementById('tax-breakdown')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
-            const totalWithTax = parseFloat(document.getElementById('total-invoice-amount')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
-            const invoiceYear = document.getElementById('invoice-year-select')?.value || new Date().getFullYear();
-            const taxPercentage = document.getElementById('tax-percentage')?.value || '0';
-            const totalMembers = memberData.length;
-            const totalProratedMonths = document.getElementById('total-prorated-months')?.textContent || '0';
-            
-            // Calculate Full Year and Prorated amounts
-            let totalFullYearAmount = 0;
-            let totalProratedAmount = 0;
-            
-            memberData.forEach(member => {
-                const dueMatch = member.dues.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
-                if (dueMatch) {
-                    const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
-                    const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
-                    
-                    totalFullYearAmount += fullYearAmount;
-                    totalProratedAmount += proratedAmount;
-                }
-            });
-            
-            const summaryData = {
-                baseAmount,
-                taxAmount,
-                totalWithTax,
-                totalFullYearAmount,
-                totalProratedAmount
-            };
-            
-            worker.postMessage({
-                type: 'generatePDF',
-                data: { 
-                    memberData, 
-                    summaryData, 
-                    invoiceYear, 
-                    taxPercentage,
-                    totalMembers,
-                    totalProratedMonths 
-                }
-            });
-            
-            worker.onmessage = (e) => {
-                if (e.data.type === 'success') {
-                    resolve(e.data.result);
-                } else {
-                    reject(new Error(e.data.error));
-                }
-                worker.terminate();
-            };
-            
-            worker.onerror = (error) => {
-                reject(error);
-                worker.terminate();
-            };
-        });
-    } catch (error) {
-        console.error('PDF generation error:', error);
-        throw error;
-    } finally {
-        // Hide loading overlay
-        const loadingOverlay = document.getElementById('loading-overlay');
-        if (loadingOverlay) {
-            loadingOverlay.classList.remove('active');
-        }
-    }
-}
+// PDF generation function - keeping original functionality
 
 // Export functions for use in HTML
 window.appFunctions = {
@@ -664,8 +560,7 @@ window.appFunctions = {
     showFileUploadError,
     debouncedUpdateTotal,
     formValidator,
-    initializeApp,
-    generatePDFOptimized
+    initializeApp
 };
 
 // Initialize app when DOM is ready

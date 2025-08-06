@@ -1,13 +1,10 @@
-/* Optimized CSS with performance improvements */
+/* CSS with safe performance improvements */
 body {
     font-family: 'Inter', sans-serif;
     background-color: #f7fafc;
     color: #4a5568;
     margin: 0;
     padding: 0;
-    /* Performance optimization: Enable hardware acceleration */
-    transform: translateZ(0);
-    will-change: transform;
 }
 
 /* Utility Classes */
@@ -16,7 +13,7 @@ body {
 .rotary-blue-light { background-color: #eaf2ff; }
 .rotary-blue-light-text { color: #004aad; }
 
-/* Optimized Button Styles */
+/* Button Styles */
 .btn {
     padding: 0.625rem 1.25rem;
     border-radius: 0.5rem;
@@ -28,9 +25,6 @@ body {
     border: 1px solid transparent;
     cursor: pointer;
     text-decoration: none;
-    /* Performance optimization */
-    transform: translateZ(0);
-    will-change: transform;
 }
 
 .btn-primary {
@@ -40,7 +34,7 @@ body {
 
 .btn-primary:hover {
     background-color: #003b8a;
-    transform: translateY(-2px) translateZ(0);
+    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 74, 173, 0.2);
 }
 
@@ -69,15 +63,12 @@ body {
     border-radius: 0.375rem;
 }
 
-/* Optimized Card Styles */
+/* Card Styles */
 .card {
     background-color: white;
     border-radius: 0.75rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
     border: 1px solid #e2e8f0;
-    /* Performance optimization */
-    transform: translateZ(0);
-    will-change: transform;
 }
 
 /* Form Styles */
@@ -259,15 +250,14 @@ input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, 
     50% { opacity: .5; }
 }
 
-/* Optimized Loading and Animation Styles */
+/* Loading and Animation Styles */
 .loading-spinner {
     animation: spin 1s linear infinite;
-    transform: translateZ(0);
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg) translateZ(0); }
-    to { transform: rotate(360deg) translateZ(0); }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .fade-in {
@@ -362,9 +352,6 @@ select:focus {
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    /* Performance optimization */
-    transform: translateZ(0);
-    will-change: opacity, visibility;
 }
 
 .loading-overlay.active {
