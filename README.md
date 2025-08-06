@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/a55b4ac6-6b6f-4857-bb6b-aa526abc7081/deploy-status)](https://app.netlify.com/projects/rotaractdues/deploys)
+
 # Rotaract Club Invoice Calculator
 
 An interactive tool developed by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.
