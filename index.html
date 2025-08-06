@@ -992,7 +992,7 @@
                             </div>
                         </div>
                         <div class="mt-4 pt-3 border-t border-blue-200">
-                            <div class="flex flex-col sm:flex-row gap-3">
+                            <div class="flex flex-col gap-3">
                                 <button type="button" id="download-template" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1447,7 +1447,7 @@
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'rotaract_member_template.csv';
+                a.download = 'Member Roster Template.csv';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
