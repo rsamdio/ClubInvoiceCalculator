@@ -546,7 +546,7 @@
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.2s ease;
-            padding: 1rem;
+            padding: 1.5rem;
         }
         
         .modal-overlay.active {
@@ -560,8 +560,9 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
             max-width: 600px;
             width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
+            max-height: calc(100vh - 3rem);
+            display: flex;
+            flex-direction: column;
             transform: translateY(20px);
             transition: transform 0.2s ease;
         }
@@ -620,6 +621,9 @@
             padding: 1.5rem;
             color: #374151;
             line-height: 1.6;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
         }
         
         .modal-body p {
@@ -715,6 +719,7 @@
             border-top: 1px solid #e5e7eb;
             border-radius: 0 0 12px 12px;
             text-align: center;
+            flex-shrink: 0;
         }
         
         .modal-btn {
@@ -741,19 +746,22 @@
             .modal-overlay {
                 padding: 1rem;
                 align-items: flex-start;
-                padding-top: 2rem;
-                padding-bottom: 3rem;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
             }
             
             .modal-content {
-                max-height: calc(100vh - 6rem);
+                max-height: calc(100vh - 2rem);
                 border-radius: 8px;
                 margin: auto 0;
+                display: flex;
+                flex-direction: column;
             }
             
             .modal-header {
                 padding: 1rem;
                 border-radius: 8px 8px 0 0;
+                flex-shrink: 0;
             }
             
             .modal-title {
@@ -762,6 +770,9 @@
             
             .modal-body {
                 padding: 1rem;
+                overflow-y: auto;
+                flex: 1;
+                min-height: 0;
             }
             
             .modal-body h4 {
@@ -771,11 +782,37 @@
             .modal-footer {
                 padding: 1rem;
                 border-radius: 0 0 8px 8px;
+                flex-shrink: 0;
             }
             
             .modal-btn {
                 width: 100%;
                 justify-content: center;
+            }
+        }
+        
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .modal-overlay {
+                padding: 0.75rem;
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+            }
+            
+            .modal-content {
+                max-height: calc(100vh - 1.5rem);
+            }
+            
+            .modal-header {
+                padding: 0.75rem;
+            }
+            
+            .modal-body {
+                padding: 0.75rem;
+            }
+            
+            .modal-footer {
+                padding: 0.75rem;
             }
         }
         
