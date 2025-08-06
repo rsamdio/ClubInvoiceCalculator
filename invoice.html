@@ -1,0 +1,3041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rotaract Club Invoice Calculator | Rotaract South Asia MDIO</title>
+
+	    <meta name="description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
+    <meta name="author" content="ZeoSpec">
+
+    <link rel="canonical" href="https://dues.rsamdio.org/"> 
+
+    <meta property="og:title" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dues.rsamdio.org/">
+    <meta property="og:site_name" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO" />
+    <meta property="og:image" content="https://dues.rsamdio.org/calculatorogimg.png" />
+    <meta property="og:description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
+    
+    <meta name="keywords" content="Rotaract, Rotary, Rotaract South Asia, Club Invoice, RSAMDIO, RI Dues" />
+
+    <meta name="subject" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO">
+
+    <meta name="url" content="https://dues.rsamdio.org/">
+    <meta name="identifier-URL" content="https://dues.rsamdio.org/">
+    
+    <meta http-equiv="cache-control" content="public" />
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/x-icon">
+	
+
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
+    
+    <!-- Optimized Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Defer non-critical scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
+    <style>
+        /* Remove duplicate font import since we're preloading it */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+            color: #4a5568;
+        }
+        .rotary-blue-dark { background-color: #003b8a; }
+        .rotary-blue-dark-text { color: #003b8a; }
+        .rotary-blue-light { background-color: #eaf2ff; }
+        .rotary-blue-light-text { color: #004aad; }
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background-color: #004aad;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #003b8a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 74, 173, 0.2);
+        }
+        .btn-danger {
+            background-color: #e53e3e;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c53030;
+        }
+        .btn-secondary {
+            background-color: #edf2f7;
+            color: #4a5568;
+            border-color: #e2e8f0;
+        }
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #e2e8f0;
+        }
+        input[type="text"], input[type="date"], select {
+            background-color: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 0.625rem 0.875rem;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        input[type="text"]:focus, input[type="date"]:focus, select:focus {
+            outline: none;
+            border-color: #0079ff;
+            box-shadow: 0 0 0 3px rgba(0, 121, 255, 0.15);
+            background-color: white;
+        }
+        .table-header {
+            background-color: #f7fafc;
+        }
+        .form-input-sm, .form-select-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        /* Enhanced styles for edit mode inputs */
+        .edit-mode-input {
+            width: 100% !important;
+            min-width: 120px;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.875rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.375rem;
+            background-color: white;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+            margin: 0;
+            display: block;
+        }
+        
+        .edit-mode-input:focus {
+            outline: none;
+            border-color: #004aad;
+            box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1);
+            background-color: #f8fafc;
+        }
+        
+        .edit-mode-select {
+            width: 100% !important;
+            min-width: 140px;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.875rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.375rem;
+            background-color: white;
+            transition: all 0.2s ease-in-out;
+            box-sizing: border-box;
+            cursor: pointer;
+            margin: 0;
+            display: block;
+        }
+        
+        .edit-mode-select:focus {
+            outline: none;
+            border-color: #004aad;
+            box-shadow: 0 0 0 3px rgba(0, 74, 173, 0.1);
+            background-color: #f8fafc;
+        }
+        
+        /* Enhanced table cell styling for edit mode */
+        .editing td {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0;
+        }
+        
+        .editing td:focus-within {
+            background-color: #f0f9ff !important;
+        }
+        
+        /* Ensure table cells have proper spacing for edit mode - match header padding */
+        .editing td {
+            padding: 1rem 1.5rem !important; /* px-6 py-4 equivalent */
+            vertical-align: middle;
+        }
+        
+        /* Make sure inputs don't overflow table cells and maintain alignment */
+        .editing td input,
+        .editing td select {
+            max-width: 100%;
+            box-sizing: border-box;
+            position: static;
+        }
+        
+        /* Ensure table structure is maintained */
+        .editing td {
+            position: static;
+            display: table-cell;
+            vertical-align: middle;
+        }
+        
+        /* Add subtle visual feedback for editing state without affecting layout */
+        .editing {
+            background-color: #f8fafc !important;
+            border-left: 3px solid #004aad;
+        }
+        .file-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .file-upload-area:hover {
+            border-color: #004aad;
+            background-color: #f8fafc;
+        }
+        .file-upload-area.dragover {
+            border-color: #004aad;
+            background-color: #eaf2ff;
+        }
+        .upload-preview {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        /* Upload area transitions */
+        .upload-area-container {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .upload-area-container.hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+        }
+        
+        .upload-preview {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        .upload-preview.hidden {
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+        }
+        
+        /* Success animation */
+        .success-animation {
+            animation: successPulse 1.5s ease-in-out;
+        }
+        
+        @keyframes successPulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .success-icon {
+            animation: successBounce 0.6s ease-in-out;
+        }
+        
+        @keyframes successBounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translate3d(0,0,0);
+            }
+            40%, 43% {
+                transform: translate3d(0, -8px, 0);
+            }
+            70% {
+                transform: translate3d(0, -4px, 0);
+            }
+            90% {
+                transform: translate3d(0, -2px, 0);
+            }
+        }
+        .member-row {
+            transition: all 0.2s ease-in-out;
+        }
+        .member-row:hover {
+            background-color: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.375rem;
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
+            }
+        }
+        
+        /* Enhanced UX Components */
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Enhanced form states */
+        .form-group {
+            position: relative;
+        }
+        
+        .error-message {
+            color: #e53e3e;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        
+        .input-error {
+            border-color: #e53e3e !important;
+            box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1) !important;
+        }
+        
+        .input-success {
+            border-color: #38a169 !important;
+            box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.1) !important;
+            background-color: #f0fff4 !important;
+        }
+        
+        /* Enhanced validation feedback */
+        .form-group {
+            position: relative;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .form-group:has(.input-success) {
+            transform: translateY(-1px);
+        }
+        
+        .form-group:has(.input-error) {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Enhanced accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        
+        /* Focus indicators */
+        .btn:focus,
+        input:focus,
+        select:focus {
+            outline: 2px solid #004aad;
+            outline-offset: 2px;
+        }
+        
+        /* Enhanced mobile responsiveness */
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+            
+            .btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .loading-content {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .loading-progress {
+            width: 100%;
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .loading-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .loading-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .loading-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .loading-step.active {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .loading-step.completed {
+            color: #10b981;
+        }
+        
+        /* Enhanced table responsiveness */
+        @media (max-width: 768px) {
+            .table-responsive {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .table-responsive table {
+                min-width: 600px;
+            }
+        }
+        
+        /* Enhanced button states */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .btn:disabled:hover {
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Enhanced file upload area */
+        .file-upload-area.dragover {
+            border-color: #004aad;
+            background-color: #eaf2ff;
+            transform: scale(1.02);
+        }
+        
+        /* Enhanced success states */
+        .success-feedback {
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+            border: 1px solid #68d391;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .error-feedback {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            border: 1px solid #fc8181;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+    </style>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z4F8DL7KLQ"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-Z4F8DL7KLQ');
+    </script>
+
+    <!-- jsPDF Library for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+</head>
+<body class="antialiased">
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4"></div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Generating Detailed Report</h3>
+            <p id="loading-message" class="text-gray-600 font-medium mb-4">Preparing...</p>
+            
+            <div class="loading-progress">
+                <div id="loading-progress-bar" class="loading-progress-bar"></div>
+            </div>
+            
+            <div class="loading-steps">
+                <div id="step-1" class="loading-step active">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full mb-1"></div>
+                    <span>Prepare</span>
+                </div>
+                <div id="step-2" class="loading-step">
+                    <div class="w-2 h-2 bg-gray-300 rounded-full mb-1"></div>
+                    <span>Process</span>
+                </div>
+                <div id="step-3" class="loading-step">
+                    <div class="w-2 h-2 bg-gray-300 rounded-full mb-1"></div>
+                    <span>Generate</span>
+                </div>
+                <div id="step-4" class="loading-step">
+                    <div class="w-2 h-2 bg-gray-300 rounded-full mb-1"></div>
+                    <span>Complete</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 mb-8 border border-blue-100">
+                <img src="https://res.cloudinary.com/frontly/image/upload/v1719324049/pink_v5vpyh.png" alt="Rotaract Logo" class="mx-auto h-24 mb-6 drop-shadow-lg">
+                <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">Rotaract Club Invoice Calculator</h1>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">An interactive tool to help Rotaractors estimate their Club Invoices with precision and ease.</p>
+                <div class="flex items-center justify-center mt-6 space-x-4 text-sm text-gray-500">
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Easy to use
+                    </div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Bulk upload support
+                    </div>
+                    <div class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Real-time calculations
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- Left Column: Add Member & Bulk Upload -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Add New Member Card -->
+                <div class="card p-6 shadow-lg border-0">
+                    <div class="text-center mb-6">
+                        <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Add New Member</h2>
+                        <p class="text-sm text-gray-500 mt-1">Add individual members to your roster</p>
+                    </div>
+                    <form id="add-member-form" class="space-y-5">
+                        <div class="form-group space-y-2">
+                            <label for="member-name" class="block text-sm font-semibold text-gray-700 text-center">Member Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="member-name" 
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-center"
+                                   placeholder="Enter member's full name"
+                                   aria-describedby="member-name-error">
+                            <div id="member-name-error" class="error-message text-center"></div>
+                        </div>
+                        <div class="form-group space-y-2">
+                            <label for="member-type" class="block text-sm font-semibold text-gray-700 text-center">Club Base <span class="text-red-500">*</span></label>
+                            <select id="member-type" 
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-center"
+                                    aria-describedby="member-type-error">
+                                <option value="">Select Club Base</option>
+                                <option value="Community-Based">Community-Based ($8)</option>
+                                <option value="University-Based">University-Based ($5)</option>
+                            </select>
+                            <div id="member-type-error" class="error-message text-center"></div>
+                        </div>
+                        <div class="form-group space-y-2">
+                            <label for="join-date" class="block text-sm font-semibold text-gray-700 text-center">Join Date <span class="text-red-500">*</span></label>
+                            <input type="date" id="join-date" 
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-center"
+                                   aria-describedby="join-date-error">
+                            <div id="join-date-error" class="error-message text-center"></div>
+                        </div>
+                        <div class="form-group space-y-2">
+                            <label for="leave-date" class="block text-sm font-semibold text-gray-700 text-center">Leave Date (Optional)</label>
+                            <input type="date" id="leave-date" 
+                                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-center"
+                                   placeholder="Leave blank if still active"
+                                   aria-describedby="leave-date-error">
+                            <div id="leave-date-error" class="error-message text-center"></div>
+                        </div>
+                        <button type="submit" id="add-member-button" class="btn btn-primary w-full !mt-6 py-3 text-base font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>
+                            Add Member
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Bulk Upload Card -->
+                <div class="card p-6 shadow-lg border-0">
+                    <div class="text-center mb-6">
+                        <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Bulk Upload Roster</h2>
+                        <p class="text-sm text-gray-500 mt-1">Upload multiple members at once</p>
+                    </div>
+                    
+                    <!-- File Upload Area -->
+                    <div id="file-upload-area" class="file-upload-area upload-area-container p-8 text-center mb-6 bg-gradient-to-br from-gray-50 to-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p class="text-base text-gray-600 mb-3 font-medium">Drag and drop your file here, or</p>
+                        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" class="hidden">
+                        <button type="button" id="browse-button" class="btn btn-secondary text-sm px-6 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Browse Files
+                        </button>
+                        <p class="text-xs text-gray-500 mt-3">Supports Excel (.xlsx, .xls) and <br><b>CSV (Recommended)</b> files </p>
+                    </div>
+                    
+                    <!-- Upload Preview -->
+                    <div id="upload-preview" class="hidden mb-6">
+                        <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Preview
+                        </h3>
+                        <div id="preview-content" class="upload-preview bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm"></div>
+                        <div class="flex gap-3 mt-4">
+                            <button type="button" id="confirm-upload" class="btn btn-primary text-sm flex-1 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                                Add to Roster
+                            </button>
+                            <button type="button" id="cancel-upload" class="btn btn-secondary text-sm py-3 px-4 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Format Instructions -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-xl border border-blue-100 mb-6">
+                        <h3 class="text-sm font-bold text-blue-800 mb-3 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Expected File Format
+                        </h3>
+                        <div class="text-sm text-blue-700 space-y-2">
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-800 mr-3">A</span>
+                                <span><strong>Member Name</strong> (e.g., John Doe)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-800 mr-3">B</span>
+                                <span><strong>Join Date</strong> (YYYY-MM-DD format)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-800 mr-3">C</span>
+                                <span><strong>Club Base</strong> (Community-Based or University-Based)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-800 mr-3">D</span>
+                                <span><strong>Leave Date</strong> (YYYY-MM-DD format, leave blank if still active)</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-blue-200">
+                            <button type="button" id="download-template" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Download Template
+                            </button>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- Right Column: Summary & Roster -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Invoice Summary Card -->
+                <div class="card p-8 shadow-lg border-0">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Invoice Summary</h2>
+                        <p class="text-gray-500">View your estimated club invoice</p>
+                    </div>
+                    
+                    <div class="mb-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Invoice Year Selection -->
+                            <div class="bg-gradient-to-br from-gray-50 to-blue-50 p-6 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all duration-300">
+                                <label for="invoice-year-select" class="block text-m font-bold text-blue-700 mb-3 text-center">Invoice of January</label>
+                                <select id="invoice-year-select" class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-center font-semibold bg-white shadow-sm">
+                                    <!-- Options will be populated by JavaScript -->
+                                </select>
+                                <div class="text-center mt-3">
+                                    <div>        
+                                        <p class="text-sm text-blue-600">Select the invoice year</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tax Percentage Input -->
+                            <div class="bg-gradient-to-br from-gray-50 to-green-50 p-6 rounded-xl border border-green-100 shadow-sm hover:shadow-md transition-all duration-300">
+                                <label for="tax-percentage" class="block text-m font-bold text-green-700 mb-3 text-center">Tax Percentage (%)</label>
+                                <div class="relative">
+                                    <input type="number" id="tax-percentage" min="0" max="100" step="0.01" value="18" 
+                                           class="w-full px-4 py-3 pr-12 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-center font-semibold bg-white shadow-sm" 
+                                           placeholder="18">
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <span class="text-green-600 font-semibold">%</span>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <div>
+                                        <p class="text-sm text-green-600">Configure tax percentage</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-100 text-center">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <p class="text-lg text-blue-700 font-semibold mb-2">Base RI Dues</p>
+                                <p id="base-invoice-amount" class="text-4xl font-bold text-blue-800 tracking-tight my-2">$0.00</p>
+                                <p id="dues-breakdown" class="text-sm text-gray-600">Full Year: $0.00 + Prorated: $0.00</p>
+                            </div>
+                            <div>
+                                <p class="text-lg text-green-700 font-semibold mb-2">Total with Tax</p>
+                                <p id="total-invoice-amount" class="text-4xl font-bold text-green-800 tracking-tight my-2">$0.00</p>
+                                <p id="tax-breakdown" class="text-sm text-gray-600">Tax: $0.00 (18%)</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Horizontal Line -->
+                        <div class="border-t border-blue-200 my-6"></div>
+                        
+                        <!-- Additional Summary Data -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 font-medium mb-1">Members</p>
+                                <p id="total-members" class="text-2xl font-semibold text-gray-700 tracking-tight">0</p>
+                                <p class="text-xs text-gray-400">Total Full Year Dues</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-500 font-medium mb-1">Months</p>
+                                <p id="total-prorated-months" class="text-2xl font-semibold text-gray-700 tracking-tight">0</p>
+                                <p class="text-xs text-gray-400">Total of Months in Prorata Calculation</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PDF Generation Section -->
+                    <div class="mt-8 pt-6 border-t border-blue-200">
+
+                        <button id="downloadPdfBtn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Generate Detailed Report</span>
+                        </button>
+                        
+                        <div id="pdfStatus" class="mt-3 text-center hidden">
+                            <div class="inline-flex items-center space-x-2 text-blue-600">
+                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Generating Detailed Report...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Member Roster Card -->
+                <div class="card p-8 shadow-lg border-0">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
+                        <div class="flex items-center mb-4 sm:mb-0">
+                            <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800">Member Roster</h2>
+                                <p class="text-sm text-gray-500">Manage your club members</p>
+                            </div>
+                        </div>
+                        <button id="reset-button" class="btn btn-secondary text-sm px-6 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Reset Roster
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto -mx-8 table-responsive">
+                        <table class="min-w-full" role="table" aria-label="Member roster">
+                            <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Name</th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Join Date</th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Leave Date</th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Club Base</th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                        Est. Base Due
+                                        <div class="text-xs font-normal text-gray-500 normal-case mt-1">(Full Year + Prorated)</div>
+                                    </th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Active Member</th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Prorated Months</th>
+                                    <th scope="col" class="relative px-6 py-4"><span class="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody id="member-roster-body" class="bg-white divide-y divide-gray-100">
+                                <!-- Rows will be dynamically injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div id="pagination-controls" class="mt-6 px-6 hidden">
+                        <!-- Desktop Layout -->
+                        <div class="hidden md:flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-700">Show</span>
+                                <select id="page-size-select" class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="10" selected>10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                                <span class="text-sm text-gray-700">entries per page</span>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <span id="pagination-info" class="text-sm text-gray-700">
+                                    Showing <span id="start-entry">1</span> to <span id="end-entry">10</span> of <span id="total-entries">0</span> entries
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center space-x-1">
+                                <button id="prev-page" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    Previous
+                                </button>
+                                <div id="page-numbers" class="flex items-center space-x-1">
+                                    <!-- Page numbers will be dynamically generated -->
+                                </div>
+                                <button id="next-page" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Mobile Layout -->
+                        <div class="md:hidden space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-700">Show</span>
+                                    <select id="page-size-select-mobile" class="border border-gray-300 rounded-md px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span class="text-sm text-gray-700">entries</span>
+                                </div>
+                                
+                                <span id="pagination-info-mobile" class="text-sm text-gray-700">
+                                    <span id="start-entry-mobile">1</span>-<span id="end-entry-mobile">10</span> of <span id="total-entries-mobile">0</span>
+                                </span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between">
+                                <button id="prev-page-mobile" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    Previous
+                                </button>
+                                
+                                <div id="page-numbers-mobile" class="flex items-center space-x-1">
+                                    <!-- Page numbers will be dynamically generated -->
+                                </div>
+                                
+                                <button id="next-page-mobile" class="px-3 py-1 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="text-center py-12">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No members yet</h3>
+                        <p class="text-gray-500 mb-4">Add members individually or upload a roster file to get started</p>
+                    </div>
+                </div>
+
+
+            </div>
+        </main>
+
+        <!-- Similar Tools Section -->
+        <section class="mt-16 mb-8">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">Similar Tools & Initiatives</h2>
+                <p class="text-lg text-gray-600 max-w-3xl mx-auto">Explore other interactive tools and resources from Rotaract South Asia MDIO</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                <!-- Rotaract Buddy -->
+                <div class="group">
+                    <a href="https://buddy.rsamdio.org/" target="_blank" rel="noopener noreferrer" 
+                       class="block bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 hover:border-blue-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-blue-800 mb-2">Rotaract Buddy</h3>
+                            <p class="text-sm text-blue-600 mb-3">AI-powered chatbot for all your Rotary & Rotaract questions</p>
+                            <div class="flex items-center justify-center text-blue-500 group-hover:text-blue-600 transition-colors duration-300">
+                                <span class="text-sm font-medium">View Resource</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- NAVIGATE -->
+                <div class="group">
+                    <a href="https://navigate.rsamdio.org/" target="_blank" rel="noopener noreferrer" 
+                       class="block bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 hover:border-green-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-green-800 mb-2">NAVIGATE</h3>
+                            <p class="text-sm text-green-600 mb-3">Navigate your Rotaract journey with guided pathways</p>
+                            <div class="flex items-center justify-center text-green-500 group-hover:text-green-600 transition-colors duration-300">
+                                <span class="text-sm font-medium">View Resource</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Publications Hub -->
+                <div class="group">
+                    <a href="https://connect.rsamdio.org/publications" target="_blank" rel="noopener noreferrer" 
+                       class="block bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-xl border border-purple-200 hover:border-purple-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-purple-800 mb-2">Publications Hub</h3>
+                            <p class="text-sm text-purple-600 mb-3">Access the District Publications from across South Asia</p>
+                            <div class="flex items-center justify-center text-purple-500 group-hover:text-purple-600 transition-colors duration-300">
+                                <span class="text-sm font-medium">View Resource</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Rotaract News Entry Submission -->
+                <div class="group">
+                    <a href="https://connect.rsamdio.org/rotaractnews" target="_blank" rel="noopener noreferrer" 
+                       class="block bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-xl border border-orange-200 hover:border-orange-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="text-center">
+                            <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-bold text-orange-800 mb-2">News Submission</h3>
+                            <p class="text-sm text-orange-600 mb-3">Submit your updates for the official Rotaract News Magazine</p>
+                            <div class="flex items-center justify-center text-orange-500 group-hover:text-orange-600 transition-colors duration-300">
+                                <span class="text-sm font-medium">View Resource</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+
+
+        <footer class="mt-12 py-6 bg-gradient-to-br from-gray-25 to-gray-50 border-t border-gray-100">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+                    <!-- Copyright & Organization -->
+                    <div class="text-center md:text-left">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Rotaract South Asia MDIO</h4>
+                        <p class="text-xs text-gray-400">© <span id="current-year"></span> All rights reserved.</p>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="text-center">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Contact</h4>
+                        <p class="text-xs text-gray-400 mb-1">PDRR Arun Teja Godavarthi</p>
+                        <a href="mailto:rotaract3191drr@gmail.com" class="text-xs text-blue-500 hover:text-blue-600 transition-colors font-medium hover:underline">
+                            rotaract3191drr@gmail.com
+                        </a>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div class="text-center md:text-right">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Disclaimer</h4>
+                        <p class="text-xs text-gray-400">All calculations are indicative estimates. Actual figures may vary based on various factors.</p>
+                    </div>
+                </div>
+
+                <!-- Bottom Bar -->
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+                        <p class="text-xs text-gray-400 text-center sm:text-left">This tool is designed to help Rotaractors estimate their Club Invoice calculations efficiently and accurately.</p>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-400">Powered by</span>
+                            <a href="https://rtr.zeospec.com/" target="_blank" rel="noopener noreferrer" class="text-xs font-medium text-gray-500 hover:text-gray-600 transition-colors">ZeoSpec</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <script>
+        // Performance optimization: Use requestIdleCallback for non-critical operations
+        const requestIdleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hide loading overlay
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+            const addMemberForm = document.getElementById('add-member-form');
+            const memberNameInput = document.getElementById('member-name');
+            const memberTypeInput = document.getElementById('member-type');
+            const joinDateInput = document.getElementById('join-date');
+            const leaveDateInput = document.getElementById('leave-date');
+            const memberRosterBody = document.getElementById('member-roster-body');
+            const totalInvoiceAmountEl = document.getElementById('total-invoice-amount');
+            const resetButton = document.getElementById('reset-button');
+            const invoiceYearSelect = document.getElementById('invoice-year-select');
+            const invoiceDateDisplay = document.getElementById('invoice-date-display');
+            const currentYearSpan = document.getElementById('current-year');
+            const taxPercentageInput = document.getElementById('tax-percentage');
+            const baseInvoiceAmountEl = document.getElementById('base-invoice-amount');
+            const taxBreakdownEl = document.getElementById('tax-breakdown');
+
+            // Bulk upload elements
+            const fileUploadArea = document.getElementById('file-upload-area');
+            const fileInput = document.getElementById('file-input');
+            const browseButton = document.getElementById('browse-button');
+            const uploadPreview = document.getElementById('upload-preview');
+            const previewContent = document.getElementById('preview-content');
+            const confirmUpload = document.getElementById('confirm-upload');
+            const cancelUpload = document.getElementById('cancel-upload');
+            const downloadTemplate = document.getElementById('download-template');
+
+            let parsedMembers = [];
+
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayFormatted = `${yyyy}-${mm}-${dd}`;
+            joinDateInput.value = todayFormatted;
+            currentYearSpan.textContent = yyyy;
+
+            let lastSelectedClubBase = memberTypeInput.value;
+            let lastSelectedJoinDate = joinDateInput.value;
+
+            // Pagination variables
+            let currentPage = 1;
+            let pageSize = 10;
+            let allMemberRows = [];
+
+            // Bulk Upload Functions
+            function downloadCSVTemplate() {
+                const csvContent = 'Member Name,Join Date,Club Base,Leave Date\nJohn Doe,2024-01-01,Community-Based,\nJane Smith,2024-02-01,University-Based,2024-12-31';
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'rotaract_member_template.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }
+
+            function parseExcelFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            
+                            // Remove header row and process data
+                            const processedData = jsonData.slice(1).filter(row => row.length >= 3);
+                            resolve(processedData);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            function parseCSVFile(file) {
+                return new Promise((resolve, reject) => {
+                    Papa.parse(file, {
+                        complete: function(results) {
+                            if (results.errors.length > 0) {
+                                reject(new Error('CSV parsing error: ' + results.errors[0].message));
+                                return;
+                            }
+                            // Remove header row and process data
+                            const processedData = results.data.slice(1).filter(row => row.length >= 3);
+                            resolve(processedData);
+                        },
+                        error: function(error) {
+                            reject(error);
+                        }
+                    });
+                });
+            }
+
+            function validateMemberData(data) {
+                const validatedMembers = [];
+                const errors = [];
+
+                data.forEach((row, index) => {
+                    const [name, joinDate, memberType, leaveDate] = row;
+                    
+                    // Validate name
+                    if (!name || typeof name !== 'string' || name.trim() === '') {
+                        errors.push(`Row ${index + 2}: Invalid member name`);
+                        return;
+                    }
+
+                    // Validate join date
+                    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+                    if (!joinDate || !dateRegex.test(joinDate)) {
+                        errors.push(`Row ${index + 2}: Invalid join date format (use YYYY-MM-DD)`);
+                        return;
+                    }
+
+                    // Validate club base
+                    const validTypes = ['Community-Based', 'University-Based'];
+                    if (!validTypes.includes(memberType)) {
+                        errors.push(`Row ${index + 2}: Invalid Club Base (use "Community-Based" or "University-Based")`);
+                        return;
+                    }
+
+                    // Validate leave date (optional)
+                    if (leaveDate && leaveDate.trim() !== '' && !dateRegex.test(leaveDate)) {
+                        errors.push(`Row ${index + 2}: Invalid leave date format (use YYYY-MM-DD or leave blank)`);
+                        return;
+                    }
+
+                    validatedMembers.push({
+                        name: name.trim(),
+                        joinDate: joinDate,
+                        clubBase: memberType,
+                        leaveDate: leaveDate && leaveDate.trim() !== '' ? leaveDate : null
+                    });
+                });
+
+                return { validatedMembers, errors };
+            }
+
+            function showPreview(members) {
+                const previewHTML = members.map((member, index) => {
+                    const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
+                    const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
+                    return `
+                        <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                            <div class="flex-1">
+                                <span class="font-medium text-gray-800">${member.name}</span>
+                                <span class="text-gray-500 ml-3">${member.joinDate}${leaveDateText}</span>
+                                <span class="text-gray-500 ml-3">${typeText}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                previewContent.innerHTML = previewHTML;
+                
+                // Show the action buttons (Add to Roster and Cancel) - restore them if they were hidden
+                const actionButtons = uploadPreview.querySelector('.flex.gap-3.mt-4');
+                if (actionButtons) {
+                    actionButtons.style.display = 'flex';
+                }
+                
+                // Hide upload area with smooth transition
+                fileUploadArea.classList.add('hidden');
+                
+                // Show preview after a short delay
+                setTimeout(() => {
+                    uploadPreview.classList.remove('hidden');
+                }, 300);
+            }
+
+            function handleFileUpload(file) {
+                // Show loading state
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('active');
+                }
+                
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                
+                let parsePromise;
+                if (fileExtension === 'csv') {
+                    parsePromise = parseCSVFile(file);
+                } else if (['xlsx', 'xls'].includes(fileExtension)) {
+                    parsePromise = parseExcelFile(file);
+                } else {
+                    showErrorMessage('Unsupported file format. Please upload a CSV or Excel file.');
+                    return;
+                }
+
+                parsePromise.then(data => {
+                    const validation = validateMemberData(data);
+                    
+                    if (validation.errors.length > 0) {
+                        const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
+                        showErrorMessage(errorMessage);
+                        return;
+                    }
+
+                    parsedMembers = validation.validatedMembers;
+                    showPreview(parsedMembers);
+                }).catch(error => {
+                    showErrorMessage('Error parsing file: ' + error.message);
+                }).finally(() => {
+                    // Hide loading state
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.remove('active');
+                    }
+                });
+            }
+
+            function addBulkMembers() {
+                if (parsedMembers.length === 0) return;
+
+                const selectedYear = parseInt(invoiceYearSelect.value, 10);
+                
+                parsedMembers.forEach(member => {
+                    const duesBreakdown = calculateIndividualDue(member.joinDate, member.clubBase, selectedYear, member.leaveDate);
+                    const memberId = `member-${Date.now()}-${Math.random()}`;
+                    
+                    const row = document.createElement('tr');
+                    row.id = memberId;
+                    row.dataset.due = duesBreakdown.total;
+                    row.dataset.joinDate = member.joinDate;
+                    row.dataset.leaveDate = member.leaveDate;
+                    row.dataset.memberType = member.clubBase;
+                    row.dataset.name = member.name;
+                    row.classList.add('member-row');
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${member.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.joinDate}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.leaveDate || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.clubBase}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                            </button>
+                            <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </td>
+                    `;
+                    
+                    memberRosterBody.appendChild(row);
+
+                    row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
+                    row.querySelector('.remove-member-btn').addEventListener('click', () => {
+                        row.remove();
+                        updateTotal();
+                        updatePagination();
+                    });
+                });
+
+                updateTotal();
+                updatePagination();
+                
+                // Show success animation and return to upload area
+                showSuccessAnimation();
+            }
+
+            function resetBulkUpload() {
+                parsedMembers = [];
+                uploadPreview.classList.add('hidden');
+                fileInput.value = '';
+                
+                // Return to upload area after a short delay
+                setTimeout(() => {
+                    fileUploadArea.classList.remove('hidden');
+                }, 300);
+            }
+            
+            function showSuccessAnimation() {
+                // Replace preview content with success message
+                const successHTML = `
+                    <div class="text-center py-8 success-animation">
+                        <div class="success-icon mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Successfully Added!</h3>
+                        <p class="text-gray-600 mb-4">${parsedMembers.length} member(s) have been added to your roster.</p>
+                        <div class="flex gap-3 justify-center">
+                            <button type="button" id="upload-more-btn" class="btn btn-primary text-sm px-6 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Upload More
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Replace the entire preview content (including buttons)
+                previewContent.innerHTML = successHTML;
+                
+                // Hide the action buttons (Add to Roster and Cancel)
+                const actionButtons = uploadPreview.querySelector('.flex.gap-3.mt-4');
+                if (actionButtons) {
+                    actionButtons.style.display = 'none';
+                }
+                
+                // Add event listener for upload more button
+                document.getElementById('upload-more-btn').addEventListener('click', () => {
+                    resetBulkUpload();
+                });
+                
+                // Auto-return to upload area after 3 seconds
+                setTimeout(() => {
+                    resetBulkUpload();
+                }, 3000);
+            }
+
+            function populateYearSelector() {
+                const currentYear = new Date().getFullYear();
+                const startInvoiceYear = 2023;
+                const endInvoiceYear = currentYear + 25;
+                for (let year = startInvoiceYear; year <= endInvoiceYear; year++) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    invoiceYearSelect.appendChild(option);
+                }
+                invoiceYearSelect.value = currentYear + 1;
+                updateInvoiceDateDisplay();
+            }
+
+            function updateInvoiceDateDisplay() {
+                const selectedYear = invoiceYearSelect.value;
+                if(invoiceDateDisplay) invoiceDateDisplay.textContent = `Jan 1st, ${selectedYear}`;
+            }
+
+            // Helper function for precise decimal arithmetic
+            function preciseDecimal(value, decimals = 2) {
+                return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+            }
+
+            function formatDuesBreakdown(duesBreakdown) {
+                const { fullYear, prorated, total } = duesBreakdown;
+                
+                if (total === 0) {
+                    return '<span class="text-gray-400">$0.00</span>';
+                }
+                
+                let breakdown = '';
+                
+                if (fullYear > 0 && prorated > 0) {
+                    breakdown = `$${preciseDecimal(fullYear).toFixed(2)} + $${preciseDecimal(prorated).toFixed(2)} = $${preciseDecimal(total).toFixed(2)}`;
+                } else if (fullYear > 0) {
+                    breakdown = `$${preciseDecimal(fullYear).toFixed(2)} + $0.00 = $${preciseDecimal(total).toFixed(2)}`;
+                } else if (prorated > 0) {
+                    breakdown = `$0.00 + $${preciseDecimal(prorated).toFixed(2)} = $${preciseDecimal(total).toFixed(2)}`;
+                }
+                
+                return breakdown;
+            }
+
+            function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr = null) {
+                const joinDate = new Date(joinDateStr + 'T00:00:00');
+                const invoiceDate = new Date(invoiceYear, 0, 1); // January 1st of invoice year
+                const baseDues = clubBase === 'Community-Based' ? 8 : 5;
+                const joinYear = joinDate.getFullYear();
+
+                // If joined in the year immediately preceding the invoice year
+                if (joinYear === invoiceYear - 1) {
+                    const joinMonth = joinDate.getMonth();
+                    const joinDay = joinDate.getDate();
+                    
+                    // Logic: If member joins on the 1st of the month or before, that month is counted
+                    // If member joins after the 1st of the month, that month is not counted
+                    let effectiveJoinMonth = joinMonth;
+                    if (joinDay > 1) {
+                        // If joined after the 1st, don't count that month
+                        effectiveJoinMonth += 1;
+                    }
+                    
+                    // Calculate prorated months for join year (even if joined in December)
+                    const monthsInJoinYear = Math.max(0, 12 - effectiveJoinMonth);
+                    let proratedDues = Math.round((baseDues / 12) * monthsInJoinYear * 100) / 100;
+
+                    // Check if member left before invoice date
+                    if (leaveDateStr) {
+                        const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+                        if (leaveDate < invoiceDate) {
+                            // Left before Jan 1st: charge only prorated dues for join year, but adjust for early departure
+                            const leaveMonth = leaveDate.getMonth();
+                            const leaveDay = leaveDate.getDate();
+                            
+                            // Logic for leave date: if they leave after the 1st, count that month
+                            // If they leave on or before the 1st, don't count that month
+                            let effectiveLeaveMonth = leaveMonth;
+                            if (leaveDay > 1) {
+                                effectiveLeaveMonth += 1;
+                            }
+                            
+                            // Calculate actual months of membership in join year
+                            // If leave month is before join month, no charge
+                            if (effectiveLeaveMonth < effectiveJoinMonth) {
+                                return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+                            }
+                            
+                            // Calculate months based on effective join and leave months
+                            let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth;
+                            
+                            // Ensure months is not negative
+                            actualMonthsInJoinYear = Math.max(0, actualMonthsInJoinYear);
+                            proratedDues = Math.round((baseDues / 12) * actualMonthsInJoinYear * 100) / 100;
+                            
+                            return { fullYear: 0, prorated: proratedDues, total: proratedDues, proratedMonths: actualMonthsInJoinYear };
+                        }
+                    }
+                    // Still a member on Jan 1st: charge both base fee and prorated fee
+                    const total = Math.round((baseDues + proratedDues) * 100) / 100;
+                    return { fullYear: baseDues, prorated: proratedDues, total: total, proratedMonths: monthsInJoinYear };
+                }
+
+                // If joined and left in the same year (not the year immediately preceding the invoice year), charge nothing
+                if (joinYear >= invoiceYear) return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+
+                // If left before Jan 1st, charge nothing
+                if (leaveDateStr) {
+                    const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+                    if (leaveDate < invoiceDate) return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+                }
+
+                if (joinYear < invoiceYear - 1) return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+                return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+            }
+
+            // Debounced function for performance optimization
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+            
+            function updateTotal() {
+                // Use requestIdleCallback for non-critical updates
+                requestIdleCallback(() => {
+                    let baseTotal = 0;
+                    let totalFullYear = 0;
+                    let totalProrated = 0;
+                    let totalMembersWithFullYear = 0;
+                    let totalProratedMonths = 0;
+                    const selectedYear = parseInt(invoiceYearSelect.value, 10);
+                    const memberRows = memberRosterBody.querySelectorAll('tr');
+                    
+                    memberRows.forEach(row => {
+                        const joinDate = row.dataset.joinDate;
+                        const leaveDate = row.dataset.leaveDate;
+                        const memberType = row.dataset.memberType;
+                        const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+                        
+                        baseTotal += duesBreakdown.total;
+                        totalFullYear += duesBreakdown.fullYear;
+                        totalProrated += duesBreakdown.prorated;
+                        
+                        // Count members with full year dues
+                        if (duesBreakdown.fullYear > 0) {
+                            totalMembersWithFullYear++;
+                        }
+                        
+                        // Add prorated months directly from the calculation
+                        totalProratedMonths += duesBreakdown.proratedMonths || 0;
+                    });
+                    
+                    // Calculate tax with precise arithmetic
+                    const taxPercentage = parseFloat(taxPercentageInput.value) || 0;
+                    const taxAmount = Math.round((baseTotal * taxPercentage) / 100 * 100) / 100;
+                    const totalWithTax = Math.round((baseTotal + taxAmount) * 100) / 100;
+                    
+                    // Update display with animation and precise formatting
+                    baseInvoiceAmountEl.textContent = `$${Math.round(baseTotal * 100) / 100}`;
+                    totalInvoiceAmountEl.textContent = `$${Math.round(totalWithTax * 100) / 100}`;
+                    taxBreakdownEl.textContent = `Tax: $${Math.round(taxAmount * 100) / 100} (${taxPercentage}%)`;
+                    
+                    // Update dues breakdown with precise arithmetic
+                    const duesBreakdownEl = document.getElementById('dues-breakdown');
+                    if (duesBreakdownEl) {
+                        const preciseFullYear = Math.round(totalFullYear * 100) / 100;
+                        const preciseProrated = Math.round(totalProrated * 100) / 100;
+                        duesBreakdownEl.textContent = `Full Year: $${preciseFullYear.toFixed(2)} + Prorated: $${preciseProrated.toFixed(2)}`;
+                    }
+                    
+                    // Update new summary data
+                    const totalMembersEl = document.getElementById('total-members');
+                    const totalProratedMonthsEl = document.getElementById('total-prorated-months');
+                    
+                    if (totalMembersEl) {
+                        totalMembersEl.textContent = totalMembersWithFullYear;
+                    }
+                    if (totalProratedMonthsEl) {
+                        totalProratedMonthsEl.textContent = totalProratedMonths;
+                    }
+                    
+                    // Show/hide empty state
+                    const emptyState = document.getElementById('empty-state');
+                    if (memberRows.length === 0) {
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        emptyState.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Debounced version for input events
+            const debouncedUpdateTotal = debounce(updateTotal, 300);
+            
+            function recalculateAllDues() {
+                const selectedYear = parseInt(invoiceYearSelect.value, 10);
+                const memberRows = memberRosterBody.querySelectorAll('tr');
+                memberRows.forEach(row => {
+                    if (row.classList.contains('editing')) return; // Skip editing rows
+                    const joinDate = row.dataset.joinDate;
+                    const leaveDate = row.dataset.leaveDate;
+                    const memberType = row.dataset.memberType;
+                    const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+                    row.dataset.due = duesBreakdown.total;
+                    row.querySelector('.due-cell').innerHTML = formatDuesBreakdown(duesBreakdown);
+                    
+                    // Update the new columns
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length >= 7) {
+                        cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+                        cells[6].textContent = duesBreakdown.proratedMonths || 0;
+                    }
+                });
+                updateTotal();
+                updateInvoiceDateDisplay();
+            }
+
+            // Unified Form Validation System
+            class FormValidator {
+                constructor() {
+                    this.errors = new Map();
+                    this.validationRules = {
+                        'member-name': [
+                            { test: (value) => value.trim().length > 0, message: 'Member name is required' },
+                            { test: (value) => value.trim().length >= 2, message: 'Name must be at least 2 characters' },
+                            { test: (value) => /^[a-zA-Z\s]+$/.test(value.trim()), message: 'Name should only contain letters and spaces' }
+                        ],
+                        'member-type': [
+                            { test: (value) => value.length > 0, message: 'Please select a Club Base' }
+                        ],
+                        'join-date': [
+                            { test: (value) => value.length > 0, message: 'Join date is required' },
+                            { test: (value) => this.isValidDate(value), message: 'Please enter a valid date' }
+                        ],
+                        'leave-date': [
+                            { test: (value) => !value || this.isValidDate(value), message: 'Please enter a valid date' },
+                            { test: (value) => !value || this.isLeaveDateValid(value), message: 'Leave date cannot be before join date' }
+                        ]
+                    };
+                }
+
+                isValidDate(dateString) {
+                    const date = new Date(dateString);
+                    return date instanceof Date && !isNaN(date);
+                }
+
+                isLeaveDateValid(leaveDate) {
+                    const joinDate = document.getElementById('join-date').value;
+                    if (!joinDate) return true; // If no join date, leave date is valid
+                    
+                    const leaveDateObj = new Date(leaveDate);
+                    const joinDateObj = new Date(joinDate);
+                    return leaveDateObj >= joinDateObj;
+                }
+
+                validateField(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    if (!field || !this.validationRules[fieldId]) return true;
+
+                    const value = field.value;
+                    const rules = this.validationRules[fieldId];
+                    
+                    // Clear previous error for this field
+                    this.clearFieldError(fieldId);
+                    
+                    // Check each validation rule
+                    for (const rule of rules) {
+                        if (!rule.test(value)) {
+                            this.setFieldError(fieldId, rule.message);
+                            return false;
+                        }
+                    }
+                    
+                    // If we get here, field is valid
+                    this.setFieldSuccess(fieldId);
+                    return true;
+                }
+
+                validateAll() {
+                    this.clearAllErrors();
+                    
+                    let isValid = true;
+                    const fieldIds = Object.keys(this.validationRules);
+                    
+                    for (const fieldId of fieldIds) {
+                        if (!this.validateField(fieldId)) {
+                            isValid = false;
+                        }
+                    }
+                    
+                    return isValid;
+                }
+
+                setFieldError(fieldId, message) {
+                    const field = document.getElementById(fieldId);
+                    const errorElement = document.getElementById(`${fieldId}-error`);
+                    
+                    if (field && errorElement) {
+                        field.classList.remove('input-success');
+                        field.classList.add('input-error');
+                        errorElement.textContent = message;
+                        errorElement.style.display = 'block';
+                        
+                        // Add error to our tracking
+                        this.errors.set(fieldId, message);
+                    }
+                }
+
+                setFieldSuccess(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    const errorElement = document.getElementById(`${fieldId}-error`);
+                    
+                    if (field && errorElement) {
+                        field.classList.remove('input-error');
+                        field.classList.add('input-success');
+                        errorElement.style.display = 'none';
+                        errorElement.textContent = '';
+                        
+                        // Remove error from our tracking
+                        this.errors.delete(fieldId);
+                    }
+                }
+
+                clearFieldError(fieldId) {
+                    const field = document.getElementById(fieldId);
+                    const errorElement = document.getElementById(`${fieldId}-error`);
+                    
+                    if (field && errorElement) {
+                        field.classList.remove('input-error', 'input-success');
+                        errorElement.style.display = 'none';
+                        errorElement.textContent = '';
+                        
+                        // Remove error from our tracking
+                        this.errors.delete(fieldId);
+                    }
+                }
+
+                clearAllErrors() {
+                    document.querySelectorAll('.error-message').forEach(el => {
+                        el.style.display = 'none';
+                        el.textContent = '';
+                    });
+                    document.querySelectorAll('.input-error, .input-success').forEach(el => {
+                        el.classList.remove('input-error', 'input-success');
+                    });
+                    this.errors.clear();
+                }
+
+                getFirstError() {
+                    return this.errors.size > 0 ? this.errors.values().next().value : null;
+                }
+
+                hasErrors() {
+                    return this.errors.size > 0;
+                }
+            }
+
+            // Initialize form validator
+            const formValidator = new FormValidator();
+            
+            // Legacy function for backward compatibility (now uses the new system)
+            function showFieldError(fieldId, message, shouldFocus = false) {
+                formValidator.setFieldError(fieldId, message);
+                if (shouldFocus) {
+                    const field = document.getElementById(fieldId);
+                    if (field) field.focus();
+                }
+            }
+            
+            function showSuccessMessage(message) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'success-feedback fade-in';
+                successDiv.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>${message}</span>
+                `;
+                
+                // Insert after the form
+                addMemberForm.parentNode.insertBefore(successDiv, addMemberForm.nextSibling);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    successDiv.remove();
+                }, 3000);
+            }
+            
+            function showErrorMessage(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-feedback fade-in';
+                errorDiv.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>${message}</span>
+                `;
+                
+                // Insert after the form
+                addMemberForm.parentNode.insertBefore(errorDiv, addMemberForm.nextSibling);
+                
+                // Remove after 5 seconds
+                setTimeout(() => {
+                    errorDiv.remove();
+                }, 5000);
+            }
+            
+            function addMember(e) {
+                // e.preventDefault() is now handled in the event listener
+                
+                // Use the new unified validation system
+                if (!formValidator.validateAll()) {
+                    // Show a summary error message if there are multiple errors
+                    if (formValidator.errors.size > 1) {
+                        showErrorMessage(`Please fix ${formValidator.errors.size} validation errors before submitting.`);
+                    }
+                    return;
+                }
+                
+                const name = memberNameInput.value.trim();
+                const clubBase = memberTypeInput.value;
+                const joinDate = joinDateInput.value;
+                const leaveDate = leaveDateInput.value;
+
+                const selectedYear = parseInt(invoiceYearSelect.value, 10);
+                const duesBreakdown = calculateIndividualDue(joinDate, clubBase, selectedYear, leaveDate);
+                const memberId = `member-${Date.now()}`;
+                const row = document.createElement('tr');
+                row.id = memberId;
+                row.dataset.due = duesBreakdown.total;
+                row.dataset.joinDate = joinDate;
+                row.dataset.leaveDate = leaveDate;
+                row.dataset.memberType = clubBase;
+                row.dataset.name = name;
+                row.classList.add('member-row');
+                
+                                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${joinDate}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${leaveDate || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${clubBase}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </td>
+                `;
+                memberRosterBody.appendChild(row);
+
+                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
+                row.querySelector('.remove-member-btn').addEventListener('click', () => {
+                    row.remove();
+                    updateTotal();
+                    updatePagination();
+                });
+                
+                lastSelectedClubBase = clubBase;
+                lastSelectedJoinDate = joinDate;
+                updateTotal();
+                updatePagination();
+                
+                // Clear all validation states before resetting
+                formValidator.clearAllErrors();
+                
+                addMemberForm.reset();
+                joinDateInput.value = lastSelectedJoinDate;
+                memberTypeInput.value = lastSelectedClubBase;
+                
+                // Show success message
+                showSuccessMessage('Member added successfully!');
+                
+                // Add success animation to the new row
+                row.classList.add('slide-up');
+            }
+
+            function editMember(memberId) {
+                const row = document.getElementById(memberId);
+                if (!row || row.classList.contains('editing')) return;
+
+                document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = true);
+                row.classList.add('editing');
+
+                const name = row.dataset.name;
+                const joinDate = row.dataset.joinDate;
+                const leaveDate = row.dataset.leaveDate;
+                const memberType = row.dataset.memberType;
+
+                // Enhanced input fields with better styling and visibility
+                row.cells[0].innerHTML = `<input type="text" value="${name}" class="edit-mode-input" placeholder="Enter member name">`;
+                row.cells[1].innerHTML = `<input type="date" value="${joinDate}" class="edit-mode-input">`;
+                row.cells[2].innerHTML = `<input type="date" value="${leaveDate || ''}" class="edit-mode-input" placeholder="Leave date (optional)">`;
+                row.cells[3].innerHTML = `
+                    <select class="edit-mode-select">
+                        <option value="Community-Based" ${memberType === 'Community-Based' ? 'selected' : ''}>Community-Based ($8)</option>
+                        <option value="University-Based" ${memberType === 'University-Based' ? 'selected' : ''}>University-Based ($5)</option>
+                    </select>
+                `;
+                row.cells[4].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+                row.cells[5].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+                row.cells[6].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+                row.cells[7].innerHTML = `
+                    <div class="flex space-x-2">
+                        <button class="btn btn-primary btn-sm !p-2 save-member-btn" title="Save changes">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                        </button>
+                        <button class="btn btn-secondary btn-sm !p-2 cancel-edit-btn" title="Cancel editing">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                `;
+
+                // Add event listeners
+                row.querySelector('.save-member-btn').addEventListener('click', () => saveMember(memberId));
+                row.querySelector('.cancel-edit-btn').addEventListener('click', () => cancelEdit(memberId));
+                
+                // Auto-focus on the name input for better UX
+                setTimeout(() => {
+                    const nameInput = row.cells[0].querySelector('input');
+                    if (nameInput) {
+                        nameInput.focus();
+                        nameInput.select();
+                    }
+                }, 100);
+                
+                // Add keyboard support for better UX
+                const inputs = row.querySelectorAll('input, select');
+                inputs.forEach((input, index) => {
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (index < inputs.length - 1) {
+                                inputs[index + 1].focus();
+                            } else {
+                                saveMember(memberId);
+                            }
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            cancelEdit(memberId);
+                        }
+                    });
+                });
+            }
+
+            function saveMember(memberId) {
+                const row = document.getElementById(memberId);
+                if (!row) return;
+
+                const newName = row.cells[0].querySelector('input').value.trim();
+                const newJoinDate = row.cells[1].querySelector('input').value;
+                const newLeaveDate = row.cells[2].querySelector('input').value;
+                const newMemberType = row.cells[3].querySelector('select').value;
+
+                // Enhanced validation for edit mode
+                if (!newName) {
+                    showErrorMessage('Please enter a member name');
+                    row.cells[0].querySelector('input').focus();
+                    return;
+                }
+
+                if (!newJoinDate) {
+                    showErrorMessage('Please select a join date');
+                    row.cells[1].querySelector('input').focus();
+                    return;
+                }
+
+                row.dataset.name = newName;
+                row.dataset.joinDate = newJoinDate;
+                row.dataset.leaveDate = newLeaveDate;
+                row.dataset.memberType = newMemberType;
+
+                const selectedYear = parseInt(invoiceYearSelect.value, 10);
+                const duesBreakdown = calculateIndividualDue(newJoinDate, newMemberType, selectedYear, newLeaveDate);
+                row.dataset.due = duesBreakdown.total;
+
+                row.cells[0].textContent = newName;
+                row.cells[1].textContent = newJoinDate;
+                row.cells[2].textContent = newLeaveDate || '-';
+                row.cells[3].textContent = newMemberType;
+                row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
+                row.cells[4].classList.add('due-cell');
+                row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+                row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
+                
+                finishEditing(row, memberId);
+                recalculateAllDues();
+                
+                // Show success feedback
+                row.style.backgroundColor = '#f0f9ff';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 1000);
+            }
+
+            function cancelEdit(memberId) {
+                const row = document.getElementById(memberId);
+                if (!row) return;
+
+                const name = row.dataset.name;
+                const joinDate = row.dataset.joinDate;
+                const leaveDate = row.dataset.leaveDate;
+                const memberType = row.dataset.memberType;
+                const selectedYear = parseInt(invoiceYearSelect.value, 10);
+                const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+
+                row.cells[0].textContent = name;
+                row.cells[1].textContent = joinDate;
+                row.cells[2].textContent = leaveDate || '-';
+                row.cells[3].textContent = memberType;
+                row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
+                row.cells[4].classList.add('due-cell');
+                row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+                row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
+
+                finishEditing(row, memberId);
+            }
+
+            function finishEditing(row, memberId) {
+                row.classList.remove('editing');
+                row.cells[7].innerHTML = `
+                    <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                    </button>
+                    <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                    </button>
+                `;
+                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
+                row.querySelector('.remove-member-btn').addEventListener('click', () => {
+                    row.remove();
+                    updateTotal();
+                });
+                document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = false);
+            }
+            
+            function resetCalculator() {
+                memberRosterBody.innerHTML = '';
+                allMemberRows = [];
+                currentPage = 1;
+                updateTotal();
+                updatePagination();
+            }
+
+            // Pagination Functions
+            function updatePagination() {
+                const paginationControls = document.getElementById('pagination-controls');
+                const pageSizeSelect = document.getElementById('page-size-select');
+                const pageSizeSelectMobile = document.getElementById('page-size-select-mobile');
+                const prevPageBtn = document.getElementById('prev-page');
+                const nextPageBtn = document.getElementById('next-page');
+                const prevPageBtnMobile = document.getElementById('prev-page-mobile');
+                const nextPageBtnMobile = document.getElementById('next-page-mobile');
+                const pageNumbers = document.getElementById('page-numbers');
+                const pageNumbersMobile = document.getElementById('page-numbers-mobile');
+                const startEntry = document.getElementById('start-entry');
+                const endEntry = document.getElementById('end-entry');
+                const totalEntries = document.getElementById('total-entries');
+                const startEntryMobile = document.getElementById('start-entry-mobile');
+                const endEntryMobile = document.getElementById('end-entry-mobile');
+                const totalEntriesMobile = document.getElementById('total-entries-mobile');
+
+                // Get all member rows
+                allMemberRows = Array.from(memberRosterBody.querySelectorAll('tr.member-row'));
+                
+                const totalMembers = allMemberRows.length;
+                const totalPages = Math.ceil(totalMembers / pageSize);
+                
+                // Show/hide pagination controls
+                if (totalMembers > pageSize) {
+                    paginationControls.classList.remove('hidden');
+                } else {
+                    paginationControls.classList.add('hidden');
+                }
+                
+                // Update pagination info
+                const start = (currentPage - 1) * pageSize + 1;
+                const end = Math.min(currentPage * pageSize, totalMembers);
+                
+                startEntry.textContent = totalMembers > 0 ? start : 0;
+                endEntry.textContent = end;
+                totalEntries.textContent = totalMembers;
+                
+                // Update mobile pagination info
+                if (startEntryMobile) startEntryMobile.textContent = totalMembers > 0 ? start : 0;
+                if (endEntryMobile) endEntryMobile.textContent = end;
+                if (totalEntriesMobile) totalEntriesMobile.textContent = totalMembers;
+                
+                // Update page size selectors
+                pageSizeSelect.value = pageSize;
+                if (pageSizeSelectMobile) pageSizeSelectMobile.value = pageSize;
+                
+                // Update navigation buttons
+                prevPageBtn.disabled = currentPage === 1;
+                nextPageBtn.disabled = currentPage === totalPages;
+                
+                // Update mobile navigation buttons
+                if (prevPageBtnMobile) prevPageBtnMobile.disabled = currentPage === 1;
+                if (nextPageBtnMobile) nextPageBtnMobile.disabled = currentPage === totalPages;
+                
+                // Generate page numbers
+                pageNumbers.innerHTML = '';
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `px-3 py-1 text-sm border rounded-md transition-colors ${
+                        i === currentPage 
+                            ? 'bg-blue-500 text-white border-blue-500' 
+                            : 'border-gray-300 hover:bg-gray-50'
+                    }`;
+                    pageBtn.textContent = i;
+                    pageBtn.addEventListener('click', () => goToPage(i));
+                    pageNumbers.appendChild(pageBtn);
+                }
+                
+                // Generate mobile page numbers (show fewer pages on mobile)
+                if (pageNumbersMobile) {
+                    pageNumbersMobile.innerHTML = '';
+                    const maxVisiblePagesMobile = 3; // Show fewer pages on mobile
+                    let startPageMobile = Math.max(1, currentPage - Math.floor(maxVisiblePagesMobile / 2));
+                    let endPageMobile = Math.min(totalPages, startPageMobile + maxVisiblePagesMobile - 1);
+                    
+                    if (endPageMobile - startPageMobile + 1 < maxVisiblePagesMobile) {
+                        startPageMobile = Math.max(1, endPageMobile - maxVisiblePagesMobile + 1);
+                    }
+                    
+                    for (let i = startPageMobile; i <= endPageMobile; i++) {
+                        const pageBtnMobile = document.createElement('button');
+                        pageBtnMobile.className = `px-2 py-1 text-xs border rounded transition-colors ${
+                            i === currentPage 
+                                ? 'bg-blue-500 text-white border-blue-500' 
+                                : 'border-gray-300 hover:bg-gray-50'
+                        }`;
+                        pageBtnMobile.textContent = i;
+                        pageBtnMobile.addEventListener('click', () => goToPage(i));
+                        pageNumbersMobile.appendChild(pageBtnMobile);
+                    }
+                }
+                
+                // Show current page rows
+                displayCurrentPage();
+            }
+            
+            function displayCurrentPage() {
+                const start = (currentPage - 1) * pageSize;
+                const end = start + pageSize;
+                
+                // Hide all rows
+                allMemberRows.forEach(row => {
+                    row.style.display = 'none';
+                });
+                
+                // Show only current page rows
+                allMemberRows.slice(start, end).forEach(row => {
+                    row.style.display = '';
+                });
+            }
+            
+            function goToPage(page) {
+                currentPage = page;
+                displayCurrentPage();
+                updatePagination();
+            }
+            
+            function goToPreviousPage() {
+                if (currentPage > 1) {
+                    goToPage(currentPage - 1);
+                }
+            }
+            
+            function goToNextPage() {
+                const totalPages = Math.ceil(allMemberRows.length / pageSize);
+                if (currentPage < totalPages) {
+                    goToPage(currentPage + 1);
+                }
+            }
+            
+            function changePageSize(newSize) {
+                pageSize = parseInt(newSize);
+                currentPage = 1; // Reset to first page
+                updatePagination();
+            }
+
+            addMemberForm.addEventListener('submit', (e) => {
+                e.preventDefault(); // Prevent default HTML5 validation
+                addMember(e);
+            });
+            resetButton.addEventListener('click', resetCalculator);
+            invoiceYearSelect.addEventListener('change', recalculateAllDues);
+            taxPercentageInput.addEventListener('input', debouncedUpdateTotal);
+
+            // Bulk upload event listeners
+            browseButton.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            });
+
+            // Drag and drop functionality
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+
+            fileUploadArea.addEventListener('dragleave', () => {
+                fileUploadArea.classList.remove('dragover');
+            });
+
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    handleFileUpload(file);
+                }
+            });
+
+            confirmUpload.addEventListener('click', addBulkMembers);
+            cancelUpload.addEventListener('click', resetBulkUpload);
+            downloadTemplate.addEventListener('click', downloadCSVTemplate);
+
+            // Pagination event listeners
+            const pageSizeSelect = document.getElementById('page-size-select');
+            const prevPageBtn = document.getElementById('prev-page');
+            const nextPageBtn = document.getElementById('next-page');
+            
+            pageSizeSelect.addEventListener('change', (e) => changePageSize(e.target.value));
+            prevPageBtn.addEventListener('click', goToPreviousPage);
+            nextPageBtn.addEventListener('click', goToNextPage);
+
+            // Mobile pagination event listeners
+            const pageSizeSelectMobile = document.getElementById('page-size-select-mobile');
+            const prevPageBtnMobile = document.getElementById('prev-page-mobile');
+            const nextPageBtnMobile = document.getElementById('next-page-mobile');
+            
+            if (pageSizeSelectMobile) {
+                pageSizeSelectMobile.addEventListener('change', (e) => changePageSize(e.target.value));
+            }
+            if (prevPageBtnMobile) {
+                prevPageBtnMobile.addEventListener('click', goToPreviousPage);
+            }
+            if (nextPageBtnMobile) {
+                nextPageBtnMobile.addEventListener('click', goToNextPage);
+            }
+
+            // Initialize the application
+            populateYearSelector();
+            updatePagination();
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                // Ctrl/Cmd + Enter to add member
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    const activeElement = document.activeElement;
+                    if (activeElement && activeElement.closest('#add-member-form')) {
+                        addMemberForm.dispatchEvent(new Event('submit'));
+                    }
+                }
+                
+                // Escape to close modals/overlays
+                if (e.key === 'Escape') {
+                    const loadingOverlay = document.getElementById('loading-overlay');
+                    if (loadingOverlay && loadingOverlay.classList.contains('active')) {
+                        loadingOverlay.classList.remove('active');
+                    }
+                }
+            });
+            
+            // Add form field validation on blur using the new system
+            [memberNameInput, memberTypeInput, joinDateInput, leaveDateInput].forEach(input => {
+                if (input) {
+                    input.addEventListener('blur', () => {
+                        // Validate only the specific field that lost focus
+                        formValidator.validateField(input.id);
+                    });
+                    
+                    // Add real-time validation on input for better UX
+                    input.addEventListener('input', () => {
+                        // Clear error state when user starts typing/selecting
+                        if (formValidator.errors.has(input.id)) {
+                            formValidator.clearFieldError(input.id);
+                        }
+                    });
+                }
+            });
+            
+            // Performance optimization: Preload critical resources
+            requestIdleCallback(() => {
+                // Preload any additional resources if needed
+                // Application loaded successfully
+            });
+
+            // PDF Generation Functionality
+            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            const pdfStatus = document.getElementById('pdfStatus');
+
+            downloadPdfBtn.addEventListener('click', generatePDFReport);
+
+            function generatePDFReport() {
+                // Show loading overlay for better UX
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.classList.add('active');
+                }
+                
+                // Show loading status
+                downloadPdfBtn.disabled = true;
+                pdfStatus.classList.remove('hidden');
+                
+                // Use setTimeout to allow UI to update before starting heavy processing
+                setTimeout(() => {
+                    generatePDFReportAsync();
+                }, 100);
+            }
+
+            async function generatePDFReportAsync() {
+                try {
+                    // Update loading message for better UX
+                    const loadingMessage = document.getElementById('loading-message');
+                    const progressBar = document.getElementById('loading-progress-bar');
+                    const step1 = document.getElementById('step-1');
+                    const step2 = document.getElementById('step-2');
+                    const step3 = document.getElementById('step-3');
+                    const step4 = document.getElementById('step-4');
+                    
+                    if (loadingMessage) {
+                        loadingMessage.textContent = 'Preparing PDF report...';
+                    }
+                    if (progressBar) {
+                        progressBar.style.width = '10%';
+                    }
+                    
+                    // Create new PDF document
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    
+                    // Set document properties
+                    doc.setProperties({
+                        title: 'Rotaract Club Invoice Report',
+                        subject: 'Invoice Calculation Report',
+                        author: 'Rotaract South Asia MDIO',
+                        creator: 'Club Invoice Calculator'
+                    });
+
+                    let yPosition = 25;
+                    const pageWidth = doc.internal.pageSize.width;
+                    const pageHeight = doc.internal.pageSize.height;
+                    const margin = 20;
+                    const contentWidth = pageWidth - (2 * margin);
+                    let currentPage = 1;
+
+                    // Add main title
+                    doc.setFontSize(25);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(25, 118, 210); // Blue color
+                    doc.text('ROTARACT CLUB INVOICE CALCULATOR', pageWidth / 2, yPosition, { align: 'center' });
+                    
+                    yPosition += 10;
+                    
+                    // Add subtitle
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(75, 85, 99); // Gray color
+                    doc.text('(A tool by Rotaract South Asia MDIO)', pageWidth / 2, yPosition, { align: 'center' });
+                    
+                    yPosition += 20;
+                    
+                    // Add gradient-like header background
+                    doc.setFillColor(25, 118, 210); // Blue
+                    doc.rect(0, yPosition - 5, pageWidth, 35, 'F');
+                    
+                    // Header with white text
+                    doc.setFontSize(22);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(255, 255, 255); // White
+                    doc.text('Estimation Report', pageWidth / 2, yPosition + 15, { align: 'center' });
+                    
+                    yPosition += 45;
+                    
+                    // Date and Year with colorful styling
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(75, 85, 99); // Gray color
+                    const currentDate = new Date().toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                    });
+                    doc.text(`Generated on: ${currentDate}`, pageWidth / 2, yPosition, { align: 'center' });
+                    
+                    yPosition += 10;
+                    doc.text(`Estimate for Invoice of January, ${invoiceYearSelect.value}`, pageWidth / 2, yPosition, { align: 'center' });
+                    
+                    yPosition += 15;
+
+                    // Invoice Summary Section with colorful header
+                    doc.setFillColor(59, 130, 246); // Blue background
+                    doc.rect(margin - 5, yPosition - 5, contentWidth + 10, 15, 'F');
+                    
+                    doc.setFontSize(16);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(255, 255, 255); // White text
+                    doc.text('Invoice Summary', pageWidth / 2, yPosition + 5, { align: 'center' });
+                    
+                    yPosition += 20;
+                    
+                    // Get summary data from the existing calculations
+                    const baseAmount = parseFloat(baseInvoiceAmountEl.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                    const taxAmount = parseFloat(taxBreakdownEl.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                    const totalAmount = parseFloat(totalInvoiceAmountEl.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                    const totalMembers = document.getElementById('total-members').textContent || '0';
+                    const totalProratedMonths = document.getElementById('total-prorated-months').textContent || '0';
+                    const taxPercentage = taxPercentageInput.value || '0';
+
+                    // Extract Full Year and Prorated amounts from the base amount breakdown
+                    // The base amount is the sum of full year + prorated amounts
+                    // We'll calculate the breakdown based on the member roster data
+                    let totalFullYearAmount = 0;
+                    let totalProratedAmount = 0;
+                    
+                    // Use the existing calculated values from member roster cells
+                    const memberRowsForSummary = memberRosterBody.querySelectorAll('tr');
+                    memberRowsForSummary.forEach(row => {
+                        const cells = row.querySelectorAll('td');
+                        if (cells.length >= 7) {
+                            const estBaseDue = cells[4].textContent.trim();
+                            const activeMember = cells[5].textContent.trim();
+                            const proratedMonths = parseInt(cells[6].textContent.trim()) || 0;
+                            
+                            // Extract amounts from the existing calculated estBaseDue cell
+                            const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
+                            if (dueMatch) {
+                                const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
+                                const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
+                                
+                                totalFullYearAmount += fullYearAmount;
+                                totalProratedAmount += proratedAmount;
+                            }
+                        }
+                    });
+
+                    // Summary table with enhanced styling and better number formatting
+                    const summaryData = [
+                        ['(a) Base RI Dues', `$${baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['  (a1) Full Year Dues', `$${totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['  (a2) Prorated Dues', `$${totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        [`(b) Tax (${taxPercentage}%)`, `$${taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['(c) Total with Tax', `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+                        ['', ''], // Empty row for spacing
+                        ['Members', totalMembers],
+                        ['Prorated Months', totalProratedMonths]
+                    ];
+
+                    doc.autoTable({
+                        startY: yPosition,
+                        head: [['Description', 'Amount']],
+                        body: summaryData,
+                        theme: 'plain',
+                        headStyles: {
+                            textColor: [55, 65, 81],
+                            fontStyle: 'bold',
+                            fontSize: 12,
+                            halign: 'center',
+                            valign: 'middle',
+                            cellPadding: 5,
+                            lineColor: [200, 200, 200],
+                            lineWidth: 0.1,
+                            fillColor: [248, 250, 252]
+                        },
+                        styles: {
+                            fontSize: 11,
+                            cellPadding: 4,
+                            textColor: [75, 85, 99],
+                            lineColor: [220, 220, 220],
+                            lineWidth: 0.1
+                        },
+                        columnStyles: {
+                            0: { fontStyle: 'bold', textColor: [55, 65, 81] },
+                            1: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] }
+                        },
+                        didParseCell: function(data) {
+                            // Make Full Year Dues and Prorated Dues rows muted/less significant
+                            if (data.row.raw[0] && (data.row.raw[0].includes('(a1) Full Year Dues') || data.row.raw[0].includes('(a2) Prorated Dues'))) {
+                                data.cell.styles.fontSize = 10;
+                                data.cell.styles.textColor = [156, 163, 175]; // Muted gray color
+                                data.cell.styles.fontStyle = 'normal';
+                            }
+                        },
+                        tableWidth: 'auto',
+                        margin: { left: margin, right: margin }
+                    });
+
+                    yPosition = doc.lastAutoTable.finalY + 8;
+                    
+                    // Add legend below the invoice summary table
+                    doc.setFontSize(8);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(156, 163, 175); // Muted gray color
+                    doc.text('Base RI Dues = Full Year Dues + Prorated Dues (a = a1 + a2)', pageWidth / 2, yPosition, { align: 'center' });
+                    yPosition += 6;
+                    doc.text('Total with Tax = Base RI Dues + Tax (c = a + b)', pageWidth / 2, yPosition, { align: 'center' });
+                    
+                    yPosition += 20;
+
+                    // Member Roster Section - Start on page 2
+                    if (memberRosterBody.children.length > 0) {
+                        // Check if we have members to process - use more specific selector
+                        let memberRows = memberRosterBody.querySelectorAll('tr.member-row');
+                        
+                        if (memberRows.length === 0) {
+                            // Fallback to all tr elements if no member-row class found
+                            const allRows = memberRosterBody.querySelectorAll('tr');
+                            
+                            if (allRows.length === 0) {
+                                // No members to process, skip to disclaimer
+                                if (loadingMessage) {
+                                    loadingMessage.textContent = 'No members found, generating summary only...';
+                                }
+                                if (progressBar) {
+                                    progressBar.style.width = '70%';
+                                }
+                            } else {
+                                // Use all rows as fallback
+                                memberRows = allRows;
+                            }
+                        }
+                        
+                        if (memberRows.length > 0) {
+                            // Update loading message and progress
+                            if (loadingMessage) {
+                                loadingMessage.textContent = 'Processing member roster...';
+                            }
+                            if (progressBar) {
+                                progressBar.style.width = '30%';
+                            }
+                            if (step1) {
+                                step1.classList.remove('active');
+                                step1.classList.add('completed');
+                            }
+                            if (step2) {
+                                step2.classList.add('active');
+                            }
+                            
+                            doc.addPage();
+                            currentPage = 2;
+                        
+                        // Page 2 header with branding
+                        doc.setFillColor(25, 118, 210); // Blue
+                        doc.rect(0, 0, pageWidth, 30, 'F');
+                        
+                        doc.setFontSize(16);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(255, 255, 255); // White
+                        doc.text('Rotaract Club Invoice Calculator', pageWidth / 2, 12, { align: 'center' });
+                        
+                        doc.setFontSize(18);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(255, 255, 255); // White
+                        doc.text('Member Roster', pageWidth / 2, 22, { align: 'center' });
+                        
+                        yPosition = 40;
+
+                        // Prepare member data for table using existing calculated values - optimized for large datasets
+                        const memberData = [];
+                        let totalEstDue = 0;
+                        let totalFullYearMembers = 0;
+                        let totalProrataMonths = 0;
+                        let totalFullYearAmount = 0;
+                        let totalProratedAmount = 0;
+                        
+                        // Process members in batches for better performance with large datasets
+                        const batchSize = Math.min(200, Math.max(100, Math.floor(memberRows.length / 10))); // Larger batch size for better performance
+                        const totalMembers = memberRows.length;
+                        
+                        // Memory optimization: Clear any existing data
+                        memberData.length = 0;
+                        
+                        // Convert NodeList to Array once for better performance
+                        const memberRowsArray = Array.from(memberRows);
+                        
+                        for (let i = 0; i < totalMembers; i += batchSize) {
+                            const endIndex = Math.min(i + batchSize, totalMembers);
+                            
+                            // Update progress for large datasets
+                            if (totalMembers > 100 && loadingMessage && progressBar) {
+                                const progress = Math.round((i / totalMembers) * 100);
+                                const overallProgress = 30 + (progress * 0.4); // 30% to 70%
+                                loadingMessage.textContent = `Processing members ${i + 1}-${endIndex} of ${totalMembers}...`;
+                                progressBar.style.width = `${overallProgress}%`;
+                            }
+                            
+                            // Process current batch
+                            for (let j = i; j < endIndex; j++) {
+                                const row = memberRowsArray[j];
+                                const cells = row.querySelectorAll('td');
+                                if (cells.length >= 7) { // Updated to check for 7 columns (including new Active Member and Prorated Months)
+                                    const name = cells[0].textContent.trim();
+                                    const joinDate = cells[1].textContent.trim();
+                                    const leaveDate = cells[2].textContent.trim() || 'Active';
+                                    const clubBase = cells[3].textContent.trim();
+                                    const estBaseDue = cells[4].textContent.trim(); // Already calculated value
+                                    const activeMember = cells[5].textContent.trim(); // "Yes" or "No"
+                                    const proratedMonths = parseInt(cells[6].textContent.trim()) || 0;
+                                    
+                                    // Extract amounts from the existing calculated estBaseDue cell
+                                    // Format is typically: "$X.XX + $Y.YY = $Z.ZZ"
+                                    const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
+                                    let fullYearAmount = 0;
+                                    let proratedAmount = 0;
+                                    let totalAmount = 0;
+                                    
+                                    if (dueMatch) {
+                                        fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
+                                        proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
+                                        totalAmount = parseFloat(dueMatch[3].replace(/,/g, '')) || 0;
+                                    } else {
+                                        // Fallback: extract total amount from the cell
+                                        const totalMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*)/);
+                                        if (totalMatch) {
+                                            totalAmount = parseFloat(totalMatch[1].replace(/,/g, '')) || 0;
+                                        }
+                                    }
+                                    
+                                    // Accumulate totals using existing calculated values
+                                    totalEstDue += totalAmount;
+                                    totalFullYearAmount += fullYearAmount;
+                                    totalProratedAmount += proratedAmount;
+                                    if (activeMember === 'Yes') totalFullYearMembers++;
+                                    totalProrataMonths += proratedMonths;
+                                    
+                                    memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, activeMember, proratedMonths]);
+                                }
+                            }
+                            
+                            // Allow UI to update for large datasets
+                            if (totalMembers > 500) {
+                                await new Promise(resolve => setTimeout(resolve, 5));
+                            }
+                            
+                            // Memory cleanup for very large datasets
+                            if (totalMembers > 2000 && i % (batchSize * 5) === 0) {
+                                // Force garbage collection hint
+                                if (window.gc) {
+                                    window.gc();
+                                }
+                            }
+                        }
+                        
+                        // Add totals row with breakdown format
+                        const formattedTotalFullYear = totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        const formattedTotalProrated = totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        const formattedTotalEstDue = totalEstDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        
+                        const totalEstDueDisplay = `$${formattedTotalFullYear} + $${formattedTotalProrated} = $${formattedTotalEstDue}`;
+                        
+                        // All members processed successfully
+                        
+                        memberData.push([
+                            'TOTAL',
+                            '',
+                            '',
+                            '',
+                            totalEstDueDisplay,
+                            totalFullYearMembers,
+                            totalProrataMonths
+                        ]);
+
+                        // Update loading message and progress
+                        if (loadingMessage) {
+                            loadingMessage.textContent = 'Generating Detailed Report table...';
+                        }
+                        if (progressBar) {
+                            progressBar.style.width = '70%';
+                        }
+                        if (step2) {
+                            step2.classList.remove('active');
+                            step2.classList.add('completed');
+                        }
+                        if (step3) {
+                            step3.classList.add('active');
+                        }
+
+                        // Member roster table with plain styling and performance optimizations for large datasets
+                        try {
+                            doc.autoTable({
+                                startY: yPosition,
+                                head: [['Name', 'Join Date', 'Leave Date', 'Club Base', 'Est. Base Due', 'Active Member', 'Prorated Months']],
+                                body: memberData,
+                                theme: 'plain',
+                                headStyles: {
+                                    textColor: [55, 65, 81],
+                                    fontStyle: 'bold',
+                                    fontSize: 8,
+                                    halign: 'center',
+                                    valign: 'middle',
+                                    cellPadding: 2,
+                                    lineColor: [200, 200, 200],
+                                    lineWidth: 0.1,
+                                    fillColor: [248, 250, 252]
+                                },
+                                columnStyles: {
+                                    0: { halign: 'left', fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 40 }, // Name - wider
+                                    1: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 }, // Join Date
+                                    2: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 }, // Leave Date
+                                    3: { halign: 'center', textColor: [75, 85, 99], cellWidth: 25 }, // Club Base
+                                    4: { halign: 'center', textColor: [75, 85, 99], cellWidth: 40 }, // Est. Base Due - wider for formula
+                                    5: { halign: 'center', textColor: [75, 85, 99], cellWidth: 25 }, // Active Member
+                                    6: { halign: 'center', textColor: [75, 85, 99], cellWidth: 30 }  // Prorated Months
+                                },
+                                tableWidth: pageWidth - 10, // Use almost full page width
+                                margin: { top: 40, bottom: 30, left: 5, right: 5 }, // Increased top margin to account for headers on overflow pages
+                                pageBreak: 'auto',
+                                showFoot: 'lastPage', // Show footer on last page only
+                                startY: yPosition, // Start table at the specified yPosition
+                                styles: {
+                                    fontSize: 7,
+                                    cellPadding: 2,
+                                    textColor: [75, 85, 99],
+                                    lineColor: [220, 220, 220],
+                                    lineWidth: 0.1,
+                                    overflow: 'linebreak',
+                                    halign: 'left'
+                                },
+                                                                // Additional options for large datasets
+                                didStartPage: function(data) {
+                                    // Set yPosition = 40 for overflow pages (page 3 and beyond)
+                                    if (data.pageNumber >= 3) {
+                                        yPosition = 40;
+                                    }
+                                },
+                                didDrawPage: function(data) {
+                                    // Add muted subtitle for "Est. Base Due" column on page 2
+                                    if (data.pageNumber === 2) {
+                                        try {
+                                            const tableX = data.table.x;
+                                            const tableY = data.table.y;
+                                            const columnWidth = data.table.width / 7; // 7 columns
+                                            const estBaseDueX = tableX + (columnWidth * 4); // 5th column (index 4)
+                                            
+                                            doc.setFontSize(6);
+                                            doc.setFont('helvetica', 'normal');
+                                            doc.setTextColor(156, 163, 175); // Muted gray color
+                                            doc.text('(Full Year + Prorated)', estBaseDueX + (columnWidth / 2), tableY - 2, { align: 'center' });
+                                        } catch (textError) {
+                                            // Could not add subtitle text
+                                        }
+                                    }
+                                    
+                                    // Add header to all overflow pages (page 3 and beyond)
+                                    if (data.pageNumber >= 2) {
+                                        try {
+                                            // Add page header for overflow pages
+                                            doc.setFillColor(25, 118, 210); // Blue
+                                            doc.rect(0, 0, pageWidth, 30, 'F');
+                                            
+                                            doc.setFontSize(16);
+                                            doc.setFont('helvetica', 'bold');
+                                            doc.setTextColor(255, 255, 255); // White
+                                            doc.text('Rotaract Club Invoice Calculator', pageWidth / 2, 12, { align: 'center' });
+                                            
+                                            doc.setFontSize(18);
+                                            doc.setFont('helvetica', 'bold');
+                                            doc.setTextColor(255, 255, 255); // White
+                                            doc.text('Member Roster (Continued)', pageWidth / 2, 22, { align: 'center' });
+                                        } catch (headerError) {
+                                            // Could not add overflow page header
+                                        }
+                                    }
+                                    
+                                    // Update current page for footer
+                                    currentPage = data.pageNumber + 1; // +1 because we start from page 2
+                                },
+                                didParseCell: function(data) {
+                                    // Style the totals row
+                                    if (data.row.raw[0] === 'TOTAL') {
+                                        data.cell.styles.fontStyle = 'bold';
+                                        data.cell.styles.fillColor = [240, 240, 240];
+                                        data.cell.styles.textColor = [55, 65, 81];
+                                    }
+                                }
+                            });
+                        } catch (tableError) {
+                            console.error('Error generating member roster table:', tableError);
+                            console.error('memberData length:', memberData.length);
+                            console.error('memberData sample:', memberData.slice(0, 5));
+                            
+                            // Continue with disclaimer even if table fails
+                            // Add a simple text fallback for the member roster
+                            doc.setFontSize(12);
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(220, 38, 127); // Red color for error
+                            doc.text('Error: Could not generate member roster table', pageWidth / 2, yPosition + 20, { align: 'center' });
+                            doc.setFontSize(10);
+                            doc.setFont('helvetica', 'normal');
+                            doc.setTextColor(75, 85, 99);
+                            doc.text(`Total members found: ${memberData.length - 1}`, pageWidth / 2, yPosition + 35, { align: 'center' });
+                            yPosition += 50;
+                        }
+                    }
+
+                    // Update loading message and progress
+                    if (loadingMessage) {
+                        loadingMessage.textContent = 'Adding disclaimer and finalizing...';
+                    }
+                    if (progressBar) {
+                        progressBar.style.width = '90%';
+                    }
+                    if (step3) {
+                        step3.classList.remove('active');
+                        step3.classList.add('completed');
+                    }
+                    if (step4) {
+                        step4.classList.add('active');
+                    }
+
+                    // Disclaimer Section after member roster
+                    yPosition = doc.lastAutoTable ? doc.lastAutoTable.finalY + 25 : yPosition + 25;
+                        
+                        // Check if we need a new page for disclaimer
+                        if (yPosition > pageHeight - 100) {
+                            doc.addPage();
+                            currentPage++;
+                            
+                            // Add header to new page
+                            doc.setFillColor(25, 118, 210); // Blue
+                            doc.rect(0, 0, pageWidth, 30, 'F');
+                            
+                            doc.setFontSize(16);
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(255, 255, 255); // White
+                            doc.text('Rotaract Club Invoice Calculator', pageWidth / 2, 12, { align: 'center' });
+                            
+                            doc.setFontSize(18);
+                            doc.setFont('helvetica', 'bold');
+                            doc.setTextColor(255, 255, 255); // White
+                            doc.text('Disclaimer', pageWidth / 2, 22, { align: 'center' });
+                            
+                            yPosition = 45;
+                        }
+                        
+                        // Disclaimer Section with colorful header
+                        doc.setFillColor(239, 68, 68); // Red background
+                        doc.rect(margin - 5, yPosition - 5, contentWidth + 10, 15, 'F');
+                        
+                        doc.setFontSize(14);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(255, 255, 255); // White text
+                        doc.text('Disclaimer', pageWidth / 2, yPosition + 5, { align: 'center' });
+                        
+                        yPosition += 20;
+                        
+                        doc.setFontSize(10);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(75, 85, 99);
+                        
+                        const disclaimerText = [
+                            'This report contains indicative estimates for Rotaract Club Invoice calculations. All calculations are based on the information provided and current Rotary International dues structure. Actual figures may vary based on various factors including but not limited to:',
+                            '',
+                            '• Changes in Rotary International dues structure',
+                            '• Currency exchange rates and fluctuations',
+                            '• Timing of member additions and removals',
+                            '• Outstanding dues from previous years',
+                            '• Previous year dues payment status of Rotaractors joining from other clubs',
+                            '',
+                            'Please verify all calculations with official Rotary International sources. This tool is designed to assist with preliminary estimates and should not be considered as official documentation.',
+                            '',
+                            'Generated by: Rotaract South Asia MDIO Club Invoice Calculator',
+                            'Powered by: ZeoSpec (https://rtr.zeospec.com/)'
+                        ];
+
+                        disclaimerText.forEach(line => {
+                            if (yPosition > pageHeight - 30) {
+                                doc.addPage();
+                                currentPage++;
+                                yPosition = 20;
+                            }
+                            
+                            if (line.trim() === '') {
+                                yPosition += 8; // Extra spacing for empty lines
+                            } else if (line.startsWith('•')) {
+                                // Bullet points
+                                doc.text(line, margin + 5, yPosition);
+                                yPosition += 8;
+                            } else {
+                                // Justified text for paragraphs
+                                const splitText = doc.splitTextToSize(line, contentWidth);
+                                splitText.forEach(textLine => {
+                                    doc.text(textLine, margin, yPosition, { align: 'justify' });
+                                    yPosition += 6;
+                                });
+                                yPosition += 2; // Extra spacing after paragraphs
+                            }
+                        });
+                    }
+
+                    // Enhanced footer with proper page counting
+                    const totalPages = currentPage;
+                    for (let i = 1; i <= totalPages; i++) {
+                        doc.setPage(i);
+                        
+                        // Footer background
+                        doc.setFillColor(248, 250, 252);
+                        doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+                        
+                        // Footer text
+                        doc.setFontSize(8);
+                        doc.setTextColor(156, 163, 175);
+                        doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                        
+                        // Footer line
+                        doc.setDrawColor(229, 231, 235);
+                        doc.setLineWidth(0.5);
+                        doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+                    }
+
+                    // Save the PDF
+                    const fileName = `Rotaract_Club_Invoice_${invoiceYearSelect.value}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    doc.save(fileName);
+
+                    // Complete progress
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+                    if (step4) {
+                        step4.classList.remove('active');
+                        step4.classList.add('completed');
+                    }
+                    if (loadingMessage) {
+                        loadingMessage.textContent = 'Detailed Report generated successfully!';
+                    }
+
+                    // Hide loading status and overlay after a brief delay
+                    setTimeout(() => {
+                        downloadPdfBtn.disabled = false;
+                        pdfStatus.classList.add('hidden');
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.remove('active');
+                        }
+                    }, 1000);
+
+                } catch (error) {
+                    console.error('Error generating Detailed Report:', error);
+                    
+                    // Hide loading status and overlay
+                    downloadPdfBtn.disabled = false;
+                    pdfStatus.classList.add('hidden');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.remove('active');
+                    }
+                    
+                    // Show error message
+                    alert('Error generating Detailed Report. Please try again.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
