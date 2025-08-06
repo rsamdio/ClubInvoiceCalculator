@@ -557,33 +557,75 @@ async function generatePDFOptimized() {
             loadingOverlay.classList.add('active');
         }
         
-        // Load PDF libraries only when needed
-        if (typeof window.loadPDFLibraries === 'function') {
-            await window.loadPDFLibraries();
+        // PDF libraries are loaded with defer, so they should be available
+        if (typeof jsPDF === 'undefined') {
+            throw new Error('PDF libraries not loaded. Please refresh the page.');
         }
         
         // Use Web Worker for PDF generation to prevent blocking
         const worker = new Worker('pdf-worker.js');
         
         return new Promise((resolve, reject) => {
-            // Prepare data for PDF generation
-            const memberData = allMemberRows.map(row => ({
-                name: row.querySelector('[data-field="name"]').textContent,
-                joinDate: row.querySelector('[data-field="joinDate"]').textContent,
-                clubBase: row.querySelector('[data-field="clubBase"]').textContent,
-                dues: row.querySelector('[data-field="dues"]').textContent
-            }));
+            // Get member data from the DOM
+            const memberRows = document.getElementById('member-roster-body')?.querySelectorAll('tr') || [];
+            const memberData = Array.from(memberRows).map(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 7) {
+                    return {
+                        name: cells[0].textContent.trim(),
+                        joinDate: cells[1].textContent.trim(),
+                        leaveDate: cells[2].textContent.trim() || 'Active',
+                        clubBase: cells[3].textContent.trim(),
+                        dues: cells[4].textContent.trim(),
+                        activeMember: cells[5].textContent.trim(),
+                        proratedMonths: cells[6].textContent.trim()
+                    };
+                }
+                return null;
+            }).filter(Boolean);
+            
+            // Calculate summary data
+            const baseAmount = parseFloat(document.getElementById('base-invoice-amount')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+            const taxAmount = parseFloat(document.getElementById('tax-breakdown')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+            const totalWithTax = parseFloat(document.getElementById('total-invoice-amount')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+            const invoiceYear = document.getElementById('invoice-year-select')?.value || new Date().getFullYear();
+            const taxPercentage = document.getElementById('tax-percentage')?.value || '0';
+            const totalMembers = memberData.length;
+            const totalProratedMonths = document.getElementById('total-prorated-months')?.textContent || '0';
+            
+            // Calculate Full Year and Prorated amounts
+            let totalFullYearAmount = 0;
+            let totalProratedAmount = 0;
+            
+            memberData.forEach(member => {
+                const dueMatch = member.dues.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
+                if (dueMatch) {
+                    const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
+                    const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
+                    
+                    totalFullYearAmount += fullYearAmount;
+                    totalProratedAmount += proratedAmount;
+                }
+            });
             
             const summaryData = {
-                totalMembers: allMemberRows.length,
-                totalAmount: document.getElementById('total-invoice-amount')?.textContent || '$0.00',
-                invoiceYear: document.getElementById('invoice-year-select')?.value || new Date().getFullYear(),
-                taxPercentage: document.getElementById('tax-percentage')?.value || '0'
+                baseAmount,
+                taxAmount,
+                totalWithTax,
+                totalFullYearAmount,
+                totalProratedAmount
             };
             
             worker.postMessage({
                 type: 'generatePDF',
-                data: { memberData, summaryData }
+                data: { 
+                    memberData, 
+                    summaryData, 
+                    invoiceYear, 
+                    taxPercentage,
+                    totalMembers,
+                    totalProratedMonths 
+                }
             });
             
             worker.onmessage = (e) => {
@@ -624,4 +666,11 @@ window.appFunctions = {
     formValidator,
     initializeApp,
     generatePDFOptimized
-}; 
+};
+
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.appFunctions && window.appFunctions.initializeApp) {
+        window.appFunctions.initializeApp();
+    }
+}); 

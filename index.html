@@ -38,19 +38,9 @@
     <!-- Defer Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com" defer></script>
     
-    <!-- Lazy load non-critical libraries -->
-    <script>
-        // Lazy load utility libraries
-        function loadUtilityLibraries() {
-            return Promise.all([
-                import('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'),
-                import('https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js')
-            ]);
-        }
-        
-        // Load libraries when needed
-        window.loadUtilityLibraries = loadUtilityLibraries;
-    </script>
+    <!-- Load utility libraries with defer for better performance -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
     <!-- Critical CSS only - rest moved to external file -->
     <style>
         /* Critical above-the-fold styles only */
@@ -110,19 +100,9 @@
         }
     </script>
 
-    <!-- Lazy load PDF libraries -->
-    <script>
-        // Lazy load PDF generation libraries
-        function loadPDFLibraries() {
-            return Promise.all([
-                import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
-                import('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js')
-            ]);
-        }
-        
-        // Make available globally
-        window.loadPDFLibraries = loadPDFLibraries;
-    </script>
+    <!-- Load PDF libraries with defer for better performance -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js" defer></script>
     
     <!-- External JavaScript for better performance -->
     <script src="app.js" defer></script>
@@ -2069,10 +2049,25 @@
                 downloadPdfBtn.disabled = true;
                 pdfStatus.classList.remove('hidden');
                 
-                // Use setTimeout to allow UI to update before starting heavy processing
-                setTimeout(() => {
-                    generatePDFReportAsync();
-                }, 100);
+                // Use the optimized PDF generation function
+                if (window.appFunctions && window.appFunctions.generatePDFOptimized) {
+                    window.appFunctions.generatePDFOptimized()
+                        .then(() => {
+                            downloadPdfBtn.disabled = false;
+                            pdfStatus.classList.add('hidden');
+                        })
+                        .catch((error) => {
+                            console.error('PDF generation error:', error);
+                            downloadPdfBtn.disabled = false;
+                            pdfStatus.classList.add('hidden');
+                            alert('Error generating PDF. Please try again.');
+                        });
+                } else {
+                    // Fallback to original method
+                    setTimeout(() => {
+                        generatePDFReportAsync();
+                    }, 100);
+                }
             }
 
             async function generatePDFReportAsync() {
