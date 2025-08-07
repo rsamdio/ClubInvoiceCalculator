@@ -2,7 +2,9 @@
 
 # Rotaract Club Invoice Calculator
 
-An interactive tool developed by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.
+An interactive tool developed by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease. This tool provides a user-friendly interface to manage a member roster, calculate dues, and generate detailed reports.
+
+**Live Demo:** [**dues.rsamdio.org**](https://dues.rsamdio.org/)
 
 ## Features
 
@@ -12,6 +14,9 @@ An interactive tool developed by Rotaract South Asia MDIO (RSAMDIO) to help Rota
 *   **Individual Member Management:** Add, edit, and remove individual members from the roster.
 *   **Prorated Dues Calculation:** Accurately calculates prorated dues based on join and leave dates.
 *   **Tax Configuration:** Allows users to input a tax percentage to see the total invoice amount including tax.
+*   **PDF Report Generation:** Generate a detailed PDF report of the invoice summary and member roster.
+*   **Instructional Pop-up:** A helpful guide for new users to get started quickly.
+*   **Responsive Design:** Works on all devices, from desktops to mobile phones.
 
 ## Technologies Used
 
@@ -19,10 +24,24 @@ An interactive tool developed by Rotaract South Asia MDIO (RSAMDIO) to help Rota
 *   **Tailwind CSS:** For a modern and responsive user interface.
 *   **JavaScript (ES6+):** For all interactive functionalities and calculations.
 *   **XLSX.js & PapaParse.js:** Libraries for handling Excel and CSV file parsing.
+*   **jsPDF & jspdf-autotable:** For generating PDF reports.
+*   **Web Worker:** For non-blocking PDF generation.
 
 ## Getting Started
 
-To use this tool, simply open the `invoice.html` file in your web browser. No special setup or server is required.
+To run the project locally, follow these steps:
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/zeospec/ClubInvoiceCalculator.git
+    ```
+2.  **Navigate to the project directory:**
+    ```bash
+    cd ClubInvoiceCalculator
+    ```
+3.  **Open `index.html` in your web browser.**
+
+No special setup or server is required.
 
 ### Adding Members
 
@@ -34,7 +53,7 @@ To use this tool, simply open the `invoice.html` file in your web browser. No sp
         *   **Column B:** Join Date (YYYY-MM-DD format)
         *   **Column C:** Club Base (Community-Based or University-Based)
         *   **Column D:** Leave Date (YYYY-MM-DD format, leave blank if still active)
-    *   A template CSV file can be downloaded for your convenience.
+    *   Templates are provided for your convenience. You can either **download a CSV template** for offline use or **make a copy of the Google Sheets template** for easy online collaboration.
 
 ### Invoice Summary
 
@@ -49,6 +68,17 @@ To use this tool, simply open the `invoice.html` file in your web browser. No sp
 *   You can edit member details by clicking the edit button next to each member.
 *   Remove members using the delete button.
 *   Use the "Reset Roster" button to clear all members from the list.
+
+## Contributing
+
+Contributions are welcome! Please follow these steps to contribute:
+
+1.  Fork the repository.
+2.  Create a new branch (`git checkout -b feature/your-feature-name`).
+3.  Make your changes.
+4.  Commit your changes (`git commit -m 'Add some feature'`).
+5.  Push to the branch (`git push origin feature/your-feature-name`).
+6.  Open a pull request.
 
 ## Disclaimer
 
