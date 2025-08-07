@@ -714,8 +714,7 @@
     </div>
 
     <script>
-        // Performance optimization: Use requestIdleCallback for non-critical operations
-        const requestIdleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
+                    // requestIdleCallback - Now provided by app.js
         
         document.addEventListener('DOMContentLoaded', () => {
             // Hide loading overlay
@@ -748,6 +747,71 @@
             const cancelUpload = document.getElementById('cancel-upload');
             const downloadTemplate = document.getElementById('download-template');
 
+            // Load functions from app.js
+            const { 
+                downloadCSVTemplate, 
+                handleFileUpload, 
+                addBulkMembers, 
+                resetBulkUpload,
+                updatePagination, 
+                goToPage, 
+                goToPreviousPage, 
+                goToNextPage, 
+                changePageSize,
+                populateYearSelector,
+                updateInvoiceDateDisplay,
+                editMember,
+                saveMember,
+                cancelEdit,
+                finishEditing,
+                resetCalculator,
+                addMember,
+                updateTotal,
+                recalculateAllDues,
+                showSuccessMessage,
+                showErrorMessage,
+                showFileUploadError,
+                debouncedUpdateTotal,
+                formValidator
+            } = window.appFunctions || {};
+
+            // Safety check - ensure app.js has loaded
+            if (!window.appFunctions) {
+                console.error('app.js functions not available. Please refresh the page.');
+                // Show user-friendly error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-feedback fade-in';
+                errorDiv.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Application failed to load properly. Please refresh the page.</span>
+                `;
+                document.body.insertBefore(errorDiv, document.body.firstChild);
+            }
+
+            // Wait for app.js to load if not already available
+            function waitForAppFunctions() {
+                return new Promise((resolve) => {
+                    if (window.appFunctions) {
+                        resolve(window.appFunctions);
+                    } else {
+                        const checkInterval = setInterval(() => {
+                            if (window.appFunctions) {
+                                clearInterval(checkInterval);
+                                resolve(window.appFunctions);
+                            }
+                        }, 100);
+                        
+                        // Timeout after 5 seconds
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            resolve(null);
+                        }, 5000);
+                    }
+                });
+            }
+
             let parsedMembers = [];
 
             const today = new Date();
@@ -766,1157 +830,79 @@
             let pageSize = 10;
             let allMemberRows = [];
 
-            // Bulk Upload Functions
-            function downloadCSVTemplate() {
-                const csvContent = 'Member Name,Join Date,Club Base,Leave Date\nJohn Doe,2024-01-01,Community-Based,\nJane Smith,2024-02-01,University-Based,2024-12-31';
-                const blob = new Blob([csvContent], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'Member Roster Template.csv';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }
+            // Functions will be loaded from app.js after DOM is ready
 
-            function parseExcelFile(file) {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        try {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const firstSheetName = workbook.SheetNames[0];
-                            const worksheet = workbook.Sheets[firstSheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                            
-                            // Remove header row and process data
-                            const processedData = jsonData.slice(1).filter(row => row.length >= 3);
-                            resolve(processedData);
-                        } catch (error) {
-                            reject(error);
-                        }
-                    };
-                    reader.onerror = reject;
-                    reader.readAsArrayBuffer(file);
-                });
-            }
-
-            function parseCSVFile(file) {
-                return new Promise((resolve, reject) => {
-                    Papa.parse(file, {
-                        complete: function(results) {
-                            if (results.errors.length > 0) {
-                                reject(new Error('CSV parsing error: ' + results.errors[0].message));
-                                return;
-                            }
-                            // Remove header row and process data
-                            const processedData = results.data.slice(1).filter(row => row.length >= 3);
-                            resolve(processedData);
-                        },
-                        error: function(error) {
-                            reject(error);
-                        }
-                    });
-                });
-            }
-
-            function validateMemberData(data) {
-                const validatedMembers = [];
-                const errors = [];
-
-                data.forEach((row, index) => {
-                    const [name, joinDate, memberType, leaveDate] = row;
-                    
-                    // Validate name
-                    if (!name || typeof name !== 'string' || name.trim() === '') {
-                        errors.push(`Row ${index + 2}: Invalid member name`);
-                        return;
-                    }
-
-                    // Validate join date
-                    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-                    if (!joinDate || !dateRegex.test(joinDate)) {
-                        errors.push(`Row ${index + 2}: Invalid join date format (use YYYY-MM-DD)`);
-                        return;
-                    }
-
-                    // Validate club base
-                    const validTypes = ['Community-Based', 'University-Based'];
-                    if (!validTypes.includes(memberType)) {
-                        errors.push(`Row ${index + 2}: Invalid Club Base (use "Community-Based" or "University-Based")`);
-                        return;
-                    }
-
-                    // Validate leave date (optional)
-                    if (leaveDate && leaveDate.trim() !== '' && !dateRegex.test(leaveDate)) {
-                        errors.push(`Row ${index + 2}: Invalid leave date format (use YYYY-MM-DD or leave blank)`);
-                        return;
-                    }
-
-                    validatedMembers.push({
-                        name: name.trim(),
-                        joinDate: joinDate,
-                        clubBase: memberType,
-                        leaveDate: leaveDate && leaveDate.trim() !== '' ? leaveDate : null
-                    });
-                });
-
-                return { validatedMembers, errors };
-            }
-
-            function showPreview(members) {
-                // Clear any existing file upload errors
-                const errorContainer = document.getElementById('file-upload-error');
-                if (errorContainer) {
-                    errorContainer.classList.add('hidden');
-                }
-                
-                // Clear any existing error timeout
-                if (currentErrorTimeout) {
-                    clearTimeout(currentErrorTimeout);
-                    currentErrorTimeout = null;
-                }
-                
-                const previewHTML = members.map((member, index) => {
-                    const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
-                    const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
-                    return `
-                        <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                            <div class="flex-1">
-                                <span class="font-medium text-gray-800">${member.name}</span>
-                                <span class="text-gray-500 ml-3">${member.joinDate}${leaveDateText}</span>
-                                <span class="text-gray-500 ml-3">${typeText}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-
-                previewContent.innerHTML = previewHTML;
-                
-                // Show the action buttons (Add to Roster and Cancel) - restore them if they were hidden
-                const actionButtons = uploadPreview.querySelector('.flex.gap-3.mt-4');
-                if (actionButtons) {
-                    actionButtons.style.display = 'flex';
-                }
-                
-                // Hide upload area with smooth transition
-                fileUploadArea.classList.add('hidden');
-                
-                // Show preview after a short delay
-                setTimeout(() => {
-                    uploadPreview.classList.remove('hidden');
-                }, 300);
-            }
-
-            function handleFileUpload(file) {
-                // Show loading state
-                const loadingOverlay = document.getElementById('loading-overlay');
-                if (loadingOverlay) {
-                    loadingOverlay.classList.add('active');
-                }
-                
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-                
-                let parsePromise;
-                if (fileExtension === 'csv') {
-                    parsePromise = parseCSVFile(file);
-                } else if (['xlsx', 'xls'].includes(fileExtension)) {
-                    parsePromise = parseExcelFile(file);
-                } else {
-                    showFileUploadError('Unsupported file format. Please upload a CSV or Excel file.');
-                    fileInput.value = ''; // Clear the file input so the same file can be selected again
-                    return;
-                }
-
-                parsePromise.then(data => {
-                    const validation = validateMemberData(data);
-                    
-                    if (validation.errors.length > 0) {
-                        const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
-                        showFileUploadError(errorMessage);
-                        fileInput.value = ''; // Clear the file input so the same file can be selected again
-                        return;
-                    }
-
-                    parsedMembers = validation.validatedMembers;
-                    showPreview(parsedMembers);
-                }).catch(error => {
-                    showFileUploadError('Error parsing file: ' + error.message);
-                    fileInput.value = ''; // Clear the file input so the same file can be selected again
-                }).finally(() => {
-                    // Hide loading state
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.remove('active');
-                    }
-                });
-            }
-
-            function addBulkMembers() {
-                if (parsedMembers.length === 0) return;
-
-                const selectedYear = parseInt(invoiceYearSelect.value, 10);
-                
-                parsedMembers.forEach(member => {
-                    const duesBreakdown = calculateIndividualDue(member.joinDate, member.clubBase, selectedYear, member.leaveDate);
-                    const memberId = `member-${Date.now()}-${Math.random()}`;
-                    
-                    const row = document.createElement('tr');
-                    row.id = memberId;
-                    row.dataset.due = duesBreakdown.total;
-                    row.dataset.joinDate = member.joinDate;
-                    row.dataset.leaveDate = member.leaveDate;
-                    row.dataset.memberType = member.clubBase;
-                    row.dataset.name = member.name;
-                    row.classList.add('member-row');
-                    
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${member.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.joinDate}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.leaveDate || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.clubBase}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                            </button>
-                            <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                            </button>
-                        </td>
-                    `;
-                    
-                    memberRosterBody.appendChild(row);
-
-                    row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
-                    row.querySelector('.remove-member-btn').addEventListener('click', () => {
-                        row.remove();
-                        updateTotal();
-                        updatePagination();
-                    });
-                });
-
-                updateTotal();
-                updatePagination();
-                
-                // Show success animation and return to upload area
-                showSuccessAnimation();
-            }
-
-            function resetBulkUpload() {
-                parsedMembers = [];
-                uploadPreview.classList.add('hidden');
-                fileInput.value = '';
-                
-                // Clear any file upload errors
-                const errorContainer = document.getElementById('file-upload-error');
-                if (errorContainer) {
-                    errorContainer.classList.add('hidden');
-                }
-                
-                // Clear any existing error timeout
-                if (currentErrorTimeout) {
-                    clearTimeout(currentErrorTimeout);
-                    currentErrorTimeout = null;
-                }
-                
-                // Return to upload area after a short delay
-                setTimeout(() => {
-                    fileUploadArea.classList.remove('hidden');
-                }, 300);
-            }
+            // debounce function - Now provided by app.js
             
-            function showSuccessAnimation() {
-                // Replace preview content with success message
-                const successHTML = `
-                    <div class="text-center py-8 success-animation">
-                        <div class="success-icon mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Successfully Added!</h3>
-                        <p class="text-gray-600 mb-4">${parsedMembers.length} member(s) have been added to your roster.</p>
-                        <div class="flex gap-3 justify-center">
-                            <button type="button" id="upload-more-btn" class="btn btn-primary text-sm px-6 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                                Upload More
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                // Replace the entire preview content (including buttons)
-                previewContent.innerHTML = successHTML;
-                
-                // Hide the action buttons (Add to Roster and Cancel)
-                const actionButtons = uploadPreview.querySelector('.flex.gap-3.mt-4');
-                if (actionButtons) {
-                    actionButtons.style.display = 'none';
-                }
-                
-                // Add event listener for upload more button
-                document.getElementById('upload-more-btn').addEventListener('click', () => {
-                    resetBulkUpload();
-                });
-                
-                // Auto-return to upload area after 3 seconds
-                setTimeout(() => {
-                    resetBulkUpload();
-                }, 3000);
-            }
-
-            function populateYearSelector() {
-                const currentYear = new Date().getFullYear();
-                const startInvoiceYear = 2023;
-                const endInvoiceYear = currentYear + 25;
-                for (let year = startInvoiceYear; year <= endInvoiceYear; year++) {
-                    const option = document.createElement('option');
-                    option.value = year;
-                    option.textContent = year;
-                    invoiceYearSelect.appendChild(option);
-                }
-                invoiceYearSelect.value = currentYear + 1;
-                updateInvoiceDateDisplay();
-            }
-
-            function updateInvoiceDateDisplay() {
-                const selectedYear = invoiceYearSelect.value;
-                if(invoiceDateDisplay) invoiceDateDisplay.textContent = `Jan 1st, ${selectedYear}`;
-            }
-
-            // Helper function for precise decimal arithmetic
-            function preciseDecimal(value, decimals = 2) {
-                return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
-            }
-
-            function formatDuesBreakdown(duesBreakdown) {
-                const { fullYear, prorated, total } = duesBreakdown;
-                
-                if (total === 0) {
-                    return '<span class="text-gray-400">$0.00</span>';
-                }
-                
-                let breakdown = '';
-                
-                if (fullYear > 0 && prorated > 0) {
-                    breakdown = `$${preciseDecimal(fullYear).toFixed(2)} + $${preciseDecimal(prorated).toFixed(2)} = $${preciseDecimal(total).toFixed(2)}`;
-                } else if (fullYear > 0) {
-                    breakdown = `$${preciseDecimal(fullYear).toFixed(2)} + $0.00 = $${preciseDecimal(total).toFixed(2)}`;
-                } else if (prorated > 0) {
-                    breakdown = `$0.00 + $${preciseDecimal(prorated).toFixed(2)} = $${preciseDecimal(total).toFixed(2)}`;
-                }
-                
-                return breakdown;
-            }
-
-            function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr = null) {
-                const joinDate = new Date(joinDateStr + 'T00:00:00');
-                const invoiceDate = new Date(invoiceYear, 0, 1); // January 1st of invoice year
-                const baseDues = clubBase === 'Community-Based' ? 8 : 5;
-                const joinYear = joinDate.getFullYear();
-
-                // If joined in the year immediately preceding the invoice year
-                if (joinYear === invoiceYear - 1) {
-                    const joinMonth = joinDate.getMonth();
-                    const joinDay = joinDate.getDate();
-                    
-                    // Logic: If member joins on the 1st of the month or before, that month is counted
-                    // If member joins after the 1st of the month, that month is not counted
-                    let effectiveJoinMonth = joinMonth;
-                    if (joinDay > 1) {
-                        // If joined after the 1st, don't count that month
-                        effectiveJoinMonth += 1;
-                    }
-                    
-                    // Calculate prorated months for join year (even if joined in December)
-                    const monthsInJoinYear = Math.max(0, 12 - effectiveJoinMonth);
-                    let proratedDues = Math.round((baseDues / 12) * monthsInJoinYear * 100) / 100;
-
-                    // Check if member left before invoice date
-                    if (leaveDateStr) {
-                        const leaveDate = new Date(leaveDateStr + 'T00:00:00');
-                        if (leaveDate < invoiceDate) {
-                            // Left before Jan 1st: charge only prorated dues for join year, but adjust for early departure
-                            const leaveMonth = leaveDate.getMonth();
-                            const leaveDay = leaveDate.getDate();
-                            
-                            // Logic for leave date: if they leave after the 1st, count that month
-                            // If they leave on or before the 1st, don't count that month
-                            let effectiveLeaveMonth = leaveMonth;
-                            if (leaveDay > 1) {
-                                effectiveLeaveMonth += 1;
-                            }
-                            
-                            // Calculate actual months of membership in join year
-                            // If leave month is before join month, no charge
-                            if (effectiveLeaveMonth < effectiveJoinMonth) {
-                                return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
-                            }
-                            
-                            // Calculate months based on effective join and leave months
-                            let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth;
-                            
-                            // Ensure months is not negative
-                            actualMonthsInJoinYear = Math.max(0, actualMonthsInJoinYear);
-                            proratedDues = Math.round((baseDues / 12) * actualMonthsInJoinYear * 100) / 100;
-                            
-                            return { fullYear: 0, prorated: proratedDues, total: proratedDues, proratedMonths: actualMonthsInJoinYear };
-                        }
-                    }
-                    // Still a member on Jan 1st: charge both base fee and prorated fee
-                    const total = Math.round((baseDues + proratedDues) * 100) / 100;
-                    return { fullYear: baseDues, prorated: proratedDues, total: total, proratedMonths: monthsInJoinYear };
-                }
-
-                // If joined and left in the same year (not the year immediately preceding the invoice year), charge nothing
-                if (joinYear >= invoiceYear) return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
-
-                // If left before Jan 1st, charge nothing
-                if (leaveDateStr) {
-                    const leaveDate = new Date(leaveDateStr + 'T00:00:00');
-                    if (leaveDate < invoiceDate) return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
-                }
-
-                if (joinYear < invoiceYear - 1) return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
-                return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
-            }
-
-            // Debounced function for performance optimization
-            function debounce(func, wait) {
-                let timeout;
-                return function executedFunction(...args) {
-                    const later = () => {
-                        clearTimeout(timeout);
-                        func(...args);
-                    };
-                    clearTimeout(timeout);
-                    timeout = setTimeout(later, wait);
-                };
-            }
+            // updateTotal function - Now provided by app.js
             
-            function updateTotal() {
-                // Use requestIdleCallback for non-critical updates
-                requestIdleCallback(() => {
-                    let baseTotal = 0;
-                    let totalFullYear = 0;
-                    let totalProrated = 0;
-                    let totalMembersWithFullYear = 0;
-                    let totalProratedMonths = 0;
-                    const selectedYear = parseInt(invoiceYearSelect.value, 10);
-                    const memberRows = memberRosterBody.querySelectorAll('tr');
-                    
-                    memberRows.forEach(row => {
-                        const joinDate = row.dataset.joinDate;
-                        const leaveDate = row.dataset.leaveDate;
-                        const memberType = row.dataset.memberType;
-                        const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
-                        
-                        baseTotal += duesBreakdown.total;
-                        totalFullYear += duesBreakdown.fullYear;
-                        totalProrated += duesBreakdown.prorated;
-                        
-                        // Count members with full year dues
-                        if (duesBreakdown.fullYear > 0) {
-                            totalMembersWithFullYear++;
-                        }
-                        
-                        // Add prorated months directly from the calculation
-                        totalProratedMonths += duesBreakdown.proratedMonths || 0;
-                    });
-                    
-                    // Calculate tax with precise arithmetic
-                    const taxPercentage = parseFloat(taxPercentageInput.value) || 0;
-                    const taxAmount = Math.round((baseTotal * taxPercentage) / 100 * 100) / 100;
-                    const totalWithTax = Math.round((baseTotal + taxAmount) * 100) / 100;
-                    
-                    // Update display with animation and precise formatting
-                    baseInvoiceAmountEl.textContent = `$${Math.round(baseTotal * 100) / 100}`;
-                    totalInvoiceAmountEl.textContent = `$${Math.round(totalWithTax * 100) / 100}`;
-                    taxBreakdownEl.textContent = `Tax: $${Math.round(taxAmount * 100) / 100} (${taxPercentage}%)`;
-                    
-                    // Update dues breakdown with precise arithmetic
-                    const duesBreakdownEl = document.getElementById('dues-breakdown');
-                    if (duesBreakdownEl) {
-                        const preciseFullYear = Math.round(totalFullYear * 100) / 100;
-                        const preciseProrated = Math.round(totalProrated * 100) / 100;
-                        duesBreakdownEl.textContent = `Full Year: $${preciseFullYear.toFixed(2)} + Prorated: $${preciseProrated.toFixed(2)}`;
-                    }
-                    
-                    // Update new summary data
-                    const totalMembersEl = document.getElementById('total-members');
-                    const totalProratedMonthsEl = document.getElementById('total-prorated-months');
-                    
-                    if (totalMembersEl) {
-                        totalMembersEl.textContent = totalMembersWithFullYear;
-                    }
-                    if (totalProratedMonthsEl) {
-                        totalProratedMonthsEl.textContent = totalProratedMonths;
-                    }
-                    
-                    // Show/hide empty state
-                    const emptyState = document.getElementById('empty-state');
-                    if (memberRows.length === 0) {
-                        emptyState.classList.remove('hidden');
-                    } else {
-                        emptyState.classList.add('hidden');
-                    }
-                });
-            }
+            // Debounced version for input events - Now provided by app.js
+            // const debouncedUpdateTotal = debounce(updateTotal, 300);
             
-            // Debounced version for input events
-            const debouncedUpdateTotal = debounce(updateTotal, 300);
+            // recalculateAllDues function - Now provided by app.js
+
+            // Unified Form Validation System - Now provided by app.js
+            // class FormValidator { ... } - Removed
+
+            // Form validator - Now provided by app.js
+            // const formValidator = new FormValidator();
+
+            // showFieldError function - Now provided by app.js
             
-            function recalculateAllDues() {
-                const selectedYear = parseInt(invoiceYearSelect.value, 10);
-                const memberRows = memberRosterBody.querySelectorAll('tr');
-                memberRows.forEach(row => {
-                    if (row.classList.contains('editing')) return; // Skip editing rows
-                    const joinDate = row.dataset.joinDate;
-                    const leaveDate = row.dataset.leaveDate;
-                    const memberType = row.dataset.memberType;
-                    const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
-                    row.dataset.due = duesBreakdown.total;
-                    row.querySelector('.due-cell').innerHTML = formatDuesBreakdown(duesBreakdown);
-                    
-                    // Update the new columns
-                    const cells = row.querySelectorAll('td');
-                    if (cells.length >= 7) {
-                        cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-                        cells[6].textContent = duesBreakdown.proratedMonths || 0;
-                    }
-                });
-                updateTotal();
-                updateInvoiceDateDisplay();
-            }
-
-            // Unified Form Validation System
-            class FormValidator {
-                constructor() {
-                    this.errors = new Map();
-                    this.validationRules = {
-                        'member-name': [
-                            { test: (value) => value.trim().length > 0, message: 'Member name is required' },
-                            { test: (value) => value.trim().length >= 2, message: 'Name must be at least 2 characters' },
-                            { test: (value) => /^[a-zA-Z\s]+$/.test(value.trim()), message: 'Name should only contain letters and spaces' }
-                        ],
-                        'member-type': [
-                            { test: (value) => value.length > 0, message: 'Please select a Club Base' }
-                        ],
-                        'join-date': [
-                            { test: (value) => value.length > 0, message: 'Join date is required' },
-                            { test: (value) => this.isValidDate(value), message: 'Please enter a valid date' }
-                        ],
-                        'leave-date': [
-                            { test: (value) => !value || this.isValidDate(value), message: 'Please enter a valid date' },
-                            { test: (value) => !value || this.isLeaveDateValid(value), message: 'Leave date cannot be before join date' }
-                        ]
-                    };
-                }
-
-                isValidDate(dateString) {
-                    const date = new Date(dateString);
-                    return date instanceof Date && !isNaN(date);
-                }
-
-                isLeaveDateValid(leaveDate) {
-                    const joinDate = document.getElementById('join-date').value;
-                    if (!joinDate) return true; // If no join date, leave date is valid
-                    
-                    const leaveDateObj = new Date(leaveDate);
-                    const joinDateObj = new Date(joinDate);
-                    return leaveDateObj >= joinDateObj;
-                }
-
-                validateField(fieldId) {
-                    const field = document.getElementById(fieldId);
-                    if (!field || !this.validationRules[fieldId]) return true;
-
-                    const value = field.value;
-                    const rules = this.validationRules[fieldId];
-                    
-                    // Clear previous error for this field
-                    this.clearFieldError(fieldId);
-                    
-                    // Check each validation rule
-                    for (const rule of rules) {
-                        if (!rule.test(value)) {
-                            this.setFieldError(fieldId, rule.message);
-                            return false;
-                        }
-                    }
-                    
-                    // If we get here, field is valid
-                    this.setFieldSuccess(fieldId);
-                    return true;
-                }
-
-                validateAll() {
-                    this.clearAllErrors();
-                    
-                    let isValid = true;
-                    const fieldIds = Object.keys(this.validationRules);
-                    
-                    for (const fieldId of fieldIds) {
-                        if (!this.validateField(fieldId)) {
-                            isValid = false;
-                        }
-                    }
-                    
-                    return isValid;
-                }
-
-                setFieldError(fieldId, message) {
-                    const field = document.getElementById(fieldId);
-                    const errorElement = document.getElementById(`${fieldId}-error`);
-                    
-                    if (field && errorElement) {
-                        field.classList.remove('input-success');
-                        field.classList.add('input-error');
-                        errorElement.textContent = message;
-                        errorElement.style.display = 'block';
-                        
-                        // Add error to our tracking
-                        this.errors.set(fieldId, message);
-                    }
-                }
-
-                setFieldSuccess(fieldId) {
-                    const field = document.getElementById(fieldId);
-                    const errorElement = document.getElementById(`${fieldId}-error`);
-                    
-                    if (field && errorElement) {
-                        field.classList.remove('input-error');
-                        field.classList.add('input-success');
-                        errorElement.style.display = 'none';
-                        errorElement.textContent = '';
-                        
-                        // Remove error from our tracking
-                        this.errors.delete(fieldId);
-                    }
-                }
-
-                clearFieldError(fieldId) {
-                    const field = document.getElementById(fieldId);
-                    const errorElement = document.getElementById(`${fieldId}-error`);
-                    
-                    if (field && errorElement) {
-                        field.classList.remove('input-error', 'input-success');
-                        errorElement.style.display = 'none';
-                        errorElement.textContent = '';
-                        
-                        // Remove error from our tracking
-                        this.errors.delete(fieldId);
-                    }
-                }
-
-                clearAllErrors() {
-                    document.querySelectorAll('.error-message').forEach(el => {
-                        el.style.display = 'none';
-                        el.textContent = '';
-                    });
-                    document.querySelectorAll('.input-error, .input-success').forEach(el => {
-                        el.classList.remove('input-error', 'input-success');
-                    });
-                    this.errors.clear();
-                }
-
-                getFirstError() {
-                    return this.errors.size > 0 ? this.errors.values().next().value : null;
-                }
-
-                hasErrors() {
-                    return this.errors.size > 0;
-                }
-            }
-
-            // Initialize form validator
-            const formValidator = new FormValidator();
+            // Message display functions - Now provided by app.js
+            // Removed: showSuccessMessage, showErrorMessage, showFileUploadError
             
-            // Legacy function for backward compatibility (now uses the new system)
-            function showFieldError(fieldId, message, shouldFocus = false) {
-                formValidator.setFieldError(fieldId, message);
-                if (shouldFocus) {
-                    const field = document.getElementById(fieldId);
-                    if (field) field.focus();
-                }
-            }
-            
-            function showSuccessMessage(message) {
-                const successDiv = document.createElement('div');
-                successDiv.className = 'success-feedback fade-in';
-                successDiv.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>${message}</span>
-                `;
-                
-                // Insert after the form
-                addMemberForm.parentNode.insertBefore(successDiv, addMemberForm.nextSibling);
-                
-                // Remove after 3 seconds
-                setTimeout(() => {
-                    successDiv.remove();
-                }, 3000);
-            }
-            
-            function showErrorMessage(message) {
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'error-feedback fade-in';
-                errorDiv.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>${message}</span>
-                `;
-                
-                // Insert after the form
-                addMemberForm.parentNode.insertBefore(errorDiv, addMemberForm.nextSibling);
-                
-                // Remove after 5 seconds
-                setTimeout(() => {
-                    errorDiv.remove();
-                }, 5000);
-            }
-            
-            // Global variable to track the current error timeout
-            let currentErrorTimeout = null;
-            
-            function showFileUploadError(message) {
-                const errorContainer = document.getElementById('file-upload-error');
-                if (!errorContainer) return;
-                
-                // Clear any existing timeout to prevent conflicts
-                if (currentErrorTimeout) {
-                    clearTimeout(currentErrorTimeout);
-                    currentErrorTimeout = null;
-                }
-                
-                // Ensure the container is visible and properly styled
-                errorContainer.className = 'error-feedback fade-in mb-4';
-                errorContainer.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>${message}</span>
-                `;
-                errorContainer.classList.remove('hidden');
-                
-                // Set new timeout and store the reference
-                currentErrorTimeout = setTimeout(() => {
-                    errorContainer.classList.add('hidden');
-                    currentErrorTimeout = null;
-                }, 4000);
-            }
-            
-            function addMember(e) {
-                // e.preventDefault() is now handled in the event listener
-                
-                // Use the new unified validation system
-                if (!formValidator.validateAll()) {
-                    // Show a summary error message if there are multiple errors
-                    if (formValidator.errors.size > 1) {
-                        showErrorMessage(`Please fix ${formValidator.errors.size} validation errors before submitting.`);
-                    }
-                    return;
-                }
-                
-                const name = memberNameInput.value.trim();
-                const clubBase = memberTypeInput.value;
-                const joinDate = joinDateInput.value;
-                const leaveDate = leaveDateInput.value;
+            // addMember function - Now provided by app.js
 
-                const selectedYear = parseInt(invoiceYearSelect.value, 10);
-                const duesBreakdown = calculateIndividualDue(joinDate, clubBase, selectedYear, leaveDate);
-                const memberId = `member-${Date.now()}`;
-                const row = document.createElement('tr');
-                row.id = memberId;
-                row.dataset.due = duesBreakdown.total;
-                row.dataset.joinDate = joinDate;
-                row.dataset.leaveDate = leaveDate;
-                row.dataset.memberType = clubBase;
-                row.dataset.name = name;
-                row.classList.add('member-row');
-                
-                                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${joinDate}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${leaveDate || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${clubBase}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                        </button>
-                        <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </td>
-                `;
-                memberRosterBody.appendChild(row);
+            // Member management functions - Now provided by app.js
+            // Removed: editMember, saveMember, cancelEdit, finishEditing, resetCalculator
 
-                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
-                row.querySelector('.remove-member-btn').addEventListener('click', () => {
-                    row.remove();
-                    updateTotal();
-                    updatePagination();
-                });
-                
-                lastSelectedClubBase = clubBase;
-                lastSelectedJoinDate = joinDate;
-                updateTotal();
-                updatePagination();
-                
-                // Clear all validation states before resetting
-                formValidator.clearAllErrors();
-                
-                addMemberForm.reset();
-                joinDateInput.value = lastSelectedJoinDate;
-                memberTypeInput.value = lastSelectedClubBase;
-                
-                // Show success message
-                showSuccessMessage('Member added successfully!');
-                
-                // Add success animation to the new row
-                row.classList.add('slide-up');
-            }
 
-            function editMember(memberId) {
-                const row = document.getElementById(memberId);
-                if (!row || row.classList.contains('editing')) return;
 
-                document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = true);
-                row.classList.add('editing');
+            // finishEditing and resetCalculator functions - Now provided by app.js
 
-                const name = row.dataset.name;
-                const joinDate = row.dataset.joinDate;
-                const leaveDate = row.dataset.leaveDate;
-                const memberType = row.dataset.memberType;
+            // Pagination Functions - Now handled by app.js
+            // Removed: updatePagination, displayCurrentPage, goToPage, goToPreviousPage, goToNextPage, changePageSize
 
-                // Enhanced input fields with better styling and visibility
-                row.cells[0].innerHTML = `<input type="text" value="${name}" class="edit-mode-input" placeholder="Enter member name">`;
-                row.cells[1].innerHTML = `<input type="date" value="${joinDate}" class="edit-mode-input">`;
-                row.cells[2].innerHTML = `<input type="date" value="${leaveDate || ''}" class="edit-mode-input" placeholder="Leave date (optional)">`;
-                row.cells[3].innerHTML = `
-                    <select class="edit-mode-select">
-                        <option value="Community-Based" ${memberType === 'Community-Based' ? 'selected' : ''}>Community-Based ($8)</option>
-                        <option value="University-Based" ${memberType === 'University-Based' ? 'selected' : ''}>University-Based ($5)</option>
-                    </select>
-                `;
-                row.cells[4].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
-                row.cells[5].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
-                row.cells[6].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
-                row.cells[7].innerHTML = `
-                    <div class="flex space-x-2">
-                        <button class="btn btn-primary btn-sm !p-2 save-member-btn" title="Save changes">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                        </button>
-                        <button class="btn btn-secondary btn-sm !p-2 cancel-edit-btn" title="Cancel editing">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                        </button>
-                    </div>
-                `;
-
-                // Add event listeners
-                row.querySelector('.save-member-btn').addEventListener('click', () => saveMember(memberId));
-                row.querySelector('.cancel-edit-btn').addEventListener('click', () => cancelEdit(memberId));
-                
-                // Auto-focus on the name input for better UX
-                setTimeout(() => {
-                    const nameInput = row.cells[0].querySelector('input');
-                    if (nameInput) {
-                        nameInput.focus();
-                        nameInput.select();
-                    }
-                }, 100);
-                
-                // Add keyboard support for better UX
-                const inputs = row.querySelectorAll('input, select');
-                inputs.forEach((input, index) => {
-                    input.addEventListener('keydown', (e) => {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (index < inputs.length - 1) {
-                                inputs[index + 1].focus();
-                            } else {
-                                saveMember(memberId);
-                            }
-                        } else if (e.key === 'Escape') {
-                            e.preventDefault();
-                            cancelEdit(memberId);
-                        }
-                    });
-                });
-            }
-
-            function saveMember(memberId) {
-                const row = document.getElementById(memberId);
-                if (!row) return;
-
-                const newName = row.cells[0].querySelector('input').value.trim();
-                const newJoinDate = row.cells[1].querySelector('input').value;
-                const newLeaveDate = row.cells[2].querySelector('input').value;
-                const newMemberType = row.cells[3].querySelector('select').value;
-
-                // Enhanced validation for edit mode
-                if (!newName) {
-                    showErrorMessage('Please enter a member name');
-                    row.cells[0].querySelector('input').focus();
-                    return;
-                }
-
-                if (!newJoinDate) {
-                    showErrorMessage('Please select a join date');
-                    row.cells[1].querySelector('input').focus();
-                    return;
-                }
-
-                row.dataset.name = newName;
-                row.dataset.joinDate = newJoinDate;
-                row.dataset.leaveDate = newLeaveDate;
-                row.dataset.memberType = newMemberType;
-
-                const selectedYear = parseInt(invoiceYearSelect.value, 10);
-                const duesBreakdown = calculateIndividualDue(newJoinDate, newMemberType, selectedYear, newLeaveDate);
-                row.dataset.due = duesBreakdown.total;
-
-                row.cells[0].textContent = newName;
-                row.cells[1].textContent = newJoinDate;
-                row.cells[2].textContent = newLeaveDate || '-';
-                row.cells[3].textContent = newMemberType;
-                row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
-                row.cells[4].classList.add('due-cell');
-                row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-                row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
-                
-                finishEditing(row, memberId);
-                recalculateAllDues();
-                
-                // Show success feedback
-                row.style.backgroundColor = '#f0f9ff';
-                setTimeout(() => {
-                    row.style.backgroundColor = '';
-                }, 1000);
-            }
-
-            function cancelEdit(memberId) {
-                const row = document.getElementById(memberId);
-                if (!row) return;
-
-                const name = row.dataset.name;
-                const joinDate = row.dataset.joinDate;
-                const leaveDate = row.dataset.leaveDate;
-                const memberType = row.dataset.memberType;
-                const selectedYear = parseInt(invoiceYearSelect.value, 10);
-                const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
-
-                row.cells[0].textContent = name;
-                row.cells[1].textContent = joinDate;
-                row.cells[2].textContent = leaveDate || '-';
-                row.cells[3].textContent = memberType;
-                row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
-                row.cells[4].classList.add('due-cell');
-                row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-                row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
-
-                finishEditing(row, memberId);
-            }
-
-            function finishEditing(row, memberId) {
-                row.classList.remove('editing');
-                row.cells[7].innerHTML = `
-                    <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                    </button>
-                    <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                    </button>
-                `;
-                row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
-                row.querySelector('.remove-member-btn').addEventListener('click', () => {
-                    row.remove();
-                    updateTotal();
-                });
-                document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = false);
-            }
-            
-            function resetCalculator() {
-                memberRosterBody.innerHTML = '';
-                allMemberRows = [];
-                currentPage = 1;
-                updateTotal();
-                updatePagination();
-            }
-
-            // Pagination Functions
-            function updatePagination() {
-                const paginationControls = document.getElementById('pagination-controls');
-                const pageSizeSelect = document.getElementById('page-size-select');
-                const pageSizeSelectMobile = document.getElementById('page-size-select-mobile');
-                const prevPageBtn = document.getElementById('prev-page');
-                const nextPageBtn = document.getElementById('next-page');
-                const prevPageBtnMobile = document.getElementById('prev-page-mobile');
-                const nextPageBtnMobile = document.getElementById('next-page-mobile');
-                const pageNumbers = document.getElementById('page-numbers');
-                const pageNumbersMobile = document.getElementById('page-numbers-mobile');
-                const startEntry = document.getElementById('start-entry');
-                const endEntry = document.getElementById('end-entry');
-                const totalEntries = document.getElementById('total-entries');
-                const startEntryMobile = document.getElementById('start-entry-mobile');
-                const endEntryMobile = document.getElementById('end-entry-mobile');
-                const totalEntriesMobile = document.getElementById('total-entries-mobile');
-
-                // Get all member rows
-                allMemberRows = Array.from(memberRosterBody.querySelectorAll('tr.member-row'));
-                
-                const totalMembers = allMemberRows.length;
-                const totalPages = Math.ceil(totalMembers / pageSize);
-                
-                // Show/hide pagination controls
-                if (totalMembers > pageSize) {
-                    paginationControls.classList.remove('hidden');
-                } else {
-                    paginationControls.classList.add('hidden');
-                }
-                
-                // Update pagination info
-                const start = (currentPage - 1) * pageSize + 1;
-                const end = Math.min(currentPage * pageSize, totalMembers);
-                
-                startEntry.textContent = totalMembers > 0 ? start : 0;
-                endEntry.textContent = end;
-                totalEntries.textContent = totalMembers;
-                
-                // Update mobile pagination info
-                if (startEntryMobile) startEntryMobile.textContent = totalMembers > 0 ? start : 0;
-                if (endEntryMobile) endEntryMobile.textContent = end;
-                if (totalEntriesMobile) totalEntriesMobile.textContent = totalMembers;
-                
-                // Update page size selectors
-                pageSizeSelect.value = pageSize;
-                if (pageSizeSelectMobile) pageSizeSelectMobile.value = pageSize;
-                
-                // Update navigation buttons
-                prevPageBtn.disabled = currentPage === 1;
-                nextPageBtn.disabled = currentPage === totalPages;
-                
-                // Update mobile navigation buttons
-                if (prevPageBtnMobile) prevPageBtnMobile.disabled = currentPage === 1;
-                if (nextPageBtnMobile) nextPageBtnMobile.disabled = currentPage === totalPages;
-                
-                // Generate page numbers
-                pageNumbers.innerHTML = '';
-                const maxVisiblePages = 5;
-                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-                
-                if (endPage - startPage + 1 < maxVisiblePages) {
-                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
-                }
-                
-                for (let i = startPage; i <= endPage; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = `px-3 py-1 text-sm border rounded-md transition-colors whitespace-nowrap min-w-[2rem] ${
-                        i === currentPage 
-                            ? 'bg-blue-500 text-white border-blue-500' 
-                            : 'border-gray-300 hover:bg-gray-50'
-                    }`;
-                    pageBtn.textContent = i;
-                    pageBtn.addEventListener('click', () => goToPage(i));
-                    pageNumbers.appendChild(pageBtn);
-                }
-                
-                // Generate mobile page numbers (show fewer pages on mobile)
-                if (pageNumbersMobile) {
-                    pageNumbersMobile.innerHTML = '';
-                    const maxVisiblePagesMobile = 3; // Show fewer pages on mobile
-                    let startPageMobile = Math.max(1, currentPage - Math.floor(maxVisiblePagesMobile / 2));
-                    let endPageMobile = Math.min(totalPages, startPageMobile + maxVisiblePagesMobile - 1);
-                    
-                    if (endPageMobile - startPageMobile + 1 < maxVisiblePagesMobile) {
-                        startPageMobile = Math.max(1, endPageMobile - maxVisiblePagesMobile + 1);
-                    }
-                    
-                    for (let i = startPageMobile; i <= endPageMobile; i++) {
-                        const pageBtnMobile = document.createElement('button');
-                        pageBtnMobile.className = `px-2 py-1 text-xs border rounded transition-colors whitespace-nowrap min-w-[1.5rem] ${
-                            i === currentPage 
-                                ? 'bg-blue-500 text-white border-blue-500' 
-                                : 'border-gray-300 hover:bg-gray-50'
-                        }`;
-                        pageBtnMobile.textContent = i;
-                        pageBtnMobile.addEventListener('click', () => goToPage(i));
-                        pageNumbersMobile.appendChild(pageBtnMobile);
-                    }
-                }
-                
-                // Show current page rows
-                displayCurrentPage();
-            }
-            
-            function displayCurrentPage() {
-                const start = (currentPage - 1) * pageSize;
-                const end = start + pageSize;
-                
-                // Hide all rows
-                allMemberRows.forEach(row => {
-                    row.style.display = 'none';
-                });
-                
-                // Show only current page rows
-                allMemberRows.slice(start, end).forEach(row => {
-                    row.style.display = '';
-                });
-            }
-            
-            function goToPage(page) {
-                currentPage = page;
-                displayCurrentPage();
-                updatePagination();
-            }
-            
-            function goToPreviousPage() {
-                if (currentPage > 1) {
-                    goToPage(currentPage - 1);
-                }
-            }
-            
-            function goToNextPage() {
-                const totalPages = Math.ceil(allMemberRows.length / pageSize);
-                if (currentPage < totalPages) {
-                    goToPage(currentPage + 1);
-                }
-            }
-            
-            function changePageSize(newSize) {
-                pageSize = parseInt(newSize);
-                currentPage = 1; // Reset to first page
-                updatePagination();
-            }
-
-            addMemberForm.addEventListener('submit', (e) => {
+            addMemberForm.addEventListener('submit', async (e) => {
                 e.preventDefault(); // Prevent default HTML5 validation
-                addMember(e);
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.addMember) {
+                    appFunctions.addMember(e);
+                }
             });
-            resetButton.addEventListener('click', resetCalculator);
-            invoiceYearSelect.addEventListener('change', recalculateAllDues);
-            taxPercentageInput.addEventListener('input', debouncedUpdateTotal);
+            
+            resetButton.addEventListener('click', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.resetCalculator) {
+                    appFunctions.resetCalculator();
+                }
+            });
+            
+            invoiceYearSelect.addEventListener('change', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.recalculateAllDues) {
+                    appFunctions.recalculateAllDues();
+                }
+            });
+            
+            taxPercentageInput.addEventListener('input', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.debouncedUpdateTotal) {
+                    appFunctions.debouncedUpdateTotal();
+                }
+            });
 
             // Bulk upload event listeners
             browseButton.addEventListener('click', () => fileInput.click());
             
-            fileInput.addEventListener('change', (e) => {
+            fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    handleFileUpload(file);
+                    const appFunctions = await waitForAppFunctions();
+                    if (appFunctions && appFunctions.handleFileUpload) {
+                        appFunctions.handleFileUpload(file);
+                    }
                 }
             });
 
@@ -1930,27 +916,64 @@
                 fileUploadArea.classList.remove('dragover');
             });
 
-            fileUploadArea.addEventListener('drop', (e) => {
+            fileUploadArea.addEventListener('drop', async (e) => {
                 e.preventDefault();
                 fileUploadArea.classList.remove('dragover');
                 const file = e.dataTransfer.files[0];
                 if (file) {
-                    handleFileUpload(file);
+                    const appFunctions = await waitForAppFunctions();
+                    if (appFunctions && appFunctions.handleFileUpload) {
+                        appFunctions.handleFileUpload(file);
+                    }
                 }
             });
 
-            confirmUpload.addEventListener('click', addBulkMembers);
-            cancelUpload.addEventListener('click', resetBulkUpload);
-            downloadTemplate.addEventListener('click', downloadCSVTemplate);
+            confirmUpload.addEventListener('click', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.addBulkMembers) {
+                    appFunctions.addBulkMembers();
+                }
+            });
+            
+            cancelUpload.addEventListener('click', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.resetBulkUpload) {
+                    appFunctions.resetBulkUpload();
+                }
+            });
+            
+            downloadTemplate.addEventListener('click', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.downloadCSVTemplate) {
+                    appFunctions.downloadCSVTemplate();
+                }
+            });
 
             // Pagination event listeners
             const pageSizeSelect = document.getElementById('page-size-select');
             const prevPageBtn = document.getElementById('prev-page');
             const nextPageBtn = document.getElementById('next-page');
             
-            pageSizeSelect.addEventListener('change', (e) => changePageSize(e.target.value));
-            prevPageBtn.addEventListener('click', goToPreviousPage);
-            nextPageBtn.addEventListener('click', goToNextPage);
+            pageSizeSelect.addEventListener('change', async (e) => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.changePageSize) {
+                    appFunctions.changePageSize(e.target.value);
+                }
+            });
+            
+            prevPageBtn.addEventListener('click', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.goToPreviousPage) {
+                    appFunctions.goToPreviousPage();
+                }
+            });
+            
+            nextPageBtn.addEventListener('click', async () => {
+                const appFunctions = await waitForAppFunctions();
+                if (appFunctions && appFunctions.goToNextPage) {
+                    appFunctions.goToNextPage();
+                }
+            });
 
             // Mobile pagination event listeners
             const pageSizeSelectMobile = document.getElementById('page-size-select-mobile');
@@ -1958,18 +981,55 @@
             const nextPageBtnMobile = document.getElementById('next-page-mobile');
             
             if (pageSizeSelectMobile) {
-                pageSizeSelectMobile.addEventListener('change', (e) => changePageSize(e.target.value));
+                pageSizeSelectMobile.addEventListener('change', async (e) => {
+                    const appFunctions = await waitForAppFunctions();
+                    if (appFunctions && appFunctions.changePageSize) {
+                        appFunctions.changePageSize(e.target.value);
+                    }
+                });
             }
+            
             if (prevPageBtnMobile) {
-                prevPageBtnMobile.addEventListener('click', goToPreviousPage);
+                prevPageBtnMobile.addEventListener('click', async () => {
+                    const appFunctions = await waitForAppFunctions();
+                    if (appFunctions && appFunctions.goToPreviousPage) {
+                        appFunctions.goToPreviousPage();
+                    }
+                });
             }
+            
             if (nextPageBtnMobile) {
-                nextPageBtnMobile.addEventListener('click', goToNextPage);
+                nextPageBtnMobile.addEventListener('click', async () => {
+                    const appFunctions = await waitForAppFunctions();
+                    if (appFunctions && appFunctions.goToNextPage) {
+                        appFunctions.goToNextPage();
+                    }
+                });
             }
 
-            // Initialize the application
-            populateYearSelector();
-            updatePagination();
+            // Initialize the application - Now handled by initializeApplication()
+            
+            // Initialize with proper function loading
+            async function initializeApplication() {
+                const appFunctions = await waitForAppFunctions();
+                if (!appFunctions) {
+                    console.error('Failed to load app.js functions');
+                    return;
+                }
+                
+                // Re-destructure functions after they're confirmed to be available
+                const {
+                    populateYearSelector: populateYearSelectorFn,
+                    updatePagination: updatePaginationFn
+                } = appFunctions;
+                
+                // Initialize with the loaded functions
+                if (populateYearSelectorFn) populateYearSelectorFn();
+                if (updatePaginationFn) updatePaginationFn();
+            }
+            
+            // Start initialization
+            initializeApplication();
             
             // Add keyboard shortcuts
             document.addEventListener('keydown', (e) => {
@@ -1993,26 +1053,27 @@
             // Add form field validation on blur using the new system
             [memberNameInput, memberTypeInput, joinDateInput, leaveDateInput].forEach(input => {
                 if (input) {
-                    input.addEventListener('blur', () => {
+                    input.addEventListener('blur', async () => {
                         // Validate only the specific field that lost focus
-                        formValidator.validateField(input.id);
+                        const appFunctions = await waitForAppFunctions();
+                        if (appFunctions && appFunctions.formValidator) {
+                            appFunctions.formValidator.validateField(input.id);
+                        }
                     });
                     
                     // Add real-time validation on input for better UX
-                    input.addEventListener('input', () => {
+                    input.addEventListener('input', async () => {
                         // Clear error state when user starts typing/selecting
-                        if (formValidator.errors.has(input.id)) {
-                            formValidator.clearFieldError(input.id);
+                        const appFunctions = await waitForAppFunctions();
+                        if (appFunctions && appFunctions.formValidator && appFunctions.formValidator.errors.has(input.id)) {
+                            appFunctions.formValidator.clearFieldError(input.id);
                         }
                     });
                 }
             });
             
             // Performance optimization: Preload critical resources
-            requestIdleCallback(() => {
-                // Preload any additional resources if needed
-                // Application loaded successfully
-            });
+            // requestIdleCallback - Now provided by app.js
 
             // PDF Generation Functionality using Web Worker
             const downloadPdfBtn = document.getElementById('downloadPdfBtn');
