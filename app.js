@@ -370,7 +370,7 @@ function addMember(e) {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
             <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
             </button>
             <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
@@ -542,5 +542,727 @@ window.appFunctions = {
     showFileUploadError,
     debouncedUpdateTotal,
     formValidator,
-    initializeApp
+    initializeApp,
+    downloadCSVTemplate,
+    parseExcelFile,
+    parseCSVFile,
+    validateMemberData,
+    showPreview,
+    handleFileUpload,
+    addBulkMembers,
+    resetBulkUpload,
+    showSuccessAnimation,
+    updatePagination,
+    displayCurrentPage,
+    goToPage,
+    goToPreviousPage,
+    goToNextPage,
+    changePageSize,
+    populateYearSelector,
+    updateInvoiceDateDisplay,
+    editMember,
+    saveMember,
+    cancelEdit,
+    finishEditing,
+    resetCalculator
+};
+
+// Bulk Upload Functions
+function downloadCSVTemplate() {
+    const csvContent = 'Member Name,Join Date,Club Base,Leave Date\nJohn Doe,2024-01-01,Community-Based,\nJane Smith,2024-02-01,University-Based,2024-12-31';
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Member Roster Template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function parseExcelFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                // Remove header row and process data
+                const processedData = jsonData.slice(1).filter(row => row.length >= 3);
+                resolve(processedData);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+function parseCSVFile(file) {
+    return new Promise((resolve, reject) => {
+        Papa.parse(file, {
+            complete: function(results) {
+                if (results.errors.length > 0) {
+                    reject(new Error('CSV parsing error: ' + results.errors[0].message));
+                    return;
+                }
+                // Remove header row and process data
+                const processedData = results.data.slice(1).filter(row => row.length >= 3);
+                resolve(processedData);
+            },
+            error: function(error) {
+                reject(error);
+            }
+        });
+    });
+}
+
+function validateMemberData(data) {
+    const validatedMembers = [];
+    const errors = [];
+
+    data.forEach((row, index) => {
+        const [name, joinDate, memberType, leaveDate] = row;
+        
+        // Validate name
+        if (!name || typeof name !== 'string' || name.trim() === '') {
+            errors.push(`Row ${index + 2}: Invalid member name`);
+            return;
+        }
+
+        // Validate join date
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!joinDate || !dateRegex.test(joinDate)) {
+            errors.push(`Row ${index + 2}: Invalid join date format (use YYYY-MM-DD)`);
+            return;
+        }
+
+        // Validate club base
+        const validTypes = ['Community-Based', 'University-Based'];
+        if (!validTypes.includes(memberType)) {
+            errors.push(`Row ${index + 2}: Invalid Club Base (use "Community-Based" or "University-Based")`);
+            return;
+        }
+
+        // Validate leave date (optional)
+        if (leaveDate && leaveDate.trim() !== '' && !dateRegex.test(leaveDate)) {
+            errors.push(`Row ${index + 2}: Invalid leave date format (use YYYY-MM-DD or leave blank)`);
+            return;
+        }
+
+        validatedMembers.push({
+            name: name.trim(),
+            joinDate: joinDate,
+            clubBase: memberType,
+            leaveDate: leaveDate && leaveDate.trim() !== '' ? leaveDate : null
+        });
+    });
+
+    return { validatedMembers, errors };
+}
+
+function showPreview(members) {
+    // Clear any existing file upload errors
+    const errorContainer = document.getElementById('file-upload-error');
+    if (errorContainer) {
+        errorContainer.classList.add('hidden');
+    }
+    
+    // Clear any existing error timeout
+    if (currentErrorTimeout) {
+        clearTimeout(currentErrorTimeout);
+        currentErrorTimeout = null;
+    }
+    
+    const previewContent = document.getElementById('preview-content');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const uploadPreview = document.getElementById('upload-preview');
+    
+    const previewHTML = members.map((member, index) => {
+        const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
+        const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
+        return `
+            <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                <div class="flex-1">
+                    <span class="font-medium text-gray-800">${member.name}</span>
+                    <span class="text-gray-500 ml-3">${member.joinDate}${leaveDateText}</span>
+                    <span class="text-gray-500 ml-3">${typeText}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    previewContent.innerHTML = previewHTML;
+    
+    // Show the action buttons (Add to Roster and Cancel) - restore them if they were hidden
+    const actionButtons = uploadPreview.querySelector('.flex.gap-3.mt-4');
+    if (actionButtons) {
+        actionButtons.style.display = 'flex';
+    }
+    
+    // Hide upload area with smooth transition
+    fileUploadArea.classList.add('hidden');
+    
+    // Show preview after a short delay
+    setTimeout(() => {
+        uploadPreview.classList.remove('hidden');
+    }, 300);
+}
+
+function handleFileUpload(file) {
+    // Show loading state
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('active');
+    }
+    
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const fileInput = document.getElementById('file-input');
+    
+    let parsePromise;
+    if (fileExtension === 'csv') {
+        parsePromise = parseCSVFile(file);
+    } else if (['xlsx', 'xls'].includes(fileExtension)) {
+        parsePromise = parseExcelFile(file);
+    } else {
+        showFileUploadError('Unsupported file format. Please upload a CSV or Excel file.');
+        fileInput.value = ''; // Clear the file input so the same file can be selected again
+        return;
+    }
+
+    parsePromise.then(data => {
+        const validation = validateMemberData(data);
+        
+        if (validation.errors.length > 0) {
+            const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
+            showFileUploadError(errorMessage);
+            fileInput.value = ''; // Clear the file input so the same file can be selected again
+            return;
+        }
+
+        window.parsedMembers = validation.validatedMembers;
+        showPreview(validation.validatedMembers);
+    }).catch(error => {
+        showFileUploadError('Error parsing file: ' + error.message);
+        fileInput.value = ''; // Clear the file input so the same file can be selected again
+    }).finally(() => {
+        // Hide loading state
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+    });
+}
+
+function addBulkMembers() {
+    if (!window.parsedMembers || window.parsedMembers.length === 0) return;
+
+    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
+    const memberRosterBody = document.getElementById('member-roster-body');
+    
+    window.parsedMembers.forEach(member => {
+        const duesBreakdown = calculateIndividualDue(member.joinDate, member.clubBase, selectedYear, member.leaveDate);
+        const memberId = `member-${Date.now()}-${Math.random()}`;
+        
+        const row = document.createElement('tr');
+        row.id = memberId;
+        row.dataset.due = duesBreakdown.total;
+        row.dataset.joinDate = member.joinDate;
+        row.dataset.leaveDate = member.leaveDate;
+        row.dataset.memberType = member.clubBase;
+        row.dataset.name = member.name;
+        row.classList.add('member-row');
+        
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${member.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.joinDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.leaveDate || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.clubBase}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                </button>
+                <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                </button>
+            </td>
+        `;
+        
+        memberRosterBody.appendChild(row);
+
+        row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
+        row.querySelector('.remove-member-btn').addEventListener('click', () => {
+            row.remove();
+            updateTotal();
+            updatePagination();
+        });
+    });
+
+    updateTotal();
+    updatePagination();
+    
+    // Show success animation and return to upload area
+    showSuccessAnimation();
+}
+
+function resetBulkUpload() {
+    window.parsedMembers = [];
+    const uploadPreview = document.getElementById('upload-preview');
+    const fileInput = document.getElementById('file-input');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    
+    uploadPreview.classList.add('hidden');
+    fileInput.value = '';
+    
+    // Clear any file upload errors
+    const errorContainer = document.getElementById('file-upload-error');
+    if (errorContainer) {
+        errorContainer.classList.add('hidden');
+    }
+    
+    // Clear any existing error timeout
+    if (currentErrorTimeout) {
+        clearTimeout(currentErrorTimeout);
+        currentErrorTimeout = null;
+    }
+    
+    // Return to upload area after a short delay
+    setTimeout(() => {
+        fileUploadArea.classList.remove('hidden');
+    }, 300);
+}
+
+function showSuccessAnimation() {
+    const previewContent = document.getElementById('preview-content');
+    const uploadPreview = document.getElementById('upload-preview');
+    
+    // Replace preview content with success message
+    const successHTML = `
+        <div class="text-center py-8 success-animation">
+            <div class="success-icon mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Successfully Added!</h3>
+            <p class="text-gray-600 mb-4">${window.parsedMembers.length} member(s) have been added to your roster.</p>
+            <div class="flex gap-3 justify-center">
+                <button type="button" id="upload-more-btn" class="btn btn-primary text-sm px-6 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Upload More
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Replace the entire preview content (including buttons)
+    previewContent.innerHTML = successHTML;
+    
+    // Hide the action buttons (Add to Roster and Cancel)
+    const actionButtons = uploadPreview.querySelector('.flex.gap-3.mt-4');
+    if (actionButtons) {
+        actionButtons.style.display = 'none';
+    }
+    
+    // Add event listener for upload more button
+    document.getElementById('upload-more-btn').addEventListener('click', () => {
+        resetBulkUpload();
+    });
+    
+    // Auto-return to upload area after 3 seconds
+    setTimeout(() => {
+        resetBulkUpload();
+    }, 3000);
+}
+
+// Pagination Functions
+function updatePagination() {
+    const paginationControls = document.getElementById('pagination-controls');
+    const pageSizeSelect = document.getElementById('page-size-select');
+    const pageSizeSelectMobile = document.getElementById('page-size-select-mobile');
+    const prevPageBtn = document.getElementById('prev-page');
+    const nextPageBtn = document.getElementById('next-page');
+    const prevPageBtnMobile = document.getElementById('prev-page-mobile');
+    const nextPageBtnMobile = document.getElementById('next-page-mobile');
+    const pageNumbers = document.getElementById('page-numbers');
+    const pageNumbersMobile = document.getElementById('page-numbers-mobile');
+    const startEntry = document.getElementById('start-entry');
+    const endEntry = document.getElementById('end-entry');
+    const totalEntries = document.getElementById('total-entries');
+    const startEntryMobile = document.getElementById('start-entry-mobile');
+    const endEntryMobile = document.getElementById('end-entry-mobile');
+    const totalEntriesMobile = document.getElementById('total-entries-mobile');
+    const memberRosterBody = document.getElementById('member-roster-body');
+
+    // Get all member rows
+    allMemberRows = Array.from(memberRosterBody.querySelectorAll('tr.member-row'));
+    
+    const totalMembers = allMemberRows.length;
+    const totalPages = Math.ceil(totalMembers / pageSize);
+    
+    // Show/hide pagination controls
+    if (totalMembers > pageSize) {
+        paginationControls.classList.remove('hidden');
+    } else {
+        paginationControls.classList.add('hidden');
+    }
+    
+    // Update pagination info
+    const start = (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalMembers);
+    
+    if (startEntry) startEntry.textContent = totalMembers > 0 ? start : 0;
+    if (endEntry) endEntry.textContent = end;
+    if (totalEntries) totalEntries.textContent = totalMembers;
+    
+    // Update mobile pagination info
+    if (startEntryMobile) startEntryMobile.textContent = totalMembers > 0 ? start : 0;
+    if (endEntryMobile) endEntryMobile.textContent = end;
+    if (totalEntriesMobile) totalEntriesMobile.textContent = totalMembers;
+    
+    // Update page size selectors
+    if (pageSizeSelect) pageSizeSelect.value = pageSize;
+    if (pageSizeSelectMobile) pageSizeSelectMobile.value = pageSize;
+    
+    // Update navigation buttons
+    if (prevPageBtn) prevPageBtn.disabled = currentPage === 1;
+    if (nextPageBtn) nextPageBtn.disabled = currentPage === totalPages;
+    
+    // Update mobile navigation buttons
+    if (prevPageBtnMobile) prevPageBtnMobile.disabled = currentPage === 1;
+    if (nextPageBtnMobile) nextPageBtnMobile.disabled = currentPage === totalPages;
+    
+    // Generate page numbers
+    if (pageNumbers) {
+        pageNumbers.innerHTML = '';
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        for (let i = startPage; i <= endPage; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.className = `px-3 py-1 text-sm border rounded-md transition-colors whitespace-nowrap min-w-[2rem] ${
+                i === currentPage 
+                    ? 'bg-blue-500 text-white border-blue-500' 
+                    : 'border-gray-300 hover:bg-gray-50'
+            }`;
+            pageBtn.textContent = i;
+            pageBtn.addEventListener('click', () => goToPage(i));
+            pageNumbers.appendChild(pageBtn);
+        }
+    }
+    
+    // Generate mobile page numbers (show fewer pages on mobile)
+    if (pageNumbersMobile) {
+        pageNumbersMobile.innerHTML = '';
+        const maxVisiblePagesMobile = 3; // Show fewer pages on mobile
+        let startPageMobile = Math.max(1, currentPage - Math.floor(maxVisiblePagesMobile / 2));
+        let endPageMobile = Math.min(totalPages, startPageMobile + maxVisiblePagesMobile - 1);
+        
+        if (endPageMobile - startPageMobile + 1 < maxVisiblePagesMobile) {
+            startPageMobile = Math.max(1, endPageMobile - maxVisiblePagesMobile + 1);
+        }
+        
+        for (let i = startPageMobile; i <= endPageMobile; i++) {
+            const pageBtnMobile = document.createElement('button');
+            pageBtnMobile.className = `px-2 py-1 text-xs border rounded transition-colors whitespace-nowrap min-w-[1.5rem] ${
+                i === currentPage 
+                    ? 'bg-blue-500 text-white border-blue-500' 
+                    : 'border-gray-300 hover:bg-gray-50'
+            }`;
+            pageBtnMobile.textContent = i;
+            pageBtnMobile.addEventListener('click', () => goToPage(i));
+            pageNumbersMobile.appendChild(pageBtnMobile);
+        }
+    }
+    
+    // Show current page rows
+    displayCurrentPage();
+}
+
+function displayCurrentPage() {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    
+    // Hide all rows
+    allMemberRows.forEach(row => {
+        row.style.display = 'none';
+    });
+    
+    // Show only current page rows
+    allMemberRows.slice(start, end).forEach(row => {
+        row.style.display = '';
+    });
+}
+
+function goToPage(page) {
+    currentPage = page;
+    displayCurrentPage();
+    updatePagination();
+}
+
+function goToPreviousPage() {
+    if (currentPage > 1) {
+        goToPage(currentPage - 1);
+    }
+}
+
+function goToNextPage() {
+    const totalPages = Math.ceil(allMemberRows.length / pageSize);
+    if (currentPage < totalPages) {
+        goToPage(currentPage + 1);
+    }
+}
+
+function changePageSize(newSize) {
+    pageSize = parseInt(newSize);
+    currentPage = 1; // Reset to first page
+    updatePagination();
+}
+
+// Year Selector Functions
+function populateYearSelector() {
+    const invoiceYearSelect = document.getElementById('invoice-year-select');
+    if (!invoiceYearSelect) return;
+    
+    const currentYear = new Date().getFullYear();
+    const startInvoiceYear = 2023;
+    const endInvoiceYear = currentYear + 25;
+    
+    for (let year = startInvoiceYear; year <= endInvoiceYear; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        invoiceYearSelect.appendChild(option);
+    }
+    invoiceYearSelect.value = currentYear + 1;
+    updateInvoiceDateDisplay();
+}
+
+function updateInvoiceDateDisplay() {
+    const invoiceYearSelect = document.getElementById('invoice-year-select');
+    const invoiceDateDisplay = document.getElementById('invoice-date-display');
+    
+    if (invoiceYearSelect && invoiceDateDisplay) {
+        const selectedYear = invoiceYearSelect.value;
+        invoiceDateDisplay.textContent = `Jan 1st, ${selectedYear}`;
+    }
+}
+
+// Member Management Functions
+function editMember(memberId) {
+    const row = document.getElementById(memberId);
+    if (!row || row.classList.contains('editing')) return;
+
+    document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = true);
+    row.classList.add('editing');
+
+    const name = row.dataset.name;
+    const joinDate = row.dataset.joinDate;
+    const leaveDate = row.dataset.leaveDate;
+    const memberType = row.dataset.memberType;
+
+    // Enhanced input fields with better styling and visibility
+    row.cells[0].innerHTML = `<input type="text" value="${name}" class="edit-mode-input" placeholder="Enter member name">`;
+    row.cells[1].innerHTML = `<input type="date" value="${joinDate}" class="edit-mode-input">`;
+    row.cells[2].innerHTML = `<input type="date" value="${leaveDate || ''}" class="edit-mode-input" placeholder="Leave date (optional)">`;
+    row.cells[3].innerHTML = `
+        <select class="edit-mode-select">
+            <option value="Community-Based" ${memberType === 'Community-Based' ? 'selected' : ''}>Community-Based ($8)</option>
+            <option value="University-Based" ${memberType === 'University-Based' ? 'selected' : ''}>University-Based ($5)</option>
+        </select>
+    `;
+    row.cells[4].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+    row.cells[5].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+    row.cells[6].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+    row.cells[7].innerHTML = `
+        <div class="flex space-x-2">
+            <button class="btn btn-primary btn-sm !p-2 save-member-btn" title="Save changes">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+            </button>
+            <button class="btn btn-secondary btn-sm !p-2 cancel-edit-btn" title="Cancel editing">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+            </button>
+        </div>
+    `;
+
+    // Add event listeners
+    row.querySelector('.save-member-btn').addEventListener('click', () => saveMember(memberId));
+    row.querySelector('.cancel-edit-btn').addEventListener('click', () => cancelEdit(memberId));
+    
+    // Auto-focus on the name input for better UX
+    setTimeout(() => {
+        const nameInput = row.cells[0].querySelector('input');
+        if (nameInput) {
+            nameInput.focus();
+            nameInput.select();
+        }
+    }, 100);
+    
+    // Add keyboard support for better UX
+    const inputs = row.querySelectorAll('input, select');
+    inputs.forEach((input, index) => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                } else {
+                    saveMember(memberId);
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelEdit(memberId);
+            }
+        });
+    });
+}
+
+function saveMember(memberId) {
+    const row = document.getElementById(memberId);
+    if (!row) return;
+
+    const newName = row.cells[0].querySelector('input').value.trim();
+    const newJoinDate = row.cells[1].querySelector('input').value;
+    const newLeaveDate = row.cells[2].querySelector('input').value;
+    const newMemberType = row.cells[3].querySelector('select').value;
+
+    // Enhanced validation for edit mode
+    if (!newName) {
+        showErrorMessage('Please enter a member name');
+        row.cells[0].querySelector('input').focus();
+        return;
+    }
+
+    if (!newJoinDate) {
+        showErrorMessage('Please select a join date');
+        row.cells[1].querySelector('input').focus();
+        return;
+    }
+
+    row.dataset.name = newName;
+    row.dataset.joinDate = newJoinDate;
+    row.dataset.leaveDate = newLeaveDate;
+    row.dataset.memberType = newMemberType;
+
+    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
+    const duesBreakdown = calculateIndividualDue(newJoinDate, newMemberType, selectedYear, newLeaveDate);
+    row.dataset.due = duesBreakdown.total;
+
+    row.cells[0].textContent = newName;
+    row.cells[1].textContent = newJoinDate;
+    row.cells[2].textContent = newLeaveDate || '-';
+    row.cells[3].textContent = newMemberType;
+    row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
+    row.cells[4].classList.add('due-cell');
+    row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+    row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
+    
+    finishEditing(row, memberId);
+    recalculateAllDues();
+    
+    // Show success feedback
+    row.style.backgroundColor = '#f0f9ff';
+    setTimeout(() => {
+        row.style.backgroundColor = '';
+    }, 1000);
+}
+
+function cancelEdit(memberId) {
+    const row = document.getElementById(memberId);
+    if (!row) return;
+
+    const name = row.dataset.name;
+    const joinDate = row.dataset.joinDate;
+    const leaveDate = row.dataset.leaveDate;
+    const memberType = row.dataset.memberType;
+    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
+    const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+
+    row.cells[0].textContent = name;
+    row.cells[1].textContent = joinDate;
+    row.cells[2].textContent = leaveDate || '-';
+    row.cells[3].textContent = memberType;
+    row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
+    row.cells[4].classList.add('due-cell');
+    row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+    row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
+
+    finishEditing(row, memberId);
+}
+
+function finishEditing(row, memberId) {
+    row.classList.remove('editing');
+    row.cells[7].innerHTML = `
+        <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+        </button>
+        <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+        </button>
+    `;
+    row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
+    row.querySelector('.remove-member-btn').addEventListener('click', () => {
+        row.remove();
+        updateTotal();
+    });
+    document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = false);
+}
+
+function resetCalculator() {
+    const memberRosterBody = document.getElementById('member-roster-body');
+    memberRosterBody.innerHTML = '';
+    allMemberRows = [];
+    currentPage = 1;
+    updateTotal();
+    updatePagination();
+}
+
+// Update the exported functions
+window.appFunctions = {
+    addMember,
+    updateTotal,
+    recalculateAllDues,
+    showSuccessMessage,
+    showErrorMessage,
+    showFileUploadError,
+    debouncedUpdateTotal,
+    formValidator,
+    initializeApp,
+    downloadCSVTemplate,
+    parseExcelFile,
+    parseCSVFile,
+    validateMemberData,
+    showPreview,
+    handleFileUpload,
+    addBulkMembers,
+    resetBulkUpload,
+    showSuccessAnimation,
+    updatePagination,
+    displayCurrentPage,
+    goToPage,
+    goToPreviousPage,
+    goToNextPage,
+    changePageSize,
+    populateYearSelector,
+    updateInvoiceDateDisplay,
+    editMember,
+    saveMember,
+    cancelEdit,
+    finishEditing,
+    resetCalculator
 }; 
