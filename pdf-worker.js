@@ -107,7 +107,7 @@ function generatePDF(data) {
         // Summary table
         const summaryTableData = [
             ['(a) Base RI Dues', `${summaryData.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['  (a1) Full Year Dues', `${summaryData.totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            [`  (a1) Active Member Dues (Jan - Dec ${invoiceYear})`, `${summaryData.totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
             ['  (a2) Prorated Dues', `${summaryData.totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
             [`(b) Tax (${taxPercentage}%)`, `${summaryData.taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
             ['(c) Total with Tax', `${summaryData.totalWithTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
@@ -144,7 +144,7 @@ function generatePDF(data) {
                 1: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] }
             },
             didParseCell: function(data) {
-                if (data.row.raw[0] && (data.row.raw[0].includes('(a1) Full Year Dues') || data.row.raw[0].includes('(a2) Prorated Dues'))) {
+                if (data.row.raw[0] && (data.row.raw[0].includes(`(a1) Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(a2) Prorated Dues'))) {
                     data.cell.styles.fontSize = 10;
                     data.cell.styles.textColor = [156, 163, 175];
                     data.cell.styles.fontStyle = 'normal';
@@ -160,9 +160,9 @@ function generatePDF(data) {
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(156, 163, 175);
-        doc.text('Base RI Dues = Full Year Dues + Prorated Dues (a = a1 + a2)', pageWidth / 2, yPosition, { align: 'center' });
+        doc.text('Base RI Dues (a = a1 + a2) = Active Member Dues (a1) + Prorated Dues (a2)', pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 6;
-        doc.text('Total with Tax = Base RI Dues + Tax (c = a + b)', pageWidth / 2, yPosition, { align: 'center' });
+        doc.text('Total with Tax (c = a + b) = Base RI Dues (a) + Tax (b)', pageWidth / 2, yPosition, { align: 'center' });
         
         yPosition += 20;
 
