@@ -171,6 +171,7 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
         const joinMonth = joinDate.getMonth();
         const joinDay = joinDate.getDate();
         
+        // If join date is on 1st of month, include that month. If after 1st, start from next month
         let effectiveJoinMonth = joinMonth;
         if (joinDay > 1) {
             effectiveJoinMonth += 1;
@@ -185,16 +186,21 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
                 const leaveMonth = leaveDate.getMonth();
                 const leaveDay = leaveDate.getDate();
                 
+                // If leave date is on 1st of month, include that month. If after 1st, end at previous month
                 let effectiveLeaveMonth = leaveMonth;
                 if (leaveDay > 1) {
-                    effectiveLeaveMonth += 1;
+                    effectiveLeaveMonth = leaveMonth - 1;
                 }
+                // If leave date is on 1st, we want to include that month, so no adjustment needed
+                
+                // Ensure we don't go below the join month
+                effectiveLeaveMonth = Math.max(effectiveLeaveMonth, effectiveJoinMonth);
                 
                 if (effectiveLeaveMonth < effectiveJoinMonth) {
                     return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
                 }
                 
-                let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth;
+                let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth + 1; // +1 to include both start and end months
                 actualMonthsInJoinYear = Math.max(0, actualMonthsInJoinYear);
                 proratedDues = Math.round((baseDues / 12) * actualMonthsInJoinYear * 100) / 100;
                 
