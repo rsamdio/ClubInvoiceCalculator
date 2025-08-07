@@ -289,7 +289,7 @@ function updateTotal() {
         if (duesBreakdownEl) {
             const preciseFullYear = Math.round(totalFullYear * 100) / 100;
             const preciseProrated = Math.round(totalProrated * 100) / 100;
-            duesBreakdownEl.textContent = `Full Year: $${preciseFullYear.toFixed(2)} + Prorated: $${preciseProrated.toFixed(2)}`;
+            duesBreakdownEl.textContent = `Annual: $${preciseFullYear.toFixed(2)} + Prorated: $${preciseProrated.toFixed(2)}`;
         }
         
         if (totalMembersEl) totalMembersEl.textContent = totalMembersWithFullYear;

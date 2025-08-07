@@ -793,7 +793,7 @@
                                                                          <div class="flex items-start">
                                          <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2"></div>
                                          <div>
-                                             <span class="font-semibold">Leave Date Rules:</span> Membership ends at the month of leaving (1st of month = include that month, after 1st = exclude that month)
+                                             <span class="font-semibold">Leave Date Rules:</span> Membership ends at the month of leaving
                                          </div>
                                      </div>
                                 </div>
@@ -946,10 +946,7 @@
                     <!-- Contact Information -->
                     <div class="text-center">
                         <h4 class="text-sm font-medium text-gray-500 mb-2">Contact</h4>
-                        <p class="text-xs text-gray-400 mb-1">PDRR Arun Teja Godavarthi</p>
-                        <a href="mailto:rotaract3191drr@gmail.com" class="text-xs text-blue-500 hover:text-blue-600 transition-colors font-medium hover:underline">
-                            rotaract3191drr@gmail.com
-                        </a>
+                        <p class="text-xs text-grey-400 mb-1">PDRR Arun Teja Godavarthi<br>rotaract3191drr@gmail.com</p>
                     </div>
 
                     <!-- Disclaimer -->
@@ -1441,7 +1438,7 @@
                     const formattedTotalProrated = totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     const formattedTotalEstDue = (totalFullYearAmount + totalProratedAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     
-                    const totalEstDueDisplay = `${formattedTotalFullYear} + ${formattedTotalProrated} = ${formattedTotalEstDue}`;
+                    const totalEstDueDisplay = `$${formattedTotalFullYear} + $${formattedTotalProrated} = $${formattedTotalEstDue}`;
                     
                     memberData.push([
                         'TOTAL',
