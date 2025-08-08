@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /testcheckbackup
 
 # Sitemap location
 Sitemap: https://dues.rsamdio.org/sitemap.xml
