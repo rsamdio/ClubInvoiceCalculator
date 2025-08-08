@@ -496,8 +496,8 @@
             position: relative;
             height: 100%;
             width: 0%;
-            transition: width 1s ease-in-out;
-            animation: progressPulse 1s ease-in-out infinite;
+            transition: width 0.3s ease-in-out;
+            animation: progressPulse 0.3s ease-in-out infinite;
             overflow: hidden;
         }
 
@@ -509,7 +509,7 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: progressShimmer 1s ease-in-out infinite;
+            animation: progressShimmer 0.3s ease-in-out infinite;
         }
 
         @keyframes progressPulse {
@@ -1169,7 +1169,7 @@
                     // Initial animation to target
                     const initialInterval = setInterval(() => {
                         if (currentPercentage < targetPercentage && isAnimating) {
-                            currentPercentage += 2; // Faster increment
+                            currentPercentage += 5; // Much faster increment
                             progressBar.style.width = currentPercentage + '%';
                         } else {
                             clearInterval(initialInterval);
@@ -1179,7 +1179,7 @@
                                 startContinuousAnimation();
                             }
                         }
-                    }, 15); // Faster speed (was 30ms, now 15ms)
+                    }, 8); // Much faster speed (was 15ms, now 8ms)
                 }
             }
 
@@ -1198,9 +1198,9 @@
                         direction = -1; // Start decreasing
                     }
                     
-                    currentWidth += direction * 1; // Faster increments (was 0.5)
+                    currentWidth += direction * 2; // Much faster increments (was 1)
                     progressBar.style.width = currentWidth + '%';
-                }, 50); // Faster speed (was 100ms, now 50ms)
+                }, 25); // Much faster speed (was 50ms, now 25ms)
             }
 
             // Start progress bar animation when page loads
