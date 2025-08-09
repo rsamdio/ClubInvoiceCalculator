@@ -124,7 +124,7 @@ function generatePDF(data) {
              `$${summaryData.totalWithTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
              `${summaryData.totalLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
             ['', '', ''],
-            ['Exchange Rate', '1', `${currencyRate.toFixed(2)}`],
+            ['Exchange Rate', '$1.00', `${currencyRate.toFixed(2)}`],
             ['', '', ''],
             ['Total Members', totalMembers, ''],
             ['Total Prorated Months', totalProratedMonths, '']
