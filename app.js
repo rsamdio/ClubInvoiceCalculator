@@ -351,6 +351,25 @@ function updateTotal() {
         if (totalMembersEl) totalMembersEl.textContent = totalMembersWithFullYear;
         if (totalProratedMonthsEl) totalProratedMonthsEl.textContent = totalProratedMonths;
         
+        // Update local currency amounts
+        const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+        const baseLocalAmount = Math.round(baseTotal * currencyRate * 100) / 100;
+        const totalLocalAmount = Math.round(totalWithTax * currencyRate * 100) / 100;
+        const taxLocalAmount = Math.round(taxAmount * currencyRate * 100) / 100;
+        const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
+        const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
+        
+        // Update local currency display elements
+        const baseInvoiceAmountLocalEl = document.getElementById('base-invoice-amount-local');
+        const totalInvoiceAmountLocalEl = document.getElementById('total-invoice-amount-local');
+        const taxBreakdownLocalEl = document.getElementById('tax-breakdown-local');
+        const duesBreakdownLocalEl = document.getElementById('dues-breakdown-local');
+        
+        if (baseInvoiceAmountLocalEl) baseInvoiceAmountLocalEl.textContent = `${baseLocalAmount.toFixed(2)}`;
+        if (totalInvoiceAmountLocalEl) totalInvoiceAmountLocalEl.textContent = `${totalLocalAmount.toFixed(2)}`;
+        if (taxBreakdownLocalEl) taxBreakdownLocalEl.textContent = `Tax: ${taxLocalAmount.toFixed(2)} (${taxPercentage}%)`;
+        if (duesBreakdownLocalEl) duesBreakdownLocalEl.textContent = `Annual: ${fullYearLocalAmount.toFixed(2)} + Prorated: ${proratedLocalAmount.toFixed(2)}`;
+        
         // Show/hide empty state
         const emptyState = document.getElementById('empty-state');
         if (memberRows.length === 0) {
