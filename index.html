@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Essential Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com;">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    
     <title>Rotaract Club Invoice Calculator | Rotaract South Asia MDIO</title>
 
 	    <meta name="description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
@@ -17,86 +23,34 @@
     <meta property="og:image" content="https://dues.rsamdio.org/calculatorogimg.png" />
     <meta property="og:description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
     
-    <meta name="keywords" content="Rotaract Club Invoice Calculator, Rotaract Dues Calculator, Rotary Club Dues, RSAMDIO Calculator, Rotaract South Asia MDIO, Club Invoice Tool, RI Dues Calculator, Rotaract Membership Dues, Rotary International Dues, Club Invoice Generator, Rotaract Financial Calculator, Membership Dues Tool, Rotaract Club Management, Rotary Club Financial Tool" />
-
-    <meta name="subject" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO">
-
-    <meta name="url" content="https://dues.rsamdio.org/">
-    <meta name="identifier-URL" content="https://dues.rsamdio.org/">
-    
-    <meta http-equiv="cache-control" content="public" />
-    <meta http-equiv="Expires" content="0">
-    
-    <!-- SEO Meta Tags -->
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="googlebot" content="index, follow">
-    <meta name="author" content="Rotaract South Asia MDIO">
-    <meta name="copyright" content="Rotaract South Asia MDIO">
-    <meta name="language" content="English">
-    <meta name="revisit-after" content="7 days">
-    <meta name="distribution" content="global">
-    <meta name="rating" content="general">
-    <meta name="coverage" content="worldwide">
-    <meta name="target" content="all">
-    <meta name="HandheldFriendly" content="true">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="keywords" content="Rotaract Club Invoice Calculator, Rotaract Dues Calculator, RSAMDIO Calculator, Rotaract South Asia MDIO">
+    <meta name="robots" content="index, follow">
     <meta name="theme-color" content="#004aad">
-    <meta name="msapplication-TileColor" content="#004aad">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Rotaract Calculator">
     
     <!-- Favicon -->
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
     <link rel="icon" href="favicon.png" type="image/x-icon">
 
-    <!-- Preload critical fonts with font-display: swap -->
+    <!-- Critical fonts -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"></noscript>
     
-    <!-- Preload critical images with responsive sizes -->
-    <link rel="preload" href="rsamdio.png" as="image" type="image/png" media="(min-width: 768px)">
-    <link rel="preload" href="rsamdio.png" as="image" type="image/png" media="(max-width: 767px)">
-    
-    <!-- External CSS for better performance -->
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- Optimized Tailwind CSS -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Critical CSS for Coming Soon page - Above the fold only -->
     <style>
-        /* CSS Spacing Variables */
+        /* Essential Variables */
         :root {
-            --space-1: 0.25rem;   /* 4px */
-            --space-2: 0.5rem;    /* 8px */
-            --space-3: 0.75rem;   /* 12px */
-            --space-4: 1rem;      /* 16px */
-            --space-5: 1.25rem;   /* 20px */
-            --space-6: 1.5rem;    /* 24px */
-            --space-8: 2rem;      /* 32px */
-            --space-10: 2.5rem;   /* 40px */
-            --space-12: 3rem;     /* 48px */
-            --space-16: 4rem;     /* 64px */
-            --space-20: 5rem;     /* 80px */
-            --space-24: 6rem;     /* 96px */
-            --space-32: 8rem;     /* 128px */
-            
-            /* Design System Variables */
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
-            --shadow-heavy: 0 20px 60px rgba(0, 0, 0, 0.15);
-            
-            /* Section Colors - Matching invoicedev.html */
-            --section-hero: linear-gradient(135deg, #004aad 0%, #003b8a 100%);
-            --section-features: #f7fafc;
-            --section-impact: #eaf2ff;
-            --section-newsletter: #f7fafc;
-            --section-footer: #2d3748;
+            --space-4: 1rem;
+            --space-6: 1.5rem;
+            --space-8: 2rem;
+            --space-16: 4rem;
+            --primary-blue: #004aad;
+            --primary-blue-dark: #003b8a;
+            --bg-light: #f7fafc;
+            --bg-blue-light: #eaf2ff;
         }
 
         /* Base Styles */
@@ -110,66 +64,25 @@
             line-height: 1.6;
         }
 
-        /* Semantic HTML Structure */
-        main {
-            display: block;
-        }
-
-        section {
-            display: block;
-            position: relative;
-        }
-
-        /* Section Containers with Clear Visual Separation */
+        /* Section Containers */
         .section-container {
             padding: var(--space-16) 0;
             position: relative;
-            overflow: hidden;
-        }
-
-        .section-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: -1;
         }
 
         .section-hero {
-            background: var(--section-hero);
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
-            position: relative;
-        }
-
-        .section-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            opacity: 0.5;
         }
 
         .section-features {
-            background: var(--section-features);
+            background: var(--bg-light);
         }
 
         .section-impact {
-            background: var(--section-impact);
-        }
-
-        .section-newsletter {
-            background: var(--section-newsletter);
-        }
-
-        .section-footer {
-            background: var(--section-footer);
+            background: var(--bg-blue-light);
         }
 
         /* Visual Separators */
@@ -189,7 +102,7 @@
 
 
 
-        /* Typography Hierarchy */
+        /* Typography */
         .hero-title {
             color: #ffffff;
             font-size: clamp(2.5rem, 6vw, 4rem);
@@ -203,7 +116,7 @@
             font-size: clamp(2rem, 5vw, 3rem);
             font-weight: 700;
             line-height: 1.3;
-            margin-bottom: var(--space-5);
+            margin-bottom: 1.25rem;
             text-align: center;
             color: #2d3748;
         }
@@ -224,16 +137,11 @@
             font-size: clamp(1.25rem, 3.5vw, 1.5rem);
             font-weight: 600;
             line-height: 1.4;
-            margin-bottom: var(--space-3);
+            margin-bottom: 0.75rem;
             color: #2d3748;
         }
 
-        .glow-text {
-            color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Container System */
+        /* Container */
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -246,35 +154,10 @@
             }
         }
 
-        @media (min-width: 1024px) {
-            .container {
-                padding: 0 var(--space-8);
-            }
-        }
-
-        /* Enhanced Responsive Breakpoints */
+        /* Mobile Responsive */
         @media (max-width: 480px) {
             .container {
-                padding: 0 var(--space-3);
-            }
-            
-            .hero-title {
-                font-size: clamp(2rem, 5vw, 2.5rem);
-                margin-bottom: var(--space-4);
-            }
-            
-            .section-title {
-                font-size: clamp(1.5rem, 4vw, 2rem);
-                margin-bottom: var(--space-3);
-            }
-            
-            .section-subtitle {
-                font-size: clamp(0.875rem, 3vw, 1rem);
-                max-width: 100%;
-            }
-            
-            .card-title {
-                font-size: clamp(1rem, 3.5vw, 1.25rem);
+                padding: 0 0.75rem;
             }
             
             .modern-card {
@@ -285,100 +168,30 @@
                 width: 50px;
                 height: 50px;
             }
-            
-            .btn-modern, .btn-secondary {
-                padding: var(--space-2) var(--space-4);
-                font-size: 13px;
-            }
         }
 
-        @media (min-width: 481px) and (max-width: 767px) {
-            .hero-title {
-                font-size: clamp(2.5rem, 6vw, 3rem);
-            }
-            
-            .section-title {
-                font-size: clamp(1.75rem, 4.5vw, 2.25rem);
-            }
-            
-            .section-subtitle {
-                font-size: clamp(1rem, 3vw, 1.125rem);
-            }
-        }
 
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .hero-title {
-                font-size: clamp(3rem, 6.5vw, 4rem);
-            }
-            
-            .section-title {
-                font-size: clamp(2.25rem, 5vw, 2.75rem);
-            }
-            
-            .section-subtitle {
-                font-size: clamp(1.125rem, 2.5vw, 1.25rem);
-            }
-        }
 
-        @media (min-width: 1024px) and (max-width: 1279px) {
-            .hero-title {
-                font-size: clamp(3.5rem, 7vw, 4.5rem);
-            }
-            
-            .section-title {
-                font-size: clamp(2.5rem, 5.5vw, 3rem);
-            }
-        }
-
-        @media (min-width: 1280px) {
-            .hero-title {
-                font-size: clamp(4rem, 7.5vw, 5rem);
-            }
-            
-            .section-title {
-                font-size: clamp(3rem, 6vw, 3.5rem);
-            }
-            
-            .container {
-                max-width: 1200px;
-            }
-        }
-
-        /* Glass Morphism */
-        .glass {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        .glass-heavy {
-            background: rgba(255, 255, 255, 0.95);
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Modern Cards with Clear Structure */
+        /* Cards */
         .modern-card {
             background: white;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
             padding: var(--space-6);
             height: 100%;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
         }
 
         .modern-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            border-color: #004aad;
+            border-color: var(--primary-blue);
         }
 
-        /* Enhanced Grid Systems */
+        /* Grid Systems */
         .grid-features {
             display: grid;
             grid-template-columns: 1fr;
@@ -393,79 +206,13 @@
             margin-top: var(--space-8);
         }
 
-        /* Small Mobile (320px - 480px) */
-        @media (min-width: 320px) and (max-width: 480px) {
-            .grid-features {
-                gap: var(--space-4);
-                margin-top: var(--space-6);
-            }
-            
-            .grid-impact {
-                gap: var(--space-4);
-                margin-top: var(--space-6);
-            }
-            
-            .modern-card {
-                padding: var(--space-4);
-            }
-        }
-
-        /* Large Mobile (481px - 767px) */
-        @media (min-width: 481px) and (max-width: 767px) {
-            .grid-features {
-                gap: var(--space-6);
-                margin-top: var(--space-8);
-            }
-            
-            .grid-impact {
-                grid-template-columns: repeat(2, 1fr);
-                gap: var(--space-6);
-                margin-top: var(--space-8);
-            }
-        }
-
-        /* Tablet (768px - 1023px) */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .grid-features {
-                grid-template-columns: repeat(2, 1fr);
-                gap: var(--space-8);
-                margin-top: var(--space-10);
-            }
-            
-            .grid-impact {
-                grid-template-columns: repeat(2, 1fr);
-                gap: var(--space-8);
-                margin-top: var(--space-10);
-            }
-        }
-
-        /* Small Desktop (1024px - 1279px) */
-        @media (min-width: 1024px) and (max-width: 1279px) {
+        @media (min-width: 768px) {
             .grid-features {
                 grid-template-columns: repeat(3, 1fr);
-                gap: var(--space-10);
-                margin-top: var(--space-12);
             }
             
             .grid-impact {
                 grid-template-columns: repeat(4, 1fr);
-                gap: var(--space-10);
-                margin-top: var(--space-12);
-            }
-        }
-
-        /* Large Desktop (1280px+) */
-        @media (min-width: 1280px) {
-            .grid-features {
-                grid-template-columns: repeat(3, 1fr);
-                gap: var(--space-12);
-                margin-top: var(--space-14);
-            }
-            
-            .grid-impact {
-                grid-template-columns: repeat(4, 1fr);
-                gap: var(--space-12);
-                margin-top: var(--space-14);
             }
         }
 
@@ -485,19 +232,17 @@
         .progress-container {
             background: #e2e8f0;
             border-radius: 8px;
-            overflow: hidden;
-            position: relative;
             height: 16px;
+            overflow: hidden;
         }
 
         .progress-bar {
-            background: #004aad;
+            background: var(--primary-blue);
             border-radius: 8px;
-            position: relative;
             height: 100%;
             width: 0%;
             transition: width 0.3s ease-in-out;
-            animation: progressPulse 0.3s ease-in-out infinite;
+            position: relative;
             overflow: hidden;
         }
 
@@ -508,20 +253,11 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: progressShimmer 0.3s ease-in-out infinite;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shimmer 2s infinite;
         }
 
-        @keyframes progressPulse {
-            0%, 100% {
-                box-shadow: 0 0 0 0 rgba(0, 74, 173, 0.4);
-            }
-            50% {
-                box-shadow: 0 0 0 4px rgba(0, 74, 173, 0.1);
-            }
-        }
-
-        @keyframes progressShimmer {
+        @keyframes shimmer {
             0% {
                 left: -100%;
             }
@@ -530,12 +266,12 @@
             }
         }
 
-        /* Enhanced Buttons */
+        /* Buttons */
         .btn-modern {
-            background: #004aad;
+            background: var(--primary-blue);
             border: none;
             border-radius: 6px;
-            padding: var(--space-3) var(--space-6);
+            padding: 0.75rem var(--space-6);
             font-weight: 600;
             font-size: 14px;
             color: white;
@@ -548,168 +284,23 @@
         }
 
         .btn-modern:hover {
-            background: #003b8a;
+            background: var(--primary-blue-dark);
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 74, 173, 0.2);
-        }
-
-        .btn-secondary {
-            background: #edf2f7;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: var(--space-3) var(--space-6);
-            font-weight: 600;
-            font-size: 14px;
-            color: #4a5568;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-secondary:hover {
-            background: #e2e8f0;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         /* Feature Icons */
         .feature-icon {
             width: 60px;
             height: 60px;
-            background: #004aad;
+            background: var(--primary-blue);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto var(--space-4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-icon::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .modern-card:hover .feature-icon::before {
-            opacity: 1;
-        }
-
-        /* Notification Badge */
-        .notification-badge {
-            background: #004aad;
-            border-radius: 6px;
-            padding: var(--space-2) var(--space-4);
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
-            position: relative;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
         }
 
 
-
-        /* Enhanced Responsive Design */
-        @media (max-width: 480px) {
-            .section-container {
-                padding: var(--space-8) 0;
-            }
-            
-            .modern-card {
-                padding: var(--space-4);
-            }
-            
-            .feature-icon {
-                width: 50px;
-                height: 50px;
-            }
-            
-            .feature-icon svg {
-                width: 20px;
-                height: 20px;
-            }
-            
-            .w-32 {
-                width: 5rem;
-            }
-            
-            .h-32 {
-                height: 5rem;
-            }
-            
-            .text-4xl {
-                font-size: 1.25rem;
-            }
-        }
-
-        @media (min-width: 481px) and (max-width: 767px) {
-            .section-container {
-                padding: var(--space-10) 0;
-            }
-            
-            .modern-card {
-                padding: var(--space-6);
-            }
-            
-            .feature-icon {
-                width: 60px;
-                height: 60px;
-            }
-            
-            .w-32 {
-                width: 6rem;
-            }
-            
-            .h-32 {
-                height: 6rem;
-            }
-        }
-
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .section-container {
-                padding: var(--space-12) 0;
-            }
-            
-            .modern-card {
-                padding: var(--space-8);
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .section-container {
-                padding: var(--space-16) 0;
-            }
-            
-            .modern-card {
-                padding: var(--space-10);
-            }
-        }
-
-        /* Loading States */
-        .loading {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.6s ease;
-        }
-
-        .loading.loaded {
-            opacity: 1;
-            transform: translateY(0);
-        }
 
         /* Accessibility */
         .sr-only {
@@ -724,148 +315,6 @@
             border: 0;
         }
 
-        /* Enhanced Newsletter Responsive */
-        @media (max-width: 640px) {
-            .newsletter-form {
-                flex-direction: column;
-                gap: var(--space-4);
-            }
-            
-            .newsletter-form input {
-                width: 100%;
-                margin-bottom: var(--space-4);
-            }
-            
-            .newsletter-form button {
-                width: 100%;
-            }
-        }
-
-        /* Enhanced Footer Responsive */
-        @media (max-width: 768px) {
-            .footer-content {
-                grid-template-columns: 1fr;
-                gap: var(--space-8);
-                text-align: center;
-            }
-            
-            .footer-content > div {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-        }
-
-        @media (min-width: 769px) and (max-width: 1023px) {
-            .footer-content {
-                grid-template-columns: repeat(2, 1fr);
-                gap: var(--space-12);
-            }
-        }
-
-        /* Enhanced Navigation Responsive */
-        @media (max-width: 640px) {
-            .nav-content {
-                flex-direction: column;
-                gap: var(--space-4);
-                text-align: center;
-            }
-            
-            .nav-content .flex {
-                justify-content: center;
-            }
-            
-            .notification-badge {
-                margin-top: var(--space-2);
-            }
-        }
-
-        /* Focus States */
-        .btn-modern:focus,
-        .btn-secondary:focus {
-            outline: 2px solid rgba(255, 255, 255, 0.5);
-            outline-offset: 2px;
-        }
-
-        /* Enhanced Hero Responsive */
-        @media (max-width: 480px) {
-            .hero-content {
-                padding: var(--space-8) 0;
-                text-align: center;
-            }
-            
-            .hero-buttons {
-                flex-direction: column;
-                gap: var(--space-4);
-                align-items: center;
-            }
-            
-            .hero-buttons .btn-modern,
-            .hero-buttons .btn-secondary {
-                width: 100%;
-                max-width: 280px;
-            }
-        }
-
-        @media (min-width: 481px) and (max-width: 767px) {
-            .hero-content {
-                padding: var(--space-12) 0;
-            }
-            
-            .hero-buttons {
-                gap: var(--space-6);
-            }
-        }
-
-        /* Enhanced Card Responsive */
-        @media (max-width: 480px) {
-            .modern-card ul {
-                font-size: 12px;
-            }
-            
-            .modern-card li {
-                margin-bottom: var(--space-1);
-            }
-            
-            .modern-card .space-y-3 > * + * {
-                margin-top: var(--space-1);
-            }
-        }
-
-        /* Enhanced Text Responsive */
-        @media (max-width: 480px) {
-            .text-lg {
-                font-size: 14px;
-            }
-            
-            .text-xl {
-                font-size: 16px;
-            }
-            
-            .mb-20 {
-                margin-bottom: var(--space-8);
-            }
-            
-            .mb-8 {
-                margin-bottom: var(--space-4);
-            }
-        }
-
-        /* Enhanced Spacing Responsive */
-        @media (max-width: 480px) {
-            .space-y-3 > * + * {
-                margin-top: var(--space-1);
-            }
-            
-            .space-y-4 > * + * {
-                margin-top: var(--space-2);
-            }
-            
-            .space-y-6 > * + * {
-                margin-top: var(--space-3);
-            }
-        }
-
         /* Reduced Motion */
         @media (prefers-reduced-motion: reduce) {
             * {
@@ -876,9 +325,7 @@
         }
     </style>
 
-    <!-- Deferred CSS for below-the-fold content -->
-    <link rel="preload" href="below-fold.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="below-fold.css"></noscript>
+
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4371E35K36"></script>
@@ -1099,125 +546,42 @@
 
     </main>
 
-    <!-- Optimized JavaScript - Loaded after critical content -->
+        <!-- Optimized JavaScript -->
     <script>
-        // Performance optimization: Load non-critical JavaScript after page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Intersection Observer for animations
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            };
-
+            // Simple intersection observer for loading animations
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('loaded');
                     }
                 });
-            }, observerOptions);
+            }, { threshold: 0.1 });
 
-            // Observe animated elements
-            const animatedElements = document.querySelectorAll('.loading');
-            animatedElements.forEach(el => observer.observe(el));
+            document.querySelectorAll('.loading').forEach(el => observer.observe(el));
 
-            // Newsletter subscription
-            const subscribeBtn = document.querySelector('.btn-modern');
-            if (subscribeBtn) {
-                subscribeBtn.addEventListener('click', function() {
-                    const email = document.querySelector('input[type="email"]').value;
-                    if (email) {
-                        alert('Thank you for subscribing! We\'ll notify you when we launch.');
-                        document.querySelector('input[type="email"]').value = '';
-                    }
-                });
-            }
-
-            // Smooth scroll for anchor links
-            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-                anchor.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    const target = document.querySelector(this.getAttribute('href'));
-                    if (target) {
-                        target.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                        });
-                    }
-                });
-            });
-
-            // Enhanced button interactions
-            document.querySelectorAll('.btn-modern, .btn-secondary').forEach(button => {
-                button.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-3px) scale(1.02)';
-                });
-                
-                button.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0) scale(1)';
-                });
-            });
-
-            // Progress Bar Animation
+            // Progress bar with shimmer effect
             function animateProgressBar() {
-                const progressBar = document.querySelector('.progress-bar');
-                const targetPercentage = 85; // Target percentage
-                let currentPercentage = 0;
-                let isAnimating = true;
-                
-                if (progressBar) {
-                    // Initial animation to target
-                    const initialInterval = setInterval(() => {
-                        if (currentPercentage < targetPercentage && isAnimating) {
-                            currentPercentage += 5; // Much faster increment
-                            progressBar.style.width = currentPercentage + '%';
-                        } else {
-                            clearInterval(initialInterval);
-                            
-                            // Start continuous loading animation
-                            if (isAnimating) {
-                                startContinuousAnimation();
-                            }
-                        }
-                    }, 8); // Much faster speed (was 15ms, now 8ms)
-                }
-            }
-
-            // Continuous loading animation
-            function startContinuousAnimation() {
                 const progressBar = document.querySelector('.progress-bar');
                 if (!progressBar) return;
                 
-                let direction = -1; // Start by decreasing
-                let currentWidth = 85;
+                let currentPercentage = 0;
+                const targetPercentage = 85;
                 
-                const continuousInterval = setInterval(() => {
-                    if (currentWidth <= 80) {
-                        direction = 1; // Start increasing
-                    } else if (currentWidth >= 85) {
-                        direction = -1; // Start decreasing
+                // Animate to 85% then stay there with shimmer effect
+                const interval = setInterval(() => {
+                    if (currentPercentage < targetPercentage) {
+                        currentPercentage += 3;
+                        progressBar.style.width = currentPercentage + '%';
+                    } else {
+                        clearInterval(interval);
+                        // Progress bar stays at 85% with continuous shimmer effect
                     }
-                    
-                    currentWidth += direction * 2; // Much faster increments (was 1)
-                    progressBar.style.width = currentWidth + '%';
-                }, 25); // Much faster speed (was 50ms, now 25ms)
+                }, 50);
             }
 
-            // Start progress bar animation when page loads
-            setTimeout(animateProgressBar, 500); // Start after 500ms delay
-
-            // Performance optimization: Throttle scroll events
-            let ticking = false;
-            function updateOnScroll() {
-                ticking = false;
-            }
-
-            window.addEventListener('scroll', () => {
-                if (!ticking) {
-                    requestAnimationFrame(updateOnScroll);
-                    ticking = true;
-                }
-            });
+            // Start progress bar animation
+            setTimeout(animateProgressBar, 500);
         });
     </script>
 </body>
