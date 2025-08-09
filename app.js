@@ -1,3 +1,61 @@
+// Security utility for input sanitization
+const SecurityUtils = {
+    // Sanitize HTML content to prevent XSS
+    sanitizeHTML: function(str) {
+        if (typeof str !== 'string') return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
+    
+    // Sanitize text content (removes all HTML)
+    sanitizeText: function(str) {
+        if (typeof str !== 'string') return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.textContent || div.innerText || '';
+    },
+    
+    // Validate and sanitize file input
+    validateFile: function(file) {
+        const allowedTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel', // .xls
+            'text/csv', // .csv
+            'application/csv' // .csv alternative
+        ];
+        
+        const maxSize = 5 * 1024 * 1024; // 5MB limit
+        
+        if (!allowedTypes.includes(file.type)) {
+            throw new Error('Invalid file type. Please upload Excel (.xlsx, .xls) or CSV files only.');
+        }
+        
+        if (file.size > maxSize) {
+            throw new Error('File size too large. Maximum size is 5MB.');
+        }
+        
+        return true;
+    },
+    
+    // Validate date format
+    validateDate: function(dateString) {
+        if (!dateString || typeof dateString !== 'string') return false;
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(dateString)) return false;
+        
+        const date = new Date(dateString);
+        return date instanceof Date && !isNaN(date) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100;
+    },
+    
+    // Validate member name
+    validateMemberName: function(name) {
+        if (!name || typeof name !== 'string') return false;
+        const sanitizedName = this.sanitizeText(name).trim();
+        return sanitizedName.length >= 2 && sanitizedName.length <= 100 && /^[a-zA-Z\s\-'\.]+$/.test(sanitizedName);
+    }
+};
+
 // Performance optimization: Use requestIdleCallback for non-critical operations
 const requestIdleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
 
@@ -16,19 +74,17 @@ class FormValidator {
         this.errors = new Map();
         this.validationRules = {
             'member-name': [
-                { test: (value) => value.trim().length > 0, message: 'Member name is required' },
-                { test: (value) => value.trim().length >= 2, message: 'Name must be at least 2 characters' },
-                { test: (value) => /^[a-zA-Z\s]+$/.test(value.trim()), message: 'Name should only contain letters and spaces' }
+                { test: (value) => SecurityUtils.validateMemberName(value), message: 'Member name is required and must be 2-100 characters with only letters, spaces, hyphens, apostrophes, and periods' }
             ],
             'member-type': [
                 { test: (value) => value.length > 0, message: 'Please select a Club Base' }
             ],
             'join-date': [
                 { test: (value) => value.length > 0, message: 'Join date is required' },
-                { test: (value) => this.isValidDate(value), message: 'Please enter a valid date' }
+                { test: (value) => SecurityUtils.validateDate(value), message: 'Please enter a valid date in YYYY-MM-DD format' }
             ],
             'leave-date': [
-                { test: (value) => !value || this.isValidDate(value), message: 'Please enter a valid date' },
+                { test: (value) => !value || SecurityUtils.validateDate(value), message: 'Please enter a valid date in YYYY-MM-DD format' },
                 { test: (value) => !value || this.isLeaveDateValid(value), message: 'Leave date cannot be before join date' }
             ]
         };
@@ -90,7 +146,7 @@ class FormValidator {
         if (field && errorElement) {
             field.classList.remove('input-success');
             field.classList.add('input-error');
-            errorElement.textContent = message;
+            errorElement.textContent = SecurityUtils.sanitizeText(message);
             errorElement.style.display = 'block';
             this.errors.set(fieldId, message);
         }
@@ -413,11 +469,12 @@ function addMember(e) {
 function showSuccessMessage(message) {
     const successDiv = document.createElement('div');
     successDiv.className = 'success-feedback fade-in';
+    const sanitizedMessage = SecurityUtils.sanitizeText(message);
     successDiv.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>${message}</span>
+        <span>${sanitizedMessage}</span>
     `;
     
     const addMemberForm = document.getElementById('add-member-form');
@@ -431,11 +488,12 @@ function showSuccessMessage(message) {
 function showErrorMessage(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-feedback fade-in';
+    const sanitizedMessage = SecurityUtils.sanitizeText(message);
     errorDiv.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>${message}</span>
+        <span>${sanitizedMessage}</span>
     `;
     
     const addMemberForm = document.getElementById('add-member-form');
@@ -636,36 +694,45 @@ function validateMemberData(data) {
     data.forEach((row, index) => {
         const [name, joinDate, memberType, leaveDate] = row;
         
-        // Validate name
-        if (!name || typeof name !== 'string' || name.trim() === '') {
-            errors.push(`Row ${index + 2}: Invalid member name`);
+        // Validate name using security utility
+        if (!SecurityUtils.validateMemberName(name)) {
+            errors.push(`Row ${index + 2}: Invalid member name - must be 2-100 characters with only letters, spaces, hyphens, apostrophes, and periods`);
             return;
         }
 
-        // Validate join date
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!joinDate || !dateRegex.test(joinDate)) {
+        // Validate join date using security utility
+        if (!SecurityUtils.validateDate(joinDate)) {
             errors.push(`Row ${index + 2}: Invalid join date format (use YYYY-MM-DD)`);
             return;
         }
 
-        // Validate club base
+        // Validate club base with stricter validation
         const validTypes = ['Community-Based', 'University-Based'];
-        if (!validTypes.includes(memberType)) {
+        if (!memberType || typeof memberType !== 'string' || !validTypes.includes(memberType.trim())) {
             errors.push(`Row ${index + 2}: Invalid Club Base (use "Community-Based" or "University-Based")`);
             return;
         }
 
-        // Validate leave date (optional)
-        if (leaveDate && leaveDate.trim() !== '' && !dateRegex.test(leaveDate)) {
+        // Validate leave date (optional) using security utility
+        if (leaveDate && leaveDate.trim() !== '' && !SecurityUtils.validateDate(leaveDate)) {
             errors.push(`Row ${index + 2}: Invalid leave date format (use YYYY-MM-DD or leave blank)`);
             return;
         }
 
+        // Additional validation: leave date should be after join date
+        if (leaveDate && leaveDate.trim() !== '') {
+            const joinDateObj = new Date(joinDate);
+            const leaveDateObj = new Date(leaveDate);
+            if (leaveDateObj <= joinDateObj) {
+                errors.push(`Row ${index + 2}: Leave date must be after join date`);
+                return;
+            }
+        }
+
         validatedMembers.push({
-            name: name.trim(),
+            name: SecurityUtils.sanitizeText(name.trim()),
             joinDate: joinDate,
-            clubBase: memberType,
+            clubBase: memberType.trim(),
             leaveDate: leaveDate && leaveDate.trim() !== '' ? leaveDate : null
         });
     });
@@ -728,8 +795,21 @@ function handleFileUpload(file) {
         loadingOverlay.classList.add('active');
     }
     
-    const fileExtension = file.name.split('.').pop().toLowerCase();
     const fileInput = document.getElementById('file-input');
+    
+    // Validate file using security utility
+    try {
+        SecurityUtils.validateFile(file);
+    } catch (error) {
+        showFileUploadError(error.message);
+        fileInput.value = '';
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+        return;
+    }
+    
+    const fileExtension = file.name.split('.').pop().toLowerCase();
     
     let parsePromise;
     if (fileExtension === 'csv') {
@@ -738,7 +818,10 @@ function handleFileUpload(file) {
         parsePromise = parseExcelFile(file);
     } else {
         showFileUploadError('Unsupported file format. Please upload a CSV or Excel file.');
-        fileInput.value = ''; // Clear the file input so the same file can be selected again
+        fileInput.value = '';
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
         return;
     }
 
@@ -784,11 +867,17 @@ function addBulkMembers() {
         row.dataset.name = member.name;
         row.classList.add('member-row');
         
+        // Sanitize member data to prevent XSS
+        const sanitizedName = SecurityUtils.sanitizeText(member.name);
+        const sanitizedJoinDate = SecurityUtils.sanitizeText(member.joinDate);
+        const sanitizedLeaveDate = member.leaveDate ? SecurityUtils.sanitizeText(member.leaveDate) : '-';
+        const sanitizedClubBase = SecurityUtils.sanitizeText(member.clubBase);
+        
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${member.name}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.joinDate}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.leaveDate || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.clubBase}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${sanitizedName}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedJoinDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedLeaveDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedClubBase}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
@@ -1082,10 +1171,14 @@ function editMember(memberId) {
     const leaveDate = row.dataset.leaveDate;
     const memberType = row.dataset.memberType;
 
-    // Enhanced input fields with better styling and visibility
-    row.cells[0].innerHTML = `<input type="text" value="${name}" class="edit-mode-input" placeholder="Enter member name">`;
-    row.cells[1].innerHTML = `<input type="date" value="${joinDate}" class="edit-mode-input">`;
-    row.cells[2].innerHTML = `<input type="date" value="${leaveDate || ''}" class="edit-mode-input" placeholder="Leave date (optional)">`;
+    // Enhanced input fields with better styling and visibility - sanitized to prevent XSS
+    const sanitizedName = SecurityUtils.sanitizeText(name);
+    const sanitizedJoinDate = SecurityUtils.sanitizeText(joinDate);
+    const sanitizedLeaveDate = leaveDate ? SecurityUtils.sanitizeText(leaveDate) : '';
+    
+    row.cells[0].innerHTML = `<input type="text" value="${sanitizedName}" class="edit-mode-input" placeholder="Enter member name">`;
+    row.cells[1].innerHTML = `<input type="date" value="${sanitizedJoinDate}" class="edit-mode-input">`;
+    row.cells[2].innerHTML = `<input type="date" value="${sanitizedLeaveDate}" class="edit-mode-input" placeholder="Leave date (optional)">`;
     row.cells[3].innerHTML = `
         <select class="edit-mode-select">
             <option value="Community-Based" ${memberType === 'Community-Based' ? 'selected' : ''}>Community-Based ($8)</option>
