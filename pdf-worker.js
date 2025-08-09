@@ -26,6 +26,7 @@ function generatePDF(data) {
             summaryData, 
             invoiceYear, 
             taxPercentage,
+            currencyRate,
             totalMembers,
             totalProratedMonths 
         } = data;
@@ -78,7 +79,7 @@ function generatePDF(data) {
         yPosition += 40;
         
         // Date and Year
-        doc.setFontSize(12);
+        doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(75, 85, 99);
         const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -87,12 +88,12 @@ function generatePDF(data) {
             day: 'numeric' 
         });
         doc.text(`Estimate for Invoice of January, ${invoiceYear}`, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 7;
+        yPosition += 6;
         doc.text(`(January - December, ${invoiceYear})`, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 8;
+        yPosition += 6;
         doc.text(`Generated on: ${currentDate}`, pageWidth / 2, yPosition, { align: 'center' });
         
-        yPosition += 15;
+        yPosition += 12;
 
         // Invoice Summary Section
         doc.setFillColor(59, 130, 246);
@@ -105,67 +106,94 @@ function generatePDF(data) {
         
         yPosition += 20;
         
-        // Summary table
+        // Summary table with 3 columns
         const summaryTableData = [
-            ['(a) Base RI Dues', `$${summaryData.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            [`  (a1) Active Member Dues (Jan - Dec ${invoiceYear})`, `$${summaryData.totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['  (a2) Prorated Dues', `$${summaryData.totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            [`(b) Tax (${taxPercentage}%)`, `$${summaryData.taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['(c) Total with Tax', `$${summaryData.totalWithTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['', ''],
-            ['Members', totalMembers],
-            ['Prorated Months', totalProratedMonths]
+            ['(a) Base RI Dues', 
+             `$${summaryData.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${summaryData.baseLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            [`  (a1) Active Member Dues (Jan - Dec ${invoiceYear})`, 
+             `$${summaryData.totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${summaryData.fullYearLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            ['  (a2) Prorated Dues', 
+             `$${summaryData.totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${summaryData.proratedLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            [`(b) Tax (${taxPercentage}%)`, 
+             `$${summaryData.taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${summaryData.taxLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            ['(c) Total with Tax', 
+             `$${summaryData.totalWithTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${summaryData.totalLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            ['', '', ''],
+            ['Exchange Rate', '1', `${currencyRate.toFixed(2)}`],
+            ['', '', ''],
+            ['Total Members', totalMembers, ''],
+            ['Total Prorated Months', totalProratedMonths, '']
         ];
 
         doc.autoTable({
             startY: yPosition,
-            head: [['Description', 'Amount']],
+            head: [['Description', 'USD Amount', 'Local Amount']],
             body: summaryTableData,
             theme: 'plain',
             headStyles: {
                 textColor: [55, 65, 81],
                 fontStyle: 'bold',
-                fontSize: 12,
+                fontSize: 11,
                 halign: 'center',
                 valign: 'middle',
-                cellPadding: 5,
+                cellPadding: 4,
                 lineColor: [200, 200, 200],
                 lineWidth: 0.1,
                 fillColor: [248, 250, 252]
             },
             styles: {
-                fontSize: 11,
-                cellPadding: 4,
+                fontSize: 10,
+                cellPadding: 3,
                 textColor: [75, 85, 99],
                 lineColor: [220, 220, 220],
                 lineWidth: 0.1
             },
             columnStyles: {
                 0: { fontStyle: 'bold', textColor: [55, 65, 81] },
-                1: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] }
+                1: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] },
+                2: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] }
             },
             didParseCell: function(data) {
+                // Sub-items styling
                 if (data.row.raw[0] && (data.row.raw[0].includes(`(a1) Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(a2) Prorated Dues'))) {
                     data.cell.styles.fontSize = 10;
                     data.cell.styles.textColor = [156, 163, 175];
                     data.cell.styles.fontStyle = 'normal';
+                }
+                // Exchange rate row styling
+                if (data.row.raw[0] && data.row.raw[0] === 'Exchange Rate') {
+                    data.cell.styles.fillColor = [239, 246, 255];
+                    data.cell.styles.textColor = [59, 130, 246];
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize = 11;
+                }
+                // Empty rows
+                if (data.row.raw[0] === '' && data.row.raw[1] === '' && data.row.raw[2] === '') {
+                    data.cell.styles.minCellHeight = 5;
                 }
             },
             tableWidth: 'auto',
             margin: { left: margin, right: margin }
         });
 
-        yPosition = doc.lastAutoTable.finalY + 8;
+        yPosition = doc.lastAutoTable.finalY + 7;
         
         // Add legend
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(156, 163, 175);
         doc.text('Base RI Dues (a = a1 + a2) = Active Member Dues (a1) + Prorated Dues (a2)', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 6;
+        yPosition += 5;
         doc.text('Total with Tax (c = a + b) = Base RI Dues (a) + Tax (b)', pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 5;
+        doc.text(`Local currency amounts calculated using exchange rate: 1 USD = ${currencyRate} Local`, pageWidth / 2, yPosition, { align: 'center' });
         
-        yPosition += 20;
+        yPosition += 15;
 
         // Member Roster Section
         if (memberData && memberData.length > 0) {
