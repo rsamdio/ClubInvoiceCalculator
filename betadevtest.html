@@ -622,6 +622,10 @@
                                         Est. Base Due
                                         <div class="text-xs font-normal text-gray-500 normal-case mt-1">(Annual + Prorated)</div>
                                     </th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                        Est. Base Due (Local)
+                                        <div class="text-xs font-normal text-gray-500 normal-case mt-1">(Annual + Prorated)</div>
+                                    </th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Active Member</th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Prorated Months</th>
                                     <th scope="col" class="relative px-6 py-4"><span class="sr-only">Actions</span></th>
@@ -1471,19 +1475,23 @@
                     
                     memberRows.forEach(row => {
                         const cells = row.querySelectorAll('td');
-                        if (cells.length >= 7) {
+                        if (cells.length >= 8) {
                             const name = cells[0].textContent.trim();
                             const joinDate = cells[1].textContent.trim();
                             const leaveDate = cells[2].textContent.trim() || 'Active';
                             const clubBase = cells[3].textContent.trim();
                             const estBaseDue = cells[4].textContent.trim();
-                            const activeMember = cells[5].textContent.trim();
-                            const proratedMonths = parseInt(cells[6].textContent.trim()) || 0;
+                            const estLocalDue = cells[5].textContent.trim();
+                            const activeMember = cells[6].textContent.trim();
+                            const proratedMonths = parseInt(cells[7].textContent.trim()) || 0;
                             
-                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, activeMember, proratedMonths]);
+                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, estLocalDue, activeMember, proratedMonths]);
                         }
                     });
 
+                    // Get currency rate for calculations
+                    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+                    
                     // Add totals row
                     const formattedTotalFullYear = totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     const formattedTotalProrated = totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1491,12 +1499,24 @@
                     
                     const totalEstDueDisplay = `$${formattedTotalFullYear} + $${formattedTotalProrated} = $${formattedTotalEstDue}`;
                     
+                    // Calculate local currency totals for the totals row
+                    const totalFullYearLocal = Math.round(totalFullYearAmount * currencyRate * 100) / 100;
+                    const totalProratedLocal = Math.round(totalProratedAmount * currencyRate * 100) / 100;
+                    const totalLocalEstDue = totalFullYearLocal + totalProratedLocal;
+                    
+                    const formattedTotalFullYearLocal = totalFullYearLocal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const formattedTotalProratedLocal = totalProratedLocal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    const formattedTotalLocalEstDue = totalLocalEstDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    
+                    const totalLocalEstDueDisplay = `${formattedTotalFullYearLocal} + ${formattedTotalProratedLocal} = ${formattedTotalLocalEstDue}`;
+                    
                     memberData.push([
                         'TOTAL',
                         '',
                         '',
                         '',
                         totalEstDueDisplay,
+                        totalLocalEstDueDisplay,
                         totalMembers,
                         totalProratedMonths
                     ]);
@@ -1516,8 +1536,7 @@
                         step2.classList.add('active');
                     }
 
-                    // Get currency rate and calculate local amounts with separate tax calculation
-                    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+                    // Calculate local amounts with separate tax calculation
                     const fullYearLocalAmount = Math.round(totalFullYearAmount * currencyRate * 100) / 100;
                     const proratedLocalAmount = Math.round(totalProratedAmount * currencyRate * 100) / 100;
                     const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;

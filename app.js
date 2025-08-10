@@ -297,6 +297,32 @@ function formatDuesBreakdown(duesBreakdown) {
     return breakdown;
 }
 
+function formatLocalDuesBreakdown(duesBreakdown) {
+    const { fullYear, prorated, total } = duesBreakdown;
+    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+    
+    if (total === 0) {
+        return '<span class="text-gray-400">0.00</span>';
+    }
+    
+    // Calculate local currency amounts
+    const fullYearLocal = Math.round(fullYear * currencyRate * 100) / 100;
+    const proratedLocal = Math.round(prorated * currencyRate * 100) / 100;
+    const totalLocal = Math.round(total * currencyRate * 100) / 100;
+    
+    let breakdown = '';
+    
+    if (fullYear > 0 && prorated > 0) {
+        breakdown = `${fullYearLocal.toFixed(2)} + ${proratedLocal.toFixed(2)} = ${totalLocal.toFixed(2)}`;
+    } else if (fullYear > 0) {
+        breakdown = `${fullYearLocal.toFixed(2)} + 0.00 = ${totalLocal.toFixed(2)}`;
+    } else if (prorated > 0) {
+        breakdown = `0.00 + ${proratedLocal.toFixed(2)} = ${totalLocal.toFixed(2)}`;
+    }
+    
+    return breakdown;
+}
+
 // UI update functions
 function updateTotal() {
     requestIdleCallback(() => {
@@ -378,6 +404,21 @@ function updateTotal() {
         if (taxBreakdownLocalEl) taxBreakdownLocalEl.textContent = `Tax: ${taxLocalAmount.toFixed(2)} (${taxPercentage}%)`;
         if (duesBreakdownLocalEl) duesBreakdownLocalEl.textContent = `Annual: ${fullYearLocalAmount.toFixed(2)} + Prorated: ${proratedLocalAmount.toFixed(2)}`;
         
+        // Update local currency cells in member roster
+        memberRows.forEach(row => {
+            if (row.classList.contains('editing')) return;
+            
+            const joinDate = row.dataset.joinDate;
+            const leaveDate = row.dataset.leaveDate;
+            const memberType = row.dataset.memberType;
+            const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+            
+            const localDueCell = row.querySelector('.local-due-cell');
+            if (localDueCell) {
+                localDueCell.innerHTML = formatLocalDuesBreakdown(duesBreakdown);
+            }
+        });
+        
         // Show/hide empty state
         const emptyState = document.getElementById('empty-state');
         if (memberRows.length === 0) {
@@ -404,11 +445,12 @@ function recalculateAllDues() {
         
         row.dataset.due = duesBreakdown.total;
         row.querySelector('.due-cell').innerHTML = formatDuesBreakdown(duesBreakdown);
+        row.querySelector('.local-due-cell').innerHTML = formatLocalDuesBreakdown(duesBreakdown);
         
         const cells = row.querySelectorAll('td');
-        if (cells.length >= 7) {
-            cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-            cells[6].textContent = duesBreakdown.proratedMonths || 0;
+        if (cells.length >= 8) {
+            cells[6].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+            cells[7].textContent = duesBreakdown.proratedMonths || 0;
         }
     });
     
@@ -455,6 +497,7 @@ function addMember(e) {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${leaveDate || '-'}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${clubBase}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-cell">${formatLocalDuesBreakdown(duesBreakdown)}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -906,6 +949,7 @@ function addBulkMembers() {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedLeaveDate}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedClubBase}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-cell">${formatLocalDuesBreakdown(duesBreakdown)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -1295,8 +1339,10 @@ function saveMember(memberId) {
     row.cells[3].textContent = newMemberType;
     row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
     row.cells[4].classList.add('due-cell');
-    row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-    row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
+    row.cells[5].innerHTML = formatLocalDuesBreakdown(duesBreakdown);
+    row.cells[5].classList.add('local-due-cell');
+    row.cells[6].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+    row.cells[7].textContent = duesBreakdown.proratedMonths || 0;
     
     finishEditing(row, memberId);
     recalculateAllDues();
@@ -1325,15 +1371,17 @@ function cancelEdit(memberId) {
     row.cells[3].textContent = memberType;
     row.cells[4].innerHTML = formatDuesBreakdown(duesBreakdown);
     row.cells[4].classList.add('due-cell');
-    row.cells[5].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-    row.cells[6].textContent = duesBreakdown.proratedMonths || 0;
+    row.cells[5].innerHTML = formatLocalDuesBreakdown(duesBreakdown);
+    row.cells[5].classList.add('local-due-cell');
+    row.cells[6].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+    row.cells[7].textContent = duesBreakdown.proratedMonths || 0;
 
     finishEditing(row, memberId);
 }
 
 function finishEditing(row, memberId) {
     row.classList.remove('editing');
-    row.cells[7].innerHTML = `
+    row.cells[8].innerHTML = `
         <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
         </button>

@@ -220,13 +220,13 @@ function generatePDF(data) {
             try {
                 doc.autoTable({
                     startY: yPosition,
-                    head: [['Name', 'Join Date', 'Leave Date', 'Club Base', 'Est. Base Due', 'Active Member', 'Prorated Months']],
+                    head: [['Name', 'Join Date', 'Leave Date', 'Club Base', 'Est. Base Due (USD)', 'Est. Base Due (Local)', 'Active Member', 'Prorated Months']],
                     body: memberData,
                     theme: 'plain',
                     headStyles: {
                         textColor: [55, 65, 81],
                         fontStyle: 'bold',
-                        fontSize: 8,
+                        fontSize: 7,
                         halign: 'center',
                         valign: 'middle',
                         cellPadding: 2,
@@ -235,13 +235,14 @@ function generatePDF(data) {
                         fillColor: [248, 250, 252]
                     },
                     columnStyles: {
-                        0: { halign: 'left', fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 40 },
-                        1: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 },
-                        2: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 },
+                        0: { halign: 'left', fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 30 },
+                        1: { halign: 'center', textColor: [75, 85, 99], cellWidth: 18 },
+                        2: { halign: 'center', textColor: [75, 85, 99], cellWidth: 18 },
                         3: { halign: 'center', textColor: [75, 85, 99], cellWidth: 25 },
-                        4: { halign: 'center', textColor: [75, 85, 99], cellWidth: 40 },
-                        5: { halign: 'center', textColor: [75, 85, 99], cellWidth: 25 },
-                        6: { halign: 'center', textColor: [75, 85, 99], cellWidth: 30 }
+                        4: { halign: 'center', textColor: [75, 85, 99], cellWidth: 35 },
+                        5: { halign: 'center', textColor: [75, 85, 99], cellWidth: 35 },
+                        6: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 },
+                        7: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 }
                     },
                     tableWidth: pageWidth - 10,
                     margin: { top: 40, bottom: 30, left: 5, right: 5 },
@@ -267,13 +268,15 @@ function generatePDF(data) {
                             try {
                                 const tableX = data.table.x;
                                 const tableY = data.table.y;
-                                const columnWidth = data.table.width / 7;
-                                const estBaseDueX = tableX + (columnWidth * 4);
+                                const columnWidth = data.table.width / 8;
+                                const estBaseDueUSDX = tableX + (columnWidth * 4);
+                                const estBaseDueLocalX = tableX + (columnWidth * 5);
                                 
                                 doc.setFontSize(6);
                                 doc.setFont('helvetica', 'normal');
                                 doc.setTextColor(156, 163, 175);
-                                doc.text('(Annual + Prorated)', estBaseDueX + (columnWidth / 2), tableY - 2, { align: 'center' });
+                                doc.text('(Annual + Prorated)', estBaseDueUSDX + (columnWidth / 2), tableY - 2, { align: 'center' });
+                                doc.text('(Annual + Prorated)', estBaseDueLocalX + (columnWidth / 2), tableY - 2, { align: 'center' });
                             } catch (textError) {
                                 // Could not add subtitle text
                             }
