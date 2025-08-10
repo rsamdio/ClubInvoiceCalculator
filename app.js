@@ -223,6 +223,9 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
     const baseDues = clubBase === 'Community-Based' ? 8 : 5;
     const joinYear = joinDate.getFullYear();
 
+    // Calculate prorated due per month (rounded to 2 decimals)
+    const proratedDuePerMonth = Math.round((baseDues / 12) * 100) / 100;
+
     if (joinYear === invoiceYear - 1) {
         const joinMonth = joinDate.getMonth();
         const joinDay = joinDate.getDate();
@@ -233,8 +236,9 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
             effectiveJoinMonth += 1;
         }
         
+        // Calculate prorated dues based on the months they were active in the previous year
         const monthsInJoinYear = Math.max(0, 12 - effectiveJoinMonth);
-        let proratedDues = Math.round((baseDues / 12) * monthsInJoinYear * 100) / 100;
+        let proratedDues = Math.round(proratedDuePerMonth * monthsInJoinYear * 100) / 100;
 
         if (leaveDateStr) {
             const leaveDate = new Date(leaveDateStr + 'T00:00:00');
@@ -258,7 +262,7 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
                 
                 let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth + 1; // +1 to include both start and end months
                 actualMonthsInJoinYear = Math.max(0, actualMonthsInJoinYear);
-                proratedDues = Math.round((baseDues / 12) * actualMonthsInJoinYear * 100) / 100;
+                proratedDues = Math.round(proratedDuePerMonth * actualMonthsInJoinYear * 100) / 100;
                 
                 return { fullYear: 0, prorated: proratedDues, total: proratedDues, proratedMonths: actualMonthsInJoinYear };
             }
@@ -305,10 +309,10 @@ function formatLocalDuesBreakdown(duesBreakdown) {
         return '<span class="text-gray-400">0.00</span>';
     }
     
-    // Calculate local currency amounts
+    // Calculate local currency amounts with proper rounding
     const fullYearLocal = Math.round(fullYear * currencyRate * 100) / 100;
     const proratedLocal = Math.round(prorated * currencyRate * 100) / 100;
-    const totalLocal = Math.round(total * currencyRate * 100) / 100;
+    const totalLocal = fullYearLocal + proratedLocal; // Use sum of individual calculations, not direct conversion
     
     let breakdown = '';
     
@@ -368,9 +372,9 @@ function updateTotal() {
         const totalMembersEl = document.getElementById('total-members');
         const totalProratedMonthsEl = document.getElementById('total-prorated-months');
         
-        if (baseInvoiceAmountEl) baseInvoiceAmountEl.textContent = `$${Math.round(baseTotal * 100) / 100}`;
-        if (totalInvoiceAmountEl) totalInvoiceAmountEl.textContent = `$${Math.round(totalWithTax * 100) / 100}`;
-        if (taxBreakdownEl) taxBreakdownEl.textContent = `Tax: $${Math.round(taxAmount * 100) / 100} (${taxPercentage}%)`;
+        if (baseInvoiceAmountEl) baseInvoiceAmountEl.textContent = `$${baseTotal.toFixed(2)}`;
+        if (totalInvoiceAmountEl) totalInvoiceAmountEl.textContent = `$${totalWithTax.toFixed(2)}`;
+        if (taxBreakdownEl) taxBreakdownEl.textContent = `Tax: $${taxAmount.toFixed(2)} (${taxPercentage}%)`;
         
         if (duesBreakdownEl) {
             const preciseFullYear = Math.round(totalFullYear * 100) / 100;
@@ -381,7 +385,7 @@ function updateTotal() {
         if (totalMembersEl) totalMembersEl.textContent = totalMembersWithFullYear;
         if (totalProratedMonthsEl) totalProratedMonthsEl.textContent = totalProratedMonths;
         
-        // Update local currency amounts
+        // Update local currency amounts with proper rounding
         const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
         const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
         const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
