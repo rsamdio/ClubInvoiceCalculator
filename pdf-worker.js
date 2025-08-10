@@ -64,19 +64,19 @@ function generatePDF(data) {
         doc.setTextColor(75, 85, 99);
         doc.text('(A tool by Rotaract South Asia MDIO)', pageWidth / 2, yPosition, { align: 'center' });
         
-        yPosition += 20;
+        yPosition += 15;
         
         // Add gradient-like header background
         doc.setFillColor(25, 118, 210);
-        doc.rect(0, yPosition - 5, pageWidth, 35, 'F');
+        doc.rect(0, yPosition - 5, pageWidth, 25, 'F');
         
         // Header with white text
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text('Estimation Report', pageWidth / 2, yPosition + 15, { align: 'center' });
+        doc.text('Estimation Report', pageWidth / 2, yPosition + 10, { align: 'center' });
         
-        yPosition += 40;
+        yPosition += 30;
         
         // Date and Year
         doc.setFontSize(11);
@@ -120,6 +120,12 @@ function generatePDF(data) {
             [`(b) Tax (${taxPercentage}%)`, 
              `$${summaryData.taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
              `${summaryData.taxLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            [`  (b1) Tax on Active Member Dues (Jan - Dec ${invoiceYear})`, 
+             `$${(Math.round((summaryData.totalFullYearAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${(Math.round((summaryData.fullYearLocalAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
+            ['  (b2) Tax on Prorated Dues', 
+             `$${(Math.round((summaryData.totalProratedAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
+             `${(Math.round((summaryData.proratedLocalAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
             ['(c) Total with Tax', 
              `$${summaryData.totalWithTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
              `${summaryData.totalLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
@@ -160,7 +166,7 @@ function generatePDF(data) {
             },
             didParseCell: function(data) {
                 // Sub-items styling
-                if (data.row.raw[0] && (data.row.raw[0].includes(`(a1) Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(a2) Prorated Dues'))) {
+                if (data.row.raw[0] && (data.row.raw[0].includes(`(a1) Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(a2) Prorated Dues') || data.row.raw[0].includes(`(b1) Tax on Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(b2) Tax on Prorated Dues'))) {
                     data.cell.styles.fontSize = 10;
                     data.cell.styles.textColor = [156, 163, 175];
                     data.cell.styles.fontStyle = 'normal';
@@ -181,13 +187,15 @@ function generatePDF(data) {
             margin: { left: margin, right: margin }
         });
 
-        yPosition = doc.lastAutoTable.finalY + 7;
+        yPosition = doc.lastAutoTable.finalY + 8;
         
         // Add legend
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(156, 163, 175);
         doc.text('Base RI Dues (a = a1 + a2) = Active Member Dues (a1) + Prorated Dues (a2)', pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 5;
+        doc.text('Tax (b = b1 + b2) = Tax on Active Member Dues (b1) + Tax on Prorated Dues (b2)', pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 5;
         doc.text('Total with Tax (c = a + b) = Base RI Dues (a) + Tax (b)', pageWidth / 2, yPosition, { align: 'center' });
         yPosition += 5;
@@ -245,7 +253,7 @@ function generatePDF(data) {
                         7: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 }
                     },
                     tableWidth: pageWidth - 10,
-                    margin: { top: 40, bottom: 30, left: 5, right: 5 },
+                    margin: { top: 40, bottom: 20, left: 5, right: 5 },
                     pageBreak: 'auto',
                     showFoot: 'lastPage',
                     startY: yPosition,
@@ -406,15 +414,15 @@ function generatePDF(data) {
             doc.setPage(i);
             
             doc.setFillColor(248, 250, 252);
-            doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+            doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
             
             doc.setFontSize(8);
             doc.setTextColor(156, 163, 175);
-            doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
             
             doc.setDrawColor(229, 231, 235);
             doc.setLineWidth(0.5);
-            doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+            doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
         }
 
         // Convert to blob and send back
