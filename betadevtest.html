@@ -1445,7 +1445,7 @@
                     const totalAmount = parseFloat(document.getElementById('total-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
                     const totalMembers = document.getElementById('total-members').textContent || '0';
                     const totalProratedMonths = document.getElementById('total-prorated-months').textContent || '0';
-                    const taxPercentage = document.getElementById('tax-percentage').value || '0';
+                    const taxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
                     const invoiceYear = document.getElementById('invoice-year-select').value;
 
                     // Extract Full Year and Prorated amounts from the base amount breakdown
@@ -1469,6 +1469,9 @@
                         }
                     });
 
+                    // Get currency rate for calculations
+                    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+                    
                     // Prepare member data for PDF
                     const memberData = [];
                     const memberRows = document.getElementById('member-roster-body').querySelectorAll('tr');
@@ -1485,12 +1488,31 @@
                             const activeMember = cells[6].textContent.trim();
                             const proratedMonths = parseInt(cells[7].textContent.trim()) || 0;
                             
-                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, estLocalDue, activeMember, proratedMonths]);
+                            // Calculate individual member's total with tax (local)
+                            let memberTotalWithTaxLocal = 0;
+                            const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
+                            if (dueMatch) {
+                                const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
+                                const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
+                                
+                                // Convert to local currency
+                                const fullYearLocal = Math.round(fullYearAmount * currencyRate * 100) / 100;
+                                const proratedLocal = Math.round(proratedAmount * currencyRate * 100) / 100;
+                                const baseLocal = fullYearLocal + proratedLocal;
+                                
+                                // Calculate tax on local amounts
+                                const taxOnFullYearLocal = Math.round((fullYearLocal * taxPercentage) / 100 * 100) / 100;
+                                const taxOnProratedLocal = Math.round((proratedLocal * taxPercentage) / 100 * 100) / 100;
+                                const taxLocal = taxOnFullYearLocal + taxOnProratedLocal;
+                                
+                                memberTotalWithTaxLocal = baseLocal + taxLocal;
+                            }
+                            
+                            const memberTotalWithTaxLocalFormatted = memberTotalWithTaxLocal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            
+                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, estLocalDue, memberTotalWithTaxLocalFormatted, activeMember, proratedMonths]);
                         }
                     });
-
-                    // Get currency rate for calculations
-                    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
                     
                     // Add totals row
                     const formattedTotalFullYear = totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1510,6 +1532,17 @@
                     
                     const totalLocalEstDueDisplay = `${formattedTotalFullYearLocal} + ${formattedTotalProratedLocal} = ${formattedTotalLocalEstDue}`;
                     
+                    // Calculate local amounts with separate tax calculation for totals
+                    const fullYearLocalAmount = Math.round(totalFullYearAmount * currencyRate * 100) / 100;
+                    const proratedLocalAmount = Math.round(totalProratedAmount * currencyRate * 100) / 100;
+                    const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
+                    
+                    // Calculate local currency tax separately on annual and prorated dues
+                    const taxOnLocalAnnualDues = Math.round((fullYearLocalAmount * taxPercentage) / 100 * 100) / 100;
+                    const taxOnLocalProratedDues = Math.round((proratedLocalAmount * taxPercentage) / 100 * 100) / 100;
+                    const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
+                    const totalLocalAmount = baseLocalAmount + taxLocalAmount;
+                    
                     memberData.push([
                         'TOTAL',
                         '',
@@ -1517,6 +1550,7 @@
                         '',
                         totalEstDueDisplay,
                         totalLocalEstDueDisplay,
+                        totalLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
                         totalMembers,
                         totalProratedMonths
                     ]);
@@ -1536,16 +1570,7 @@
                         step2.classList.add('active');
                     }
 
-                    // Calculate local amounts with separate tax calculation
-                    const fullYearLocalAmount = Math.round(totalFullYearAmount * currencyRate * 100) / 100;
-                    const proratedLocalAmount = Math.round(totalProratedAmount * currencyRate * 100) / 100;
-                    const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
-                    
-                    // Calculate local currency tax separately on annual and prorated dues
-                    const taxOnLocalAnnualDues = Math.round((fullYearLocalAmount * taxPercentage) / 100 * 100) / 100;
-                    const taxOnLocalProratedDues = Math.round((proratedLocalAmount * taxPercentage) / 100 * 100) / 100;
-                    const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
-                    const totalLocalAmount = baseLocalAmount + taxLocalAmount;
+
 
                     // Prepare data for Web Worker
                     const pdfData = {
