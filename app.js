@@ -327,7 +327,11 @@ function updateTotal() {
         });
         
         const taxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
-        const taxAmount = Math.round((baseTotal * taxPercentage) / 100 * 100) / 100;
+        
+        // Calculate tax separately on annual and prorated dues
+        const taxOnAnnualDues = Math.round((totalFullYear * taxPercentage) / 100 * 100) / 100;
+        const taxOnProratedDues = Math.round((totalProrated * taxPercentage) / 100 * 100) / 100;
+        const taxAmount = taxOnAnnualDues + taxOnProratedDues;
         const totalWithTax = Math.round((baseTotal + taxAmount) * 100) / 100;
         
         // Update display elements
@@ -353,11 +357,15 @@ function updateTotal() {
         
         // Update local currency amounts
         const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
-        const baseLocalAmount = Math.round(baseTotal * currencyRate * 100) / 100;
-        const totalLocalAmount = Math.round(totalWithTax * currencyRate * 100) / 100;
-        const taxLocalAmount = Math.round(taxAmount * currencyRate * 100) / 100;
         const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
         const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
+        const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
+        
+        // Calculate local currency tax separately on annual and prorated dues
+        const taxOnLocalAnnualDues = Math.round((fullYearLocalAmount * taxPercentage) / 100 * 100) / 100;
+        const taxOnLocalProratedDues = Math.round((proratedLocalAmount * taxPercentage) / 100 * 100) / 100;
+        const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
+        const totalLocalAmount = baseLocalAmount + taxLocalAmount;
         
         // Update local currency display elements
         const baseInvoiceAmountLocalEl = document.getElementById('base-invoice-amount-local');

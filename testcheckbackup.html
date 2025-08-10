@@ -1516,13 +1516,17 @@
                         step2.classList.add('active');
                     }
 
-                    // Get currency rate and calculate local amounts
+                    // Get currency rate and calculate local amounts with separate tax calculation
                     const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
-                    const baseLocalAmount = Math.round(baseAmount * currencyRate * 100) / 100;
-                    const totalLocalAmount = Math.round(totalAmount * currencyRate * 100) / 100;
-                    const taxLocalAmount = Math.round(taxAmount * currencyRate * 100) / 100;
                     const fullYearLocalAmount = Math.round(totalFullYearAmount * currencyRate * 100) / 100;
                     const proratedLocalAmount = Math.round(totalProratedAmount * currencyRate * 100) / 100;
+                    const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
+                    
+                    // Calculate local currency tax separately on annual and prorated dues
+                    const taxOnLocalAnnualDues = Math.round((fullYearLocalAmount * taxPercentage) / 100 * 100) / 100;
+                    const taxOnLocalProratedDues = Math.round((proratedLocalAmount * taxPercentage) / 100 * 100) / 100;
+                    const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
+                    const totalLocalAmount = baseLocalAmount + taxLocalAmount;
 
                     // Prepare data for Web Worker
                     const pdfData = {
