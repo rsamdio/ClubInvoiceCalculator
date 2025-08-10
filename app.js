@@ -374,7 +374,7 @@ function updateTotal() {
         
         if (baseInvoiceAmountEl) baseInvoiceAmountEl.textContent = `$${baseTotal.toFixed(2)}`;
         if (totalInvoiceAmountEl) totalInvoiceAmountEl.textContent = `$${totalWithTax.toFixed(2)}`;
-        if (taxBreakdownEl) taxBreakdownEl.textContent = `Tax: $${taxAmount.toFixed(2)} (${taxPercentage}%)`;
+        if (taxBreakdownEl) taxBreakdownEl.textContent = `Tax: $${taxOnAnnualDues.toFixed(2)} + $${taxOnProratedDues.toFixed(2)} (${taxPercentage}%)`;
         
         if (duesBreakdownEl) {
             const preciseFullYear = Math.round(totalFullYear * 100) / 100;
@@ -405,7 +405,7 @@ function updateTotal() {
         
         if (baseInvoiceAmountLocalEl) baseInvoiceAmountLocalEl.textContent = `${baseLocalAmount.toFixed(2)}`;
         if (totalInvoiceAmountLocalEl) totalInvoiceAmountLocalEl.textContent = `${totalLocalAmount.toFixed(2)}`;
-        if (taxBreakdownLocalEl) taxBreakdownLocalEl.textContent = `Tax: ${taxLocalAmount.toFixed(2)} (${taxPercentage}%)`;
+        if (taxBreakdownLocalEl) taxBreakdownLocalEl.textContent = `Tax: ${taxOnLocalAnnualDues.toFixed(2)} + ${taxOnLocalProratedDues.toFixed(2)} (${taxPercentage}%)`;
         if (duesBreakdownLocalEl) duesBreakdownLocalEl.textContent = `Annual: ${fullYearLocalAmount.toFixed(2)} + Prorated: ${proratedLocalAmount.toFixed(2)}`;
         
         // Update local currency cells in member roster
