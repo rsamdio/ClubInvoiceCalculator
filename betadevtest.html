@@ -626,6 +626,10 @@
                                         Est. Base Due (Local)
                                         <div class="text-xs font-normal text-gray-500 normal-case mt-1">(Annual + Prorated)</div>
                                     </th>
+                                    <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                        Est.Total Due (Local)
+                                        <div class="text-xs font-normal text-gray-500 normal-case mt-1">(Base + Tax)</div>
+                                    </th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Active Member</th>
                                     <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">Prorated Months</th>
                                     <th scope="col" class="relative px-6 py-4"><span class="sr-only">Actions</span></th>
@@ -1332,12 +1336,17 @@
                 
                 // Re-destructure functions after they're confirmed to be available
                 const {
-                    populateYearSelector: populateYearSelectorFn,
+                    initializeApp: initializeAppFn,
                     updatePagination: updatePaginationFn
                 } = appFunctions;
                 
-                // Initialize with the loaded functions
-                if (populateYearSelectorFn) populateYearSelectorFn();
+                // Initialize the application (this includes populateYearSelector)
+                if (initializeAppFn) {
+                    console.log('Calling initializeApp...');
+                    initializeAppFn();
+                }
+                
+                // Update pagination
                 if (updatePaginationFn) updatePaginationFn();
             }
             
@@ -1478,39 +1487,33 @@
                     
                     memberRows.forEach(row => {
                         const cells = row.querySelectorAll('td');
-                        if (cells.length >= 8) {
+                        if (cells.length >= 9) {
                             const name = cells[0].textContent.trim();
                             const joinDate = cells[1].textContent.trim();
                             const leaveDate = cells[2].textContent.trim() || 'Active';
                             const clubBase = cells[3].textContent.trim();
                             const estBaseDue = cells[4].textContent.trim();
                             const estLocalDue = cells[5].textContent.trim();
-                            const activeMember = cells[6].textContent.trim();
-                            const proratedMonths = parseInt(cells[7].textContent.trim()) || 0;
                             
-                            // Calculate individual member's total with tax (local)
-                            let memberTotalWithTaxLocal = 0;
-                            const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
-                            if (dueMatch) {
-                                const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
-                                const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
+                            // Format the "Est. Base + Tax (Local)" column for PDF
+                            let formattedEstLocalWithTax = cells[6].textContent.trim();
+                            
+                            // Extract the total amount and tax amount from the existing format
+                            // Current format: "696.00 + 125.28 = 821.28"
+                            const taxMatch = formattedEstLocalWithTax.match(/(\d+\.?\d*) \+ (\d+\.?\d*) = (\d+\.?\d*)/);
+                            if (taxMatch) {
+                                const baseAmount = parseFloat(taxMatch[1]);
+                                const taxAmount = parseFloat(taxMatch[2]);
+                                const totalAmount = parseFloat(taxMatch[3]);
                                 
-                                // Convert to local currency
-                                const fullYearLocal = Math.round(fullYearAmount * currencyRate * 100) / 100;
-                                const proratedLocal = Math.round(proratedAmount * currencyRate * 100) / 100;
-                                const baseLocal = fullYearLocal + proratedLocal;
-                                
-                                // Calculate tax on local amounts
-                                const taxOnFullYearLocal = Math.round((fullYearLocal * taxPercentage) / 100 * 100) / 100;
-                                const taxOnProratedLocal = Math.round((proratedLocal * taxPercentage) / 100 * 100) / 100;
-                                const taxLocal = taxOnFullYearLocal + taxOnProratedLocal;
-                                
-                                memberTotalWithTaxLocal = baseLocal + taxLocal;
+                                // Format as requested: "Total with Tax\n(Tax: total tax amount)"
+                                formattedEstLocalWithTax = `${totalAmount.toFixed(2)}\n(Tax: ${taxAmount.toFixed(2)})`;
                             }
                             
-                            const memberTotalWithTaxLocalFormatted = memberTotalWithTaxLocal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            const activeMember = cells[7].textContent.trim();
+                            const proratedMonths = parseInt(cells[8].textContent.trim()) || 0;
                             
-                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, estLocalDue, memberTotalWithTaxLocalFormatted, activeMember, proratedMonths]);
+                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, estLocalDue, formattedEstLocalWithTax, activeMember, proratedMonths]);
                         }
                     });
                     
@@ -1543,6 +1546,9 @@
                     const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
                     const totalLocalAmount = baseLocalAmount + taxLocalAmount;
                     
+                    // Format the totals row "Est. Base + Tax (Local)" column
+                    const formattedTotalLocalWithTax = `${totalLocalAmount.toFixed(2)}\n(Tax: ${taxLocalAmount.toFixed(2)})`;
+                    
                     memberData.push([
                         'TOTAL',
                         '',
@@ -1550,7 +1556,7 @@
                         '',
                         totalEstDueDisplay,
                         totalLocalEstDueDisplay,
-                        totalLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                        formattedTotalLocalWithTax,
                         totalMembers,
                         totalProratedMonths
                     ]);

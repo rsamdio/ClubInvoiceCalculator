@@ -228,7 +228,7 @@ function generatePDF(data) {
             try {
                 doc.autoTable({
                     startY: yPosition,
-                    head: [['Name', 'Join Date', 'Leave Date', 'Club Base', 'Est. Base Due (USD)', 'Est. Base Due (Local)', 'Est. Base + Tax (Local)', 'Active Member', 'Prorated Months']],
+                    head: [['Name', 'Join Date', 'Leave Date', 'Club Base', 'Est. Base Due (USD)', 'Est. Base Due (Local)', 'Est. Total Due (Local)', 'Active Member', 'Prorated Months']],
                     body: memberData,
                     theme: 'plain',
                     headStyles: {
@@ -237,24 +237,23 @@ function generatePDF(data) {
                         fontSize: 7,
                         halign: 'center',
                         valign: 'middle',
-                        cellPadding: 2,
                         lineColor: [200, 200, 200],
                         lineWidth: 0.1,
                         fillColor: [248, 250, 252]
                     },
                     columnStyles: {
-                        0: { halign: 'left', fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 25 },
-                        1: { halign: 'center', textColor: [75, 85, 99], cellWidth: 17 },
-                        2: { halign: 'center', textColor: [75, 85, 99], cellWidth: 17 },
-                        3: { halign: 'center', textColor: [75, 85, 99], cellWidth: 24 },
-                        4: { halign: 'center', textColor: [75, 85, 99], cellWidth: 34 },
-                        5: { halign: 'center', textColor: [75, 85, 99], cellWidth: 34 },
-                        6: { halign: 'center', textColor: [75, 85, 99], cellWidth: 20 },
-                        7: { halign: 'center', textColor: [75, 85, 99], cellWidth: 15 },
-                        8: { halign: 'center', textColor: [75, 85, 99], cellWidth: 15 }
+                        0: { halign: 'left', valign: 'middle', fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 25 },
+                        1: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 17 },
+                        2: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 17 },
+                        3: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 24 },
+                        4: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 34 },
+                        5: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 34 },
+                        6: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 24 },
+                        7: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 14 },
+                        8: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 14 }
                     },
-                    tableWidth: pageWidth - 10,
-                    margin: { top: 40, bottom: 20, left: 5, right: 5 },
+                    tableWidth: pageWidth - 6,
+                    margin: { top: 40, bottom: 20, left: 3, right: 3 },
                     pageBreak: 'auto',
                     showFoot: 'lastPage',
                     startY: yPosition,
@@ -319,6 +318,12 @@ function generatePDF(data) {
                             data.cell.styles.fontStyle = 'bold';
                             data.cell.styles.fillColor = [240, 240, 240];
                             data.cell.styles.textColor = [55, 65, 81];
+                        }
+                        
+                        // Handle multi-line formatting for "Est. Base + Tax (Local)" column
+                        if (data.column.index === 6 && data.cell.text && data.cell.text.includes('\n')) {
+                            data.cell.styles.fontSize = 6;
+                            data.cell.styles.lineHeight = 1.2;
                         }
                     }
                 });

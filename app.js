@@ -222,10 +222,14 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
     const invoiceDate = new Date(invoiceYear, 0, 1);
     const baseDues = clubBase === 'Community-Based' ? 8 : 5;
     const joinYear = joinDate.getFullYear();
+    
+    console.log(`Calculating dues for: joinDate=${joinDateStr}, clubBase=${clubBase}, invoiceYear=${invoiceYear}, leaveDate=${leaveDateStr}`);
+    console.log(`Join year: ${joinYear}, Invoice year: ${invoiceYear}`);
 
     // Calculate prorated due per month (rounded to 2 decimals)
     const proratedDuePerMonth = Math.round((baseDues / 12) * 100) / 100;
 
+    // Handle members who joined in the previous year (invoiceYear - 1)
     if (joinYear === invoiceYear - 1) {
         const joinMonth = joinDate.getMonth();
         const joinDay = joinDate.getDate();
@@ -240,7 +244,8 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
         const monthsInJoinYear = Math.max(0, 12 - effectiveJoinMonth);
         let proratedDues = Math.round(proratedDuePerMonth * monthsInJoinYear * 100) / 100;
 
-        if (leaveDateStr) {
+        // Handle leave date if provided
+        if (leaveDateStr && leaveDateStr.trim() !== '') {
             const leaveDate = new Date(leaveDateStr + 'T00:00:00');
             if (leaveDate < invoiceDate) {
                 const leaveMonth = leaveDate.getMonth();
@@ -251,7 +256,6 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
                 if (leaveDay > 1) {
                     effectiveLeaveMonth = leaveMonth - 1;
                 }
-                // If leave date is on 1st, we want to include that month, so no adjustment needed
                 
                 // Ensure we don't go below the join month
                 effectiveLeaveMonth = Math.max(effectiveLeaveMonth, effectiveJoinMonth);
@@ -269,15 +273,32 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
         }
         
         const total = Math.round((baseDues + proratedDues) * 100) / 100;
+        console.log(`Member joined in previous year - fullYear: ${baseDues}, prorated: ${proratedDues}, total: ${total}, proratedMonths: ${monthsInJoinYear}`);
         return { fullYear: baseDues, prorated: proratedDues, total: total, proratedMonths: monthsInJoinYear };
     }
 
-    if (leaveDateStr) {
-        const leaveDate = new Date(leaveDateStr + 'T00:00:00');
-        if (leaveDate < invoiceDate) return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+    // Handle members who joined in the current invoice year
+    if (joinYear === invoiceYear) {
+        // Members who join in the current invoice year should not owe any dues for that year
+        // They will start owing dues from the next year onwards
+        console.log('Member joined in current invoice year - no dues owed');
+        return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
     }
 
-    if (joinYear < invoiceYear - 1) return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+    // Handle members who joined before the previous year (full year dues)
+    if (joinYear < invoiceYear - 1) {
+        // Check if they have a leave date before the invoice year
+        if (leaveDateStr && leaveDateStr.trim() !== '') {
+            const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+            if (leaveDate < invoiceDate) {
+                return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+            }
+        }
+        console.log(`Member joined before previous year - fullYear: ${baseDues}, prorated: 0, total: ${baseDues}, proratedMonths: 0`);
+        return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+    }
+
+    // Default case: no dues
     return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
 }
 
@@ -322,6 +343,40 @@ function formatLocalDuesBreakdown(duesBreakdown) {
         breakdown = `${fullYearLocal.toFixed(2)} + 0.00 = ${totalLocal.toFixed(2)}`;
     } else if (prorated > 0) {
         breakdown = `0.00 + ${proratedLocal.toFixed(2)} = ${totalLocal.toFixed(2)}`;
+    }
+    
+    return breakdown;
+}
+
+function formatLocalDuesWithTaxBreakdown(duesBreakdown) {
+    const { fullYear, prorated, total } = duesBreakdown;
+    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+    const taxPercentage = parseFloat(document.getElementById('tax-percentage')?.value) || 0;
+    
+    if (total === 0) {
+        return '<span class="text-gray-400">0.00</span>';
+    }
+    
+    // Calculate local currency amounts with proper rounding
+    const fullYearLocal = Math.round(fullYear * currencyRate * 100) / 100;
+    const proratedLocal = Math.round(prorated * currencyRate * 100) / 100;
+    const baseLocal = fullYearLocal + proratedLocal;
+    
+    // Calculate tax on local amounts
+    const taxOnFullYearLocal = Math.round((fullYearLocal * taxPercentage) / 100 * 100) / 100;
+    const taxOnProratedLocal = Math.round((proratedLocal * taxPercentage) / 100 * 100) / 100;
+    const taxLocal = taxOnFullYearLocal + taxOnProratedLocal;
+    
+    const totalWithTaxLocal = baseLocal + taxLocal;
+    
+    let breakdown = '';
+    
+    if (baseLocal > 0 && taxLocal > 0) {
+        breakdown = `${baseLocal.toFixed(2)} + ${taxLocal.toFixed(2)} = ${totalWithTaxLocal.toFixed(2)}`;
+    } else if (baseLocal > 0) {
+        breakdown = `${baseLocal.toFixed(2)} + 0.00 = ${totalWithTaxLocal.toFixed(2)}`;
+    } else {
+        breakdown = `0.00 + 0.00 = ${totalWithTaxLocal.toFixed(2)}`;
     }
     
     return breakdown;
@@ -421,6 +476,11 @@ function updateTotal() {
             if (localDueCell) {
                 localDueCell.innerHTML = formatLocalDuesBreakdown(duesBreakdown);
             }
+            
+            const localDueWithTaxCell = row.querySelector('.local-due-with-tax-cell');
+            if (localDueWithTaxCell) {
+                localDueWithTaxCell.innerHTML = formatLocalDuesWithTaxBreakdown(duesBreakdown);
+            }
         });
         
         // Show/hide empty state
@@ -436,30 +496,83 @@ function updateTotal() {
 const debouncedUpdateTotal = debounce(updateTotal, 300);
 
 function recalculateAllDues() {
-    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
-    const memberRows = document.getElementById('member-roster-body').querySelectorAll('tr');
-    
-    memberRows.forEach(row => {
-        if (row.classList.contains('editing')) return;
+    try {
+        console.log('Recalculating all dues...');
         
-        const joinDate = row.dataset.joinDate;
-        const leaveDate = row.dataset.leaveDate;
-        const memberType = row.dataset.memberType;
-        const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
-        
-        row.dataset.due = duesBreakdown.total;
-        row.querySelector('.due-cell').innerHTML = formatDuesBreakdown(duesBreakdown);
-        row.querySelector('.local-due-cell').innerHTML = formatLocalDuesBreakdown(duesBreakdown);
-        
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 8) {
-            cells[6].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-            cells[7].textContent = duesBreakdown.proratedMonths || 0;
+        const invoiceYearSelect = document.getElementById('invoice-year-select');
+        if (!invoiceYearSelect) {
+            console.error('Invoice year selector not found');
+            return;
         }
-    });
-    
-    updateTotal();
-    updateInvoiceDateDisplay();
+        
+        const selectedYear = parseInt(invoiceYearSelect.value, 10);
+        if (isNaN(selectedYear)) {
+            console.error('Invalid invoice year:', invoiceYearSelect.value);
+            return;
+        }
+        
+        console.log('Selected year for recalculation:', selectedYear);
+        
+        const memberRosterBody = document.getElementById('member-roster-body');
+        if (!memberRosterBody) {
+            console.error('Member roster body not found');
+            return;
+        }
+        
+        const memberRows = memberRosterBody.querySelectorAll('tr');
+        console.log('Found', memberRows.length, 'member rows to recalculate');
+        
+        memberRows.forEach((row, index) => {
+            try {
+                if (row.classList.contains('editing')) {
+                    console.log('Skipping row', index, '- currently being edited');
+                    return;
+                }
+                
+                const joinDate = row.dataset.joinDate;
+                const leaveDate = row.dataset.leaveDate;
+                const memberType = row.dataset.memberType;
+                
+                if (!joinDate || !memberType) {
+                    console.warn('Row', index, 'missing required data:', { joinDate, memberType });
+                    return;
+                }
+                
+                const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+                
+                row.dataset.due = duesBreakdown.total;
+                
+                // Update cells with error handling
+                const dueCell = row.querySelector('.due-cell');
+                const localDueCell = row.querySelector('.local-due-cell');
+                const localDueWithTaxCell = row.querySelector('.local-due-with-tax-cell');
+                
+                if (dueCell) dueCell.innerHTML = formatDuesBreakdown(duesBreakdown);
+                if (localDueCell) localDueCell.innerHTML = formatLocalDuesBreakdown(duesBreakdown);
+                if (localDueWithTaxCell) localDueWithTaxCell.innerHTML = formatLocalDuesWithTaxBreakdown(duesBreakdown);
+                
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 9) {
+                    cells[7].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+                    cells[7].classList.add('active-member-cell');
+                    cells[8].textContent = duesBreakdown.proratedMonths || 0;
+                    cells[8].classList.add('prorated-months-cell');
+                }
+                
+                console.log('Recalculated row', index, 'for member:', row.dataset.name, 'dues:', duesBreakdown);
+                
+            } catch (rowError) {
+                console.error('Error recalculating row', index, ':', rowError);
+            }
+        });
+        
+        console.log('Recalculation complete, updating totals...');
+        updateTotal();
+        updateInvoiceDateDisplay();
+        
+    } catch (error) {
+        console.error('Error in recalculateAllDues:', error);
+    }
 }
 
 // Member management functions
@@ -502,8 +615,9 @@ function addMember(e) {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${clubBase}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-cell">${formatLocalDuesBreakdown(duesBreakdown)}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-with-tax-cell">${formatLocalDuesWithTaxBreakdown(duesBreakdown)}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center active-member-cell">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center prorated-months-cell">${duesBreakdown.proratedMonths || 0}</td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
             <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
@@ -516,12 +630,23 @@ function addMember(e) {
     
     memberRosterBody.appendChild(row);
 
-    row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
-    row.querySelector('.remove-member-btn').addEventListener('click', () => {
-        row.remove();
-        updateTotal();
-        updatePagination();
-    });
+    // Add event listeners after the row is appended
+    setTimeout(() => {
+        const editBtn = row.querySelector('.edit-member-btn');
+        const removeBtn = row.querySelector('.remove-member-btn');
+        
+        if (editBtn) {
+            editBtn.addEventListener('click', () => editMember(memberId));
+        }
+        
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                row.remove();
+                updateTotal();
+                updatePagination();
+            });
+        }
+    }, 0);
     
     lastSelectedClubBase = clubBase;
     lastSelectedJoinDate = joinDate;
@@ -604,6 +729,8 @@ function showFileUploadError(message) {
 
 // Initialize application
 function initializeApp() {
+    console.log('initializeApp called');
+    
     // Hide loading overlay
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay) {
@@ -646,6 +773,23 @@ function initializeApp() {
     // Initialize year selector
     populateYearSelector();
     updatePagination();
+    
+    // Add event listeners for calculation triggers
+    const taxPercentageInput = document.getElementById('tax-percentage');
+    const currencyRateInput = document.getElementById('currency-rate');
+    
+    if (taxPercentageInput) {
+        taxPercentageInput.addEventListener('input', debouncedUpdateTotal);
+        taxPercentageInput.addEventListener('change', updateTotal);
+    }
+    
+    if (currencyRateInput) {
+        currencyRateInput.addEventListener('input', debouncedUpdateTotal);
+        currencyRateInput.addEventListener('change', updateTotal);
+    }
+    
+    // Create debounced version of recalculateAllDues for better performance
+    const debouncedRecalculateAllDues = debounce(recalculateAllDues, 300);
     
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -947,33 +1091,45 @@ function addBulkMembers() {
         const sanitizedLeaveDate = member.leaveDate ? SecurityUtils.sanitizeText(member.leaveDate) : '-';
         const sanitizedClubBase = SecurityUtils.sanitizeText(member.clubBase);
         
-        row.innerHTML = `
+                row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${sanitizedName}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedJoinDate}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedLeaveDate}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${sanitizedClubBase}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-cell">${formatLocalDuesBreakdown(duesBreakdown)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${duesBreakdown.proratedMonths || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-with-tax-cell">${formatLocalDuesWithTaxBreakdown(duesBreakdown)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center active-member-cell">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center prorated-months-cell">${duesBreakdown.proratedMonths || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                 </button>
                 <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
                 </button>
             </td>
         `;
         
         memberRosterBody.appendChild(row);
 
-        row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
-        row.querySelector('.remove-member-btn').addEventListener('click', () => {
-            row.remove();
-            updateTotal();
-            updatePagination();
-        });
+        // Add event listeners after the row is appended
+        setTimeout(() => {
+            const editBtn = row.querySelector('.edit-member-btn');
+            const removeBtn = row.querySelector('.remove-member-btn');
+            
+            if (editBtn) {
+                editBtn.addEventListener('click', () => editMember(memberId));
+            }
+            
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    row.remove();
+                    updateTotal();
+                    updatePagination();
+                });
+            }
+        }, 0);
     });
 
     updateTotal();
@@ -1204,10 +1360,28 @@ function changePageSize(newSize) {
     updatePagination();
 }
 
+// Global flag to prevent duplicate initialization
+let yearSelectorInitialized = false;
+
 // Year Selector Functions
 function populateYearSelector() {
+    console.log('populateYearSelector called');
     const invoiceYearSelect = document.getElementById('invoice-year-select');
-    if (!invoiceYearSelect) return;
+    if (!invoiceYearSelect) {
+        console.error('Invoice year select element not found');
+        return;
+    }
+    
+    console.log('Found invoice year select element:', invoiceYearSelect);
+    
+    // Prevent duplicate initialization
+    if (yearSelectorInitialized) {
+        console.log('Year selector already initialized, skipping...');
+        return;
+    }
+    
+    // Clear existing options to prevent duplicates
+    invoiceYearSelect.innerHTML = '';
     
     const currentYear = new Date().getFullYear();
     const startInvoiceYear = 2023;
@@ -1221,6 +1395,20 @@ function populateYearSelector() {
     }
     invoiceYearSelect.value = currentYear + 1;
     updateInvoiceDateDisplay();
+    
+    // Add event listener for year changes
+    invoiceYearSelect.addEventListener('change', () => {
+        console.log('Invoice year changed to:', invoiceYearSelect.value);
+        updateInvoiceDateDisplay();
+        // Use immediate recalculation for year changes to ensure responsiveness
+        recalculateAllDues();
+    });
+    
+    // Mark as initialized
+    yearSelectorInitialized = true;
+    console.log('Year selector initialized successfully');
+    console.log('Year selector options count:', invoiceYearSelect.options.length);
+    console.log('Year selector value:', invoiceYearSelect.value);
 }
 
 function updateInvoiceDateDisplay() {
@@ -1263,7 +1451,9 @@ function editMember(memberId) {
     row.cells[4].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
     row.cells[5].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
     row.cells[6].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
-    row.cells[7].innerHTML = `
+    row.cells[7].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+    row.cells[8].innerHTML = '<span class="text-gray-400 italic">Calculating...</span>';
+    row.cells[9].innerHTML = `
         <div class="flex space-x-2">
             <button class="btn btn-primary btn-sm !p-2 save-member-btn" title="Save changes">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
@@ -1274,9 +1464,19 @@ function editMember(memberId) {
         </div>
     `;
 
-    // Add event listeners
-    row.querySelector('.save-member-btn').addEventListener('click', () => saveMember(memberId));
-    row.querySelector('.cancel-edit-btn').addEventListener('click', () => cancelEdit(memberId));
+    // Add event listeners after the HTML is set
+    setTimeout(() => {
+        const saveBtn = row.querySelector('.save-member-btn');
+        const cancelBtn = row.querySelector('.cancel-edit-btn');
+        
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => saveMember(memberId));
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => cancelEdit(memberId));
+        }
+    }, 0);
     
     // Auto-focus on the name input for better UX
     setTimeout(() => {
@@ -1285,25 +1485,27 @@ function editMember(memberId) {
             nameInput.focus();
             nameInput.select();
         }
-    }, 100);
+    }, 150);
     
     // Add keyboard support for better UX
-    const inputs = row.querySelectorAll('input, select');
-    inputs.forEach((input, index) => {
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (index < inputs.length - 1) {
-                    inputs[index + 1].focus();
-                } else {
-                    saveMember(memberId);
+    setTimeout(() => {
+        const inputs = row.querySelectorAll('input, select');
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (index < inputs.length - 1) {
+                        inputs[index + 1].focus();
+                    } else {
+                        saveMember(memberId);
+                    }
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit(memberId);
                 }
-            } else if (e.key === 'Escape') {
-                e.preventDefault();
-                cancelEdit(memberId);
-            }
+            });
         });
-    });
+    }, 0);
 }
 
 function saveMember(memberId) {
@@ -1345,11 +1547,16 @@ function saveMember(memberId) {
     row.cells[4].classList.add('due-cell');
     row.cells[5].innerHTML = formatLocalDuesBreakdown(duesBreakdown);
     row.cells[5].classList.add('local-due-cell');
-    row.cells[6].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-    row.cells[7].textContent = duesBreakdown.proratedMonths || 0;
+    row.cells[6].innerHTML = formatLocalDuesWithTaxBreakdown(duesBreakdown);
+    row.cells[6].classList.add('local-due-with-tax-cell');
+    row.cells[7].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+    row.cells[7].classList.add('active-member-cell');
+    row.cells[8].textContent = duesBreakdown.proratedMonths || 0;
+    row.cells[8].classList.add('prorated-months-cell');
     
     finishEditing(row, memberId);
     recalculateAllDues();
+    updatePagination();
     
     // Show success feedback
     row.style.backgroundColor = '#f0f9ff';
@@ -1377,15 +1584,20 @@ function cancelEdit(memberId) {
     row.cells[4].classList.add('due-cell');
     row.cells[5].innerHTML = formatLocalDuesBreakdown(duesBreakdown);
     row.cells[5].classList.add('local-due-cell');
-    row.cells[6].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
-    row.cells[7].textContent = duesBreakdown.proratedMonths || 0;
+    row.cells[6].innerHTML = formatLocalDuesWithTaxBreakdown(duesBreakdown);
+    row.cells[6].classList.add('local-due-with-tax-cell');
+    row.cells[7].textContent = duesBreakdown.fullYear > 0 ? 'Yes' : 'No';
+    row.cells[7].classList.add('active-member-cell');
+    row.cells[8].textContent = duesBreakdown.proratedMonths || 0;
+    row.cells[8].classList.add('prorated-months-cell');
 
     finishEditing(row, memberId);
+    updatePagination();
 }
 
 function finishEditing(row, memberId) {
     row.classList.remove('editing');
-    row.cells[8].innerHTML = `
+    row.cells[9].innerHTML = `
         <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
         </button>
@@ -1393,11 +1605,25 @@ function finishEditing(row, memberId) {
              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
         </button>
     `;
-    row.querySelector('.edit-member-btn').addEventListener('click', () => editMember(memberId));
-    row.querySelector('.remove-member-btn').addEventListener('click', () => {
-        row.remove();
-        updateTotal();
-    });
+    
+    // Add event listeners after the HTML is set
+    setTimeout(() => {
+        const editBtn = row.querySelector('.edit-member-btn');
+        const removeBtn = row.querySelector('.remove-member-btn');
+        
+        if (editBtn) {
+            editBtn.addEventListener('click', () => editMember(memberId));
+        }
+        
+        if (removeBtn) {
+            removeBtn.addEventListener('click', () => {
+                row.remove();
+                updateTotal();
+                updatePagination();
+            });
+        }
+    }, 0);
+    
     document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = false);
 }
 
