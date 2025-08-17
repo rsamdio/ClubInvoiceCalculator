@@ -251,11 +251,10 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
                 const leaveMonth = leaveDate.getMonth();
                 const leaveDay = leaveDate.getDate();
                 
-                // If leave date is on 1st of month, include that month. If after 1st, end at previous month
+                // Leave date logic: The month is always included regardless of leave date
+                // This is because the member was present on the 1st of the month when the invoice was calculated
                 let effectiveLeaveMonth = leaveMonth;
-                if (leaveDay > 1) {
-                    effectiveLeaveMonth = leaveMonth - 1;
-                }
+                // No need to subtract 1 - the month is always included regardless of leave date
                 
                 // Ensure we don't go below the join month
                 effectiveLeaveMonth = Math.max(effectiveLeaveMonth, effectiveJoinMonth);
