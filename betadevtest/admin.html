@@ -7,7 +7,11 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), interest-cohort=()">
     <!-- Basic CSP for static hosting. Prefer setting headers server-side for stronger protection. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'">
     <title>Admin Dashboard | Rotaract Club Invoice Calculator</title>
     
     <!-- Optimized Resource Loading -->
@@ -22,7 +26,12 @@
     <link rel="stylesheet" href="styles.css">
     
     <!-- Optimized Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <!-- 
+    PRODUCTION WARNING: This CDN should be replaced with a local build for production.
+    For production, install Tailwind CSS as a PostCSS plugin or use the Tailwind CLI.
+    See: https://tailwindcss.com/docs/installation
+    -->
     
     <style>
         body {
@@ -617,8 +626,8 @@
                     <!-- User State (Hidden by default) - Circular Profile with Dropdown -->
                     <div id="admin-user-info" class="hidden relative">
                         <!-- Profile Circle -->
-                        <div id="profile-trigger" class="w-10 h-10 rounded-full shadow-lg border-2 border-white cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-105 flex items-center justify-center overflow-hidden">
-                            <img id="user-avatar" class="w-[90%] h-[90%] rounded-full object-cover" src="" alt="User avatar" width="36" height="36" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                        <div id="profile-trigger" class="w-12 h-12 rounded-full shadow-lg border-2 border-white cursor-pointer transition-all duration-200 hover:shadow-xl hover:scale-105 flex items-center justify-center overflow-hidden">
+                            <img id="user-avatar" class="w-[90%] h-[90%] rounded-full object-cover" src="" alt="User avatar">
                         </div>
                         
                         <!-- Dropdown Menu -->
@@ -626,7 +635,7 @@
                             <!-- User Info Section -->
                             <div class="px-4 py-3 border-b border-gray-100">
                                 <div class="flex items-center space-x-3">
-                                    <img id="dropdown-avatar" class="w-10 h-10 rounded-full border-2 border-gray-200" src="" alt="User avatar" width="40" height="40" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                                    <img id="dropdown-avatar" class="w-10 h-10 rounded-full border-2 border-gray-200" src="" alt="User avatar">
                                     <div class="flex-1 min-w-0">
                                         <p id="dropdown-name" class="text-sm font-semibold text-gray-900 truncate"></p>
                                         <p id="dropdown-email" class="text-xs text-gray-500 truncate"></p>
@@ -636,7 +645,7 @@
                             
                             <!-- Menu Items -->
                             <div class="py-1">
-                                <button id="logout-btn" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3 group">
+                                <button id="logout-button" class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3 group">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 group-hover:text-red-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                     </svg>
@@ -647,7 +656,7 @@
                     </div>
                     
                     <!-- Loading State (Hidden by default) -->
-                    <div id="loading-state" class="hidden bg-white text-gray-700 px-3 py-1.5 rounded-full shadow-lg border border-gray-200 flex items-center space-x-2">
+                    <div id="loading-state" class="hidden bg-white text-gray-700 px-3 py-2 rounded-full shadow-lg border border-gray-200 flex items-center space-x-2">
                         <div class="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
                         <span class="text-sm font-medium">Signing in...</span>
                     </div>
@@ -1025,24 +1034,62 @@
             const loginBtn = document.getElementById('login-btn');
             const logoutBtn = document.getElementById('logout-btn');
             const goHomeBtn = document.getElementById('go-home-btn');
-            const profileTrigger = document.getElementById('profile-trigger');
+            let profileTrigger = document.getElementById('profile-trigger');
             const profileDropdown = document.getElementById('profile-dropdown');
             
             // Add event listeners with cached elements
             if (loginBtn) loginBtn.addEventListener('click', handleLogin);
-            if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
+            if (logoutBtn) {
+                // Remove any existing listeners to prevent duplicates
+                const newLogoutBtn = logoutBtn.cloneNode(true);
+                logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+                newLogoutBtn.addEventListener('click', handleLogout);
+            }
+            // Also handle the logout-button ID for consistency with index.html
+            const logoutButton = document.getElementById('logout-button');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', handleLogout);
+            }
             if (goHomeBtn) goHomeBtn.addEventListener('click', goToHome);
             
             // Optimized profile dropdown functionality
             if (profileTrigger && profileDropdown) {
-                profileTrigger.addEventListener('click', () => {
-                    profileDropdown.classList.toggle('hidden');
+                // Remove any existing listeners to prevent duplicates
+                const newProfileTrigger = profileTrigger.cloneNode(true);
+                profileTrigger.parentNode.replaceChild(newProfileTrigger, profileTrigger);
+                profileTrigger = newProfileTrigger; // Update the reference
+                
+                newProfileTrigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const isHidden = profileDropdown.classList.contains('hidden');
+                    if (isHidden) {
+                        profileDropdown.classList.remove('hidden');
+                        // Add a small delay to ensure the element is visible before animating
+                        setTimeout(() => {
+                            profileDropdown.classList.remove('opacity-0');
+                            profileDropdown.classList.remove('scale-95');
+                        }, 10);
+                    } else {
+                        profileDropdown.classList.add('opacity-0');
+                        profileDropdown.classList.add('scale-95');
+                        // Add a delay before hiding to allow animation to complete
+                        setTimeout(() => {
+                            profileDropdown.classList.add('hidden');
+                        }, 200);
+                    }
                 });
                 
-                // Single event listener for outside clicks
+                // Close dropdown when clicking outside
                 document.addEventListener('click', (e) => {
-                    if (!profileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
-                        profileDropdown.classList.add('hidden');
+                    if (!newProfileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        profileDropdown.classList.add('opacity-0');
+                        profileDropdown.classList.add('scale-95');
+                        // Add a delay before hiding to allow animation to complete
+                        setTimeout(() => {
+                            profileDropdown.classList.add('hidden');
+                        }, 200);
                     }
                 });
             }
@@ -2316,13 +2363,13 @@
                 overlay.classList.remove('show');
                 overlay.style.display = 'none';
                 
-                // Cleanup all event listeners
+                                // Cleanup all event listeners
                 if (overlay.dataset.cleanup) {
                     try {
                         overlay.dataset.cleanup();
-                            } catch (e) {
-            // Silent error handling for production
-        }
+                    } catch (e) {
+                        // Silent error handling for production
+                    }
                     delete overlay.dataset.cleanup;
                 }
 
@@ -2330,9 +2377,9 @@
                 currentEventListeners.forEach(cleanup => {
                     try {
                         cleanup();
-                            } catch (e) {
-            // Silent error handling for production
-        }
+                    } catch (e) {
+                        // Silent error handling for production
+                    }
                 });
                 currentEventListeners = [];
                 
@@ -2419,6 +2466,8 @@
         } else {
             optimizePerformance();
         }
+
+
     </script>
 </body>
 </html>
