@@ -2055,10 +2055,20 @@ async function loadUserData(userId) {
                 showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
             }
         } else {
+            // Document doesn't exist - this is normal for new users
             showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
         }
     } catch (error) {
-        showErrorMessage('Failed to load your data. Please try again.');
+        // Only show error for actual network/authentication issues, not for empty data
+        console.warn('Error loading user data:', error);
+        
+        // Check if it's a permission error or network issue
+        if (error.code === 'permission-denied' || error.code === 'unavailable' || error.message.includes('network')) {
+            showErrorMessage('Failed to load your data. Please try again.');
+        } else {
+            // For other errors (like document not found), just show welcome message
+            showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
+        }
     }
 }
 
