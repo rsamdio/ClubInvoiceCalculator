@@ -1,0 +1,28 @@
+{
+  "name": "club-invoice-calculator",
+  "version": "1.0.0",
+  "description": "Rotaract Club Invoice Calculator with Firebase integration",
+  "main": "index.html",
+  "scripts": {
+    "dev": "echo 'Development server - use a local server like live-server or http-server'",
+    "build": "echo 'Build process for production optimization'",
+    "build:tailwind": "echo 'Run: npm install -g tailwindcss && npx tailwindcss -i ./src/input.css -o ./dist/output.css --watch'",
+    "optimize": "echo 'Production optimization steps:' && echo '1. Install Tailwind CSS: npm install -D tailwindcss' && echo '2. Build CSS: npx tailwindcss -i ./src/input.css -o ./dist/output.css --minify' && echo '3. Replace CDN with local CSS file'",
+    "analyze": "echo 'Performance analysis tools:' && echo '1. Lighthouse: npm install -g lighthouse' && echo '2. Bundle analyzer: npm install -g webpack-bundle-analyzer'"
+  },
+  "keywords": [
+    "rotaract",
+    "invoice",
+    "calculator",
+    "firebase",
+    "javascript"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "tailwindcss": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

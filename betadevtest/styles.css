@@ -7,6 +7,72 @@ body {
     padding: 0;
 }
 
+.member-row {
+    contain: layout style paint;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.card {
+    contain: layout style;
+    will-change: transform;
+}
+
+.btn {
+    contain: layout style;
+    will-change: transform;
+}
+
+.member-row:hover {
+    transform: translateY(-1px) translateZ(0);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover {
+    transform: translateY(-2px) translateZ(0);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.table-responsive {
+    contain: layout style;
+    will-change: scroll-position;
+}
+
+input, select, textarea {
+    contain: layout style;
+    will-change: transform;
+}
+
+.loading-spinner {
+    contain: layout style;
+    will-change: transform;
+}
+
+.modal-overlay {
+    contain: layout style;
+    will-change: opacity;
+}
+
+.modal-content {
+    contain: layout style;
+    will-change: transform;
+}
+
+.file-upload-area {
+    contain: layout style;
+    will-change: transform;
+}
+
+#pagination-controls {
+    contain: layout style;
+}
+
+.success-feedback,
+.error-feedback {
+    contain: layout style;
+    will-change: transform;
+}
+
 /* Utility Classes */
 .rotary-blue-dark { background-color: #003b8a; }
 .rotary-blue-dark-text { color: #003b8a; }

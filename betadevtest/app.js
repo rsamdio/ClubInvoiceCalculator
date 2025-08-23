@@ -59,6 +59,226 @@ const SecurityUtils = {
 // Performance optimization: Use requestIdleCallback for non-critical operations
 const requestIdleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
 
+// DOM Cache for frequently accessed elements
+const DOMCache = {
+    elements: new Map(),
+    
+    get(id) {
+        if (!this.elements.has(id)) {
+            const element = document.getElementById(id);
+            if (element) {
+                this.elements.set(id, element);
+            }
+            return element;
+        }
+        return this.elements.get(id);
+    },
+    
+    clear() {
+        this.elements.clear();
+    },
+    
+    // Pre-cache critical elements
+    initialize() {
+        const criticalElements = [
+            'member-roster-body',
+            'pagination-controls',
+            'add-member-form',
+            'file-upload-area',
+            'upload-preview',
+            'base-invoice-amount',
+            'total-invoice-amount',
+            'tax-breakdown',
+            'total-members',
+            'total-prorated-months',
+            'invoice-year-select',
+            'tax-percentage',
+            'currency-rate'
+        ];
+        
+        criticalElements.forEach(id => this.get(id));
+    }
+};
+
+// Event Delegation Manager
+const EventManager = {
+    handlers: new Map(),
+    
+    delegate(container, selector, eventType, handler) {
+        const key = `${container.id}-${eventType}`;
+        
+        if (!this.handlers.has(key)) {
+            const delegatedHandler = (e) => {
+                const target = e.target.closest(selector);
+                if (target && container.contains(target)) {
+                    handler(e, target);
+                }
+            };
+            
+            this.handlers.set(key, delegatedHandler);
+            container.addEventListener(eventType, delegatedHandler);
+        }
+    },
+    
+    removeDelegation(container, eventType) {
+        const key = `${container.id}-${eventType}`;
+        const handler = this.handlers.get(key);
+        if (handler) {
+            container.removeEventListener(eventType, handler);
+            this.handlers.delete(key);
+        }
+    },
+    
+    cleanup() {
+        this.handlers.clear();
+    }
+};
+
+// Performance Monitor
+const PerformanceMonitor = {
+    metrics: new Map(),
+    
+    startTimer(name) {
+        this.metrics.set(name, performance.now());
+    },
+    
+    endTimer(name) {
+        const startTime = this.metrics.get(name);
+        if (startTime) {
+            const duration = performance.now() - startTime;
+            this.metrics.delete(name);
+            
+
+            
+            return duration;
+        }
+        return 0;
+    },
+    
+    trackUserInteraction(action, duration) {
+        if (window.gtag) {
+            gtag('event', 'user_interaction', {
+                action,
+                duration: Math.round(duration),
+                timestamp: Date.now()
+            });
+        }
+        
+        FirebaseAnalyticsChecker.logEvent('user_interaction', {
+            action,
+            duration: Math.round(duration)
+        });
+    }
+};
+
+// Error Handler with Retry Mechanism
+const ErrorHandler = {
+    async withRetry(fn, maxRetries = 3, delay = 1000) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await fn();
+            } catch (error) {
+                if (i === maxRetries - 1) {
+                    throw error;
+                }
+                
+                // Exponential backoff
+                const backoffDelay = delay * Math.pow(2, i);
+                await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                
+
+            }
+        }
+    },
+    
+    handleError(error, context = 'unknown') {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.error(`Error in ${context}:`, error);
+        }
+        
+        if (window.gtag) {
+            gtag('event', 'exception', {
+                description: error.message,
+                fatal: false,
+                context: context
+            });
+        }
+        
+        FirebaseAnalyticsChecker.logEvent('exception', {
+            description: error.message,
+            fatal: false,
+            context: context
+        });
+        
+        const errorMessage = this.getUserFriendlyMessage(error, context);
+        showErrorMessage(errorMessage);
+    },
+    
+    getUserFriendlyMessage(error, context) {
+        const errorMessages = {
+            'network': 'Network connection issue. Please check your internet connection and try again.',
+            'firebase': 'Authentication service temporarily unavailable. Please try again in a moment.',
+            'validation': 'Please check your input and try again.',
+            'file': 'File processing error. Please ensure your file is in the correct format.',
+            'pdf': 'PDF generation failed. Please try again.',
+            'default': 'An unexpected error occurred. Please refresh the page and try again.'
+        };
+        
+        return errorMessages[context] || errorMessages.default;
+    }
+};
+
+// Circuit Breaker Pattern for External Services
+const CircuitBreaker = {
+    failures: new Map(),
+    thresholds: new Map(),
+    
+    async execute(serviceName, fn, failureThreshold = 5, timeout = 30000) {
+        const key = serviceName;
+        
+        // Check if circuit is open
+        if (this.isOpen(key)) {
+            throw new Error(`${serviceName} service is temporarily unavailable`);
+        }
+        
+        try {
+            // Execute with timeout
+            const result = await Promise.race([
+                fn(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), timeout)
+                )
+            ]);
+            
+            // Reset failure count on success
+            this.failures.set(key, 0);
+            return result;
+            
+        } catch (error) {
+            // Increment failure count
+            const currentFailures = this.failures.get(key) || 0;
+            this.failures.set(key, currentFailures + 1);
+            
+            // Open circuit if threshold exceeded
+            if (currentFailures + 1 >= failureThreshold) {
+                this.thresholds.set(key, Date.now() + 60000); // 1 minute timeout
+            }
+            
+            throw error;
+        }
+    },
+    
+    isOpen(key) {
+        const threshold = this.thresholds.get(key);
+        return threshold && Date.now() < threshold;
+    },
+    
+    reset(key) {
+        this.failures.delete(key);
+        this.thresholds.delete(key);
+    }
+};
+
 // Global variables
 let parsedMembers = [];
 let lastSelectedClubBase = '';
@@ -383,6 +603,8 @@ function formatLocalDuesWithTaxBreakdown(duesBreakdown) {
 
 // UI update functions
 function updateTotal() {
+    PerformanceMonitor.startTimer('updateTotal');
+    
     requestIdleCallback(() => {
         let baseTotal = 0;
         let totalFullYear = 0;
@@ -390,8 +612,9 @@ function updateTotal() {
         let totalMembersWithFullYear = 0;
         let totalProratedMonths = 0;
         
-        const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
-        const memberRows = document.getElementById('member-roster-body').querySelectorAll('tr');
+        const selectedYear = parseInt(DOMCache.get('invoice-year-select')?.value || new Date().getFullYear() + 1, 10);
+        const memberRosterBody = DOMCache.get('member-roster-body');
+        const memberRows = memberRosterBody ? memberRosterBody.querySelectorAll('tr') : [];
         
         memberRows.forEach(row => {
             const joinDate = row.dataset.joinDate;
@@ -418,13 +641,13 @@ function updateTotal() {
         const taxAmount = taxOnAnnualDues + taxOnProratedDues;
         const totalWithTax = Math.round((baseTotal + taxAmount) * 100) / 100;
         
-        // Update display elements
-        const baseInvoiceAmountEl = document.getElementById('base-invoice-amount');
-        const totalInvoiceAmountEl = document.getElementById('total-invoice-amount');
-        const taxBreakdownEl = document.getElementById('tax-breakdown');
+        // Update display elements using DOM cache
+        const baseInvoiceAmountEl = DOMCache.get('base-invoice-amount');
+        const totalInvoiceAmountEl = DOMCache.get('total-invoice-amount');
+        const taxBreakdownEl = DOMCache.get('tax-breakdown');
         const duesBreakdownEl = document.getElementById('dues-breakdown');
-        const totalMembersEl = document.getElementById('total-members');
-        const totalProratedMonthsEl = document.getElementById('total-prorated-months');
+        const totalMembersEl = DOMCache.get('total-members');
+        const totalProratedMonthsEl = DOMCache.get('total-prorated-months');
         
         if (baseInvoiceAmountEl) baseInvoiceAmountEl.textContent = `$${baseTotal.toFixed(2)}`;
         if (totalInvoiceAmountEl) totalInvoiceAmountEl.textContent = `$${totalWithTax.toFixed(2)}`;
@@ -440,7 +663,7 @@ function updateTotal() {
         if (totalProratedMonthsEl) totalProratedMonthsEl.textContent = totalProratedMonths;
         
         // Update local currency amounts with proper rounding
-        const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+        const currencyRate = parseFloat(DOMCache.get('currency-rate')?.value) || 87;
         const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
         const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
         const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
@@ -451,7 +674,7 @@ function updateTotal() {
         const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
         const totalLocalAmount = baseLocalAmount + taxLocalAmount;
         
-        // Update local currency display elements
+        // Update local currency display elements using DOM cache where possible
         const baseInvoiceAmountLocalEl = document.getElementById('base-invoice-amount-local');
         const totalInvoiceAmountLocalEl = document.getElementById('total-invoice-amount-local');
         const taxBreakdownLocalEl = document.getElementById('tax-breakdown-local');
@@ -489,6 +712,10 @@ function updateTotal() {
         } else {
             emptyState.classList.add('hidden');
         }
+        
+        // End performance monitoring
+        const duration = PerformanceMonitor.endTimer('updateTotal');
+        PerformanceMonitor.trackUserInteraction('update_total', duration);
     });
 }
 
@@ -563,6 +790,8 @@ function recalculateAllDues() {
 
 // Member management functions
 function addMember(e) {
+    PerformanceMonitor.startTimer('addMember');
+    
     if (!formValidator.validateAll()) {
         if (formValidator.errors.size > 1) {
             showErrorMessage(`Please fix ${formValidator.errors.size} validation errors before submitting.`);
@@ -570,11 +799,11 @@ function addMember(e) {
         return;
     }
     
-    const memberNameInput = document.getElementById('member-name');
-    const memberTypeInput = document.getElementById('member-type');
-    const joinDateInput = document.getElementById('join-date');
-    const leaveDateInput = document.getElementById('leave-date');
-    const memberRosterBody = document.getElementById('member-roster-body');
+    const memberNameInput = DOMCache.get('member-name') || document.getElementById('member-name');
+    const memberTypeInput = DOMCache.get('member-type') || document.getElementById('member-type');
+    const joinDateInput = DOMCache.get('join-date') || document.getElementById('join-date');
+    const leaveDateInput = DOMCache.get('leave-date') || document.getElementById('leave-date');
+    const memberRosterBody = DOMCache.get('member-roster-body');
     
     const name = memberNameInput.value.trim();
     const clubBase = memberTypeInput.value;
@@ -619,25 +848,8 @@ function addMember(e) {
     window.allMemberRows.push(row); // Add the row to the allMemberRows array
     allMemberRows = window.allMemberRows;
 
-    // Add event listeners after the row is appended
-    setTimeout(() => {
-        const editBtn = row.querySelector('.edit-member-btn');
-        const removeBtn = row.querySelector('.remove-member-btn');
-        
-        if (editBtn) {
-            editBtn.addEventListener('click', () => editMember(memberId));
-        }
-        
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                row.remove();
-                updateTotal();
-                updatePagination();
-                
-                // Note: Auto-save removed. Use "Save to Cloud" button to save data.
-            });
-        }
-    }, 0);
+    // Use event delegation instead of individual event listeners
+    // Event listeners are now handled by the EventManager.delegate() in initializeApp()
     
     lastSelectedClubBase = clubBase;
     lastSelectedJoinDate = joinDate;
@@ -658,6 +870,10 @@ function addMember(e) {
     if (window.isAuthenticated && window.currentUser) {
         logUserActivity(window.currentUser.uid, 'add_member');
     }
+    
+    // End performance monitoring
+    const duration = PerformanceMonitor.endTimer('addMember');
+    PerformanceMonitor.trackUserInteraction('add_member', duration);
     
     // Note: Auto-save removed. Use "Save to Cloud" button to save data.
 }
@@ -766,6 +982,11 @@ function showFileUploadError(message) {
 
 // Initialize application
 function initializeApp() {
+    PerformanceMonitor.startTimer('initializeApp');
+    
+    // Initialize DOM cache
+    DOMCache.initialize();
+    
     // Hide loading overlay
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay) {
@@ -779,17 +1000,17 @@ function initializeApp() {
     const dd = String(today.getDate()).padStart(2, '0');
     const todayFormatted = `${yyyy}-${mm}-${dd}`;
     
-    const joinDateInput = document.getElementById('join-date');
+    const joinDateInput = DOMCache.get('join-date') || document.getElementById('join-date');
     const currentYearSpan = document.getElementById('current-year');
     
     if (joinDateInput) joinDateInput.value = todayFormatted;
     if (currentYearSpan) currentYearSpan.textContent = yyyy;
     
     // Initialize form validation
-    const memberNameInput = document.getElementById('member-name');
-    const memberTypeInput = document.getElementById('member-type');
-    const joinDateInput2 = document.getElementById('join-date');
-    const leaveDateInput = document.getElementById('leave-date');
+    const memberNameInput = DOMCache.get('member-name') || document.getElementById('member-name');
+    const memberTypeInput = DOMCache.get('member-type') || document.getElementById('member-type');
+    const joinDateInput2 = DOMCache.get('join-date') || document.getElementById('join-date');
+    const leaveDateInput = DOMCache.get('leave-date') || document.getElementById('leave-date');
     
     [memberNameInput, memberTypeInput, joinDateInput2, leaveDateInput].forEach(input => {
         if (input) {
@@ -810,8 +1031,8 @@ function initializeApp() {
     updatePagination();
     
     // Add event listeners for calculation triggers
-    const taxPercentageInput = document.getElementById('tax-percentage');
-    const currencyRateInput = document.getElementById('currency-rate');
+    const taxPercentageInput = DOMCache.get('tax-percentage');
+    const currencyRateInput = DOMCache.get('currency-rate');
     
     if (taxPercentageInput) {
         taxPercentageInput.addEventListener('input', debouncedUpdateTotal);
@@ -830,12 +1051,53 @@ function initializeApp() {
     // initializeFirebaseAuth();
     setupManualSave();
     
+    // Setup event delegation for member roster
+    const memberRosterBody = DOMCache.get('member-roster-body');
+    if (memberRosterBody) {
+        EventManager.delegate(memberRosterBody, '.edit-member-btn', 'click', (e, target) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const row = target.closest('tr');
+            if (row) {
+                editMember(row.id);
+            }
+        });
+        
+        EventManager.delegate(memberRosterBody, '.remove-member-btn', 'click', (e, target) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const row = target.closest('tr');
+            if (row) {
+                // Log member delete activity if authenticated
+                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                    window.appFunctions.logUserActivity(window.currentUser.uid, 'delete_member');
+                }
+                
+                // Remove from DOM
+                row.remove();
+                // Remove from allMemberRows array
+                const index = window.allMemberRows.indexOf(row);
+                if (index > -1) {
+                    window.allMemberRows.splice(index, 1);
+                    allMemberRows = window.allMemberRows;
+                }
+                updateTotal();
+                updatePagination();
+                
+                // Note: Auto-save removed. Use "Save to Cloud" button to save data.
+            }
+        });
+    }
+    
     // Add keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             const activeElement = document.activeElement;
             if (activeElement && activeElement.closest('#add-member-form')) {
-                document.getElementById('add-member-form').dispatchEvent(new Event('submit'));
+                const addMemberForm = DOMCache.get('add-member-form');
+                if (addMemberForm) {
+                    addMemberForm.dispatchEvent(new Event('submit'));
+                }
             }
         }
         
@@ -850,6 +1112,8 @@ function initializeApp() {
     // Performance optimization: Preload critical resources
     requestIdleCallback(() => {
         // Application loaded successfully
+        const duration = PerformanceMonitor.endTimer('initializeApp');
+        PerformanceMonitor.trackUserInteraction('app_initialized', duration);
     });
 }
 
@@ -1106,10 +1370,15 @@ function handleFileUpload(file) {
 }
 
 function addBulkMembers() {
+    PerformanceMonitor.startTimer('addBulkMembers');
+    
     if (!window.parsedMembers || window.parsedMembers.length === 0) return;
 
-    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
-    const memberRosterBody = document.getElementById('member-roster-body');
+    const selectedYear = parseInt(DOMCache.get('invoice-year-select')?.value || new Date().getFullYear() + 1, 10);
+    const memberRosterBody = DOMCache.get('member-roster-body');
+    
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
     
     window.parsedMembers.forEach(member => {
         const duesBreakdown = calculateIndividualDue(member.joinDate, member.clubBase, selectedYear, member.leaveDate);
@@ -1151,30 +1420,13 @@ function addBulkMembers() {
             </td>
         `;
         
-        memberRosterBody.appendChild(row);
+        fragment.appendChild(row);
         window.allMemberRows.push(row); // Add this line
         allMemberRows = window.allMemberRows;
-
-        // Add event listeners after the row is appended
-        setTimeout(() => {
-            const editBtn = row.querySelector('.edit-member-btn');
-            const removeBtn = row.querySelector('.remove-member-btn');
-            
-            if (editBtn) {
-                editBtn.addEventListener('click', () => editMember(memberId));
-            }
-            
-                            if (removeBtn) {
-                    removeBtn.addEventListener('click', () => {
-                        row.remove();
-                        updateTotal();
-                        updatePagination();
-                        
-                        // Note: Auto-save removed. Use "Save to Cloud" button to save data.
-                    });
-                }
-        }, 0);
     });
+    
+    // Append all rows at once using DocumentFragment
+    memberRosterBody.appendChild(fragment);
 
     updateTotal();
     updatePagination();
@@ -1183,6 +1435,10 @@ function addBulkMembers() {
     if (window.isAuthenticated && window.currentUser) {
         logUserActivity(window.currentUser.uid, 'bulk_upload');
     }
+    
+    // End performance monitoring
+    const duration = PerformanceMonitor.endTimer('addBulkMembers');
+    PerformanceMonitor.trackUserInteraction('bulk_upload', duration);
     
     // Note: Auto-save removed. Use "Save to Cloud" button to save data.
     
@@ -1801,7 +2057,7 @@ function updateLoginUI(user) {
         userState.classList.remove('hidden');
         
         // Update user info in both profile circle and dropdown
-        const avatarSrc = user.photoURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDEyQzE0LjIwOTEgMTIgMTYgMTAuMjA5MSAxNiA4QzE2IDUuNzkwODYgMTQuMjA5MSA0IDEyIDRDOS43OTA4NiA0IDggNS43OTA4NiA4IDhDOCAxMC4yMDkxIDkuNzkwODYgMTIgMTIgMTJaIiBmaWxsPSIjNkI3MjgwIi8+CjxwYXRoIGQ9Ik0xMiAxNEM5LjMzIDE0IDcgMTYuMzMgNyAxOVYyMEgxN1YxOUMxNyAxNi4zMyAxNC42NyAxNCAxMiAxNFoiIGZpbGw9IiM2QjcyODAiLz4KPC9zdmc+';
+        const avatarSrc = user.photoURL || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDEyQzE0LjIwOTEgMTIgMTYgMTAuMjA5MSAxNiA4QzE2IDUuNzkwODYgMTQuMjA5MSA0IDEyIDRDOS43OTA4NiA0IDggNS43OTA4NiA4IDhDOCAxMC4yMDkxIDkuNzkwODYgMTIgMTJaIiBmaWxsPSIjNkI3MjgwIi8+CjxwYXRoIGQ9Ik0xMiAxNEM5LjMzIDE0IDcgMTYuMzMgNyAxOVYyMEgxN1YxOUMxNyAxNi4zMyAxNC42NyAxNCAxMiAxNFoiIGZpbGw9IiM2QjcyODAiLz4KPC9zdmc+';
         
         if (userAvatar) userAvatar.src = avatarSrc;
         if (dropdownAvatar) dropdownAvatar.src = avatarSrc;
@@ -1854,31 +2110,30 @@ async function logUserActivity(userId, activityType) {
     }
 
     try {
-        // Get current user data
-        const user = window.currentUser;
-        const currentTime = new Date().toISOString();
-        
-        // Log to Firebase Analytics instead of Firestore
-        if (window.firebaseAnalytics && window.firebaseLogEvent) {
-            await window.firebaseLogEvent(window.firebaseAnalytics, 'user_activity', {
+        await CircuitBreaker.execute('firebase', async () => {
+            // Get current user data
+            const user = window.currentUser;
+            const currentTime = new Date().toISOString();
+            
+            FirebaseAnalyticsChecker.logEvent('user_activity', {
                 user_id: userId,
                 activity_type: activityType,
-                timestamp: currentTime,
                 session_id: generateSessionId()
             });
-        }
 
-        // Still update the user's main document with latest login info (this is important for user management)
-        const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userId);
-        await window.firebaseSetDoc(userDocRef, {
-            displayName: user.displayName || 'Unknown',
-            email: user.email || 'No email',
-            lastLogin: user.metadata?.lastSignInTime || currentTime,
-            lastUpdated: currentTime
-        }, { merge: true });
+            // Update user's main document with latest login info
+            const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userId);
+            await window.firebaseSetDoc(userDocRef, {
+                displayName: user.displayName || 'Unknown',
+                email: user.email || 'No email',
+                lastLogin: user.metadata?.lastSignInTime || currentTime,
+                lastUpdated: currentTime
+            }, { merge: true });
+        });
 
     } catch (error) {
-        // Silently fail for logging - don't interrupt user experience
+        // Handle error gracefully - don't interrupt user experience
+        ErrorHandler.handleError(error, 'firebase');
     }
 }
 
@@ -1928,7 +2183,7 @@ async function logInvoiceSummary(userId, invoiceSummary) {
         await window.firebaseAddDoc(summariesRef, summaryDoc);
 
     } catch (error) {
-        // Silently fail for logging
+        ErrorHandler.handleError(error, 'firebase');
     }
 }
 
@@ -1957,23 +2212,19 @@ async function saveUserBasicInfo(user) {
         await window.firebaseSetDoc(userDocRef, userBasicInfo, { merge: true });
 
     } catch (error) {
-        // Silent error handling for production
+        ErrorHandler.handleError(error, 'firebase');
     }
 }
 
 async function saveUserData(userId, data) {
     if (!window.isAuthenticated || !userId) {
-        // User not authenticated, data not saved
         return;
     }
 
-    // Validate data before saving
     if (!data || typeof data !== 'object') {
-        // Invalid data structure
         return;
     }
 
-    // Clean and validate member roster
     const cleanMemberRoster = [];
     if (data.memberRoster && Array.isArray(data.memberRoster)) {
         data.memberRoster.forEach(member => {
@@ -1989,29 +2240,24 @@ async function saveUserData(userId, data) {
         });
     }
 
-    // Clean and validate settings
     const cleanSettings = {
         taxPercentage: data.settings && typeof data.settings.taxPercentage === 'number' ? data.settings.taxPercentage : 18,
         currencyRate: data.settings && typeof data.settings.currencyRate === 'number' ? data.settings.currencyRate : 87,
         invoiceYear: data.settings && data.settings.invoiceYear ? String(data.settings.invoiceYear) : new Date().getFullYear().toString()
     };
 
-    // Get current user data for logging
     const user = window.currentUser;
     const currentTime = new Date().toISOString();
     
     const cleanData = {
-        // User information
         displayName: user?.displayName || 'Unknown',
         email: user?.email || 'No email',
         lastLogin: user?.metadata?.lastSignInTime || currentTime,
         lastUpdated: currentTime,
-        // Application data
         memberRoster: cleanMemberRoster,
         settings: cleanSettings
     };
 
-    // Log user activity
     await logUserActivity(userId, 'data_save');
 
     try {
@@ -2020,7 +2266,6 @@ async function saveUserData(userId, data) {
         
 
     } catch (error) {
-        // Error saving data
         showErrorMessage('Failed to save data. Please try again.');
     }
 }
@@ -2059,14 +2304,11 @@ async function loadUserData(userId) {
             showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
         }
     } catch (error) {
-        // Only show error for actual network/authentication issues, not for empty data
-        console.warn('Error loading user data:', error);
+        ErrorHandler.handleError(error, 'firebase');
         
-        // Check if it's a permission error or network issue
         if (error.code === 'permission-denied' || error.code === 'unavailable' || error.message.includes('network')) {
             showErrorMessage('Failed to load your data. Please try again.');
         } else {
-            // For other errors (like document not found), just show welcome message
             showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
         }
     }
@@ -2639,6 +2881,77 @@ function handleLoginToSave() {
     }
 }
 
+// Cleanup function to prevent memory leaks
+function cleanup() {
+    // Clear DOM cache
+    DOMCache.clear();
+    
+    // Cleanup event delegation
+    EventManager.cleanup();
+    
+    // Clear performance metrics
+    PerformanceMonitor.metrics.clear();
+    
+    // Reset circuit breaker
+    CircuitBreaker.failures.clear();
+    CircuitBreaker.thresholds.clear();
+    
+    // Clear global arrays
+    window.allMemberRows = [];
+    allMemberRows = [];
+    parsedMembers = [];
+    
+    // Clear timeouts
+    if (currentErrorTimeout) {
+        clearTimeout(currentErrorTimeout);
+        currentErrorTimeout = null;
+    }
+}
+
+
+
+// Firebase Analytics Status Checker
+const FirebaseAnalyticsChecker = {
+    isAvailable() {
+        return !!(window.firebaseAnalytics && window.firebaseLogEvent);
+    },
+    
+    async testConnection() {
+        if (!this.isAvailable()) {
+            return { available: false, reason: 'Firebase Analytics not initialized' };
+        }
+        
+        try {
+            await window.firebaseLogEvent(window.firebaseAnalytics, 'test_connection', {
+                timestamp: Date.now()
+            });
+            return { available: true };
+        } catch (error) {
+            return { 
+                available: false, 
+                reason: error.message,
+                error: error
+            };
+        }
+    },
+    
+    logEvent(eventName, parameters = {}) {
+        if (!this.isAvailable()) {
+            return false;
+        }
+        
+        try {
+            window.firebaseLogEvent(window.firebaseAnalytics, eventName, {
+                ...parameters,
+                timestamp: Date.now()
+            });
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+};
+
 // Update the exported functions
 window.appFunctions = {
     addMember,
@@ -2683,5 +2996,10 @@ window.appFunctions = {
     setupManualSave,
     handleManualSave,
     updateSaveButtonState,
-    handleLoginToSave
+    handleLoginToSave,
+    cleanup,
+    PerformanceMonitor,
+    ErrorHandler,
+    CircuitBreaker,
+    FirebaseAnalyticsChecker
 }; 
