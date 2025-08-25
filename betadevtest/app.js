@@ -1117,6 +1117,33 @@ function initializeApp() {
     });
 }
 
+// Prefer shared modules if present (behavior-preserving overrides)
+try {
+	if (window.DuesCalculator && typeof window.DuesCalculator.calculateIndividualDue === 'function') {
+		calculateIndividualDue = window.DuesCalculator.calculateIndividualDue;
+	}
+	if (window.DuesFormatter) {
+		if (typeof window.DuesFormatter.formatUSD === 'function') {
+			formatDuesBreakdown = window.DuesFormatter.formatUSD;
+		}
+		if (typeof window.DuesFormatter.formatLocal === 'function') {
+			formatLocalDuesBreakdown = function(duesBreakdown) {
+				const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+				return window.DuesFormatter.formatLocal(duesBreakdown, currencyRate);
+			};
+		}
+		if (typeof window.DuesFormatter.formatLocalWithTax === 'function') {
+			formatLocalDuesWithTaxBreakdown = function(duesBreakdown) {
+				const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+				const taxPercentage = parseFloat(document.getElementById('tax-percentage')?.value) || 0;
+				return window.DuesFormatter.formatLocalWithTax(duesBreakdown, currencyRate, taxPercentage);
+			};
+		}
+	}
+} catch (e) {
+	// Safe no-op if overrides fail
+}
+
 // Export functions for use in HTML
 window.appFunctions = {
     addMember,
