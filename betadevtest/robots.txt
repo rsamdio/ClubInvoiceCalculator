@@ -1,9 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /betadevtest
-
-# Sitemap location
-Sitemap: https://dues.rsamdio.org/sitemap.xml
-
-# Crawl delay (optional)
-Crawl-delay: 1
