@@ -11,7 +11,7 @@
     
     <title>Rotaract Club Invoice Calculator | Rotaract South Asia MDIO</title>
 
-	    <meta name="description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
+    <meta name="description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
     <meta name="author" content="ZeoSpec">
 
     <link rel="canonical" href="https://dues.rsamdio.org/"> 
@@ -32,11 +32,22 @@
     <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
     <link rel="icon" href="favicon.png" type="image/x-icon">
 
-    <!-- Critical fonts -->
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"></noscript>
+    <!-- Resource Preloading for Critical Resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" as="style">
+    <link rel="preload" href="styles.css" as="style">
+    <link rel="preload" href="app.js" as="script">
+    <link rel="preload" href="pdf-worker.js" as="script">
     
-    <!-- Tailwind CSS -->
+    <!-- DNS Prefetch for External Resources -->
+    <link rel="dns-prefetch" href="//cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="//www.googletagmanager.com">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    
+    <!-- Critical fonts with optimized loading -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    
+    <!-- Tailwind CSS with fallback -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Critical CSS for Coming Soon page - Above the fold only -->
@@ -99,8 +110,6 @@
             margin: 0;
             border: none;
         }
-
-
 
         /* Typography */
         .hero-title {
@@ -169,8 +178,6 @@
                 height: 50px;
             }
         }
-
-
 
         /* Cards */
         .modern-card {
@@ -300,8 +307,6 @@
             margin: 0 auto var(--space-4);
         }
 
-
-
         /* Accessibility */
         .sr-only {
             position: absolute;
@@ -325,15 +330,12 @@
         }
     </style>
 
-
-
-    <!-- Google tag (gtag.js) -->
+    <!-- Google tag (gtag.js) with async loading -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-4371E35K36"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-4371E35K36');
     </script>
     
@@ -406,12 +408,12 @@
         <section class="section-container section-features" id="features">
             <div class="container mx-auto">
                 <div class="text-center mb-20">
-                                            <h2 class="section-title">
-                            What's Coming
-                        </h2>
-                        <p class="section-subtitle">
-                            Discover the revolutionary features that will transform how Rotaract clubs manage their administrative tasks
-                        </p>
+                    <h2 class="section-title">
+                        What's Coming
+                    </h2>
+                    <p class="section-subtitle">
+                        Discover the revolutionary features that will transform how Rotaract clubs manage their administrative tasks
+                    </p>
                 </div>
 
                 <div class="grid-features">
@@ -500,12 +502,12 @@
         <section class="section-container section-impact" id="impact">
             <div class="container mx-auto">
                 <div class="text-center mb-20">
-                                            <h2 class="section-title">
-                            Expected Impact
-                        </h2>
-                        <p class="section-subtitle">
-                            See the transformative results that await Rotaract clubs across South Asia
-                        </p>
+                    <h2 class="section-title">
+                        Expected Impact
+                    </h2>
+                    <p class="section-subtitle">
+                        See the transformative results that await Rotaract clubs across South Asia
+                    </p>
                 </div>
 
                 <div class="grid-impact">
@@ -546,21 +548,26 @@
 
     </main>
 
-        <!-- Optimized JavaScript -->
+    <!-- Optimized JavaScript with lazy loading -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Simple intersection observer for loading animations
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('loaded');
-                    }
-                });
-            }, { threshold: 0.1 });
+        // Performance optimization: Use requestIdleCallback for non-critical operations
+        const requestIdleCallback = window.requestIdleCallback || ((cb) => setTimeout(cb, 1));
+        
+        // Intersection Observer for lazy loading animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('loaded');
+                }
+            });
+        }, { threshold: 0.1 });
 
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Observe loading elements
             document.querySelectorAll('.loading').forEach(el => observer.observe(el));
 
-            // Progress bar with shimmer effect
+            // Progress bar animation with performance optimization
             function animateProgressBar() {
                 const progressBar = document.querySelector('.progress-bar');
                 if (!progressBar) return;
@@ -568,19 +575,18 @@
                 let currentPercentage = 0;
                 const targetPercentage = 85;
                 
-                // Animate to 85% then stay there with shimmer effect
-                const interval = setInterval(() => {
+                const animate = () => {
                     if (currentPercentage < targetPercentage) {
                         currentPercentage += 3;
                         progressBar.style.width = currentPercentage + '%';
-                    } else {
-                        clearInterval(interval);
-                        // Progress bar stays at 85% with continuous shimmer effect
+                        requestAnimationFrame(animate);
                     }
-                }, 50);
+                };
+                
+                requestAnimationFrame(animate);
             }
 
-            // Start progress bar animation
+            // Start progress bar animation after a short delay
             setTimeout(animateProgressBar, 500);
         });
     </script>
