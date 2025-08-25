@@ -1,10 +1,62 @@
-// PDF Generation Web Worker
-// This worker handles PDF generation to prevent blocking the main thread
+// ============================================================================
+// PDF GENERATION WEB WORKER - PERFORMANCE OPTIMIZED VERSION
+// ============================================================================
 
+// Import required libraries with error handling
 self.importScripts(
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
     'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js'
 );
+
+// Performance monitoring for the worker
+const WorkerPerformanceMonitor = {
+    startTime: null,
+    
+    start() {
+        this.startTime = performance.now();
+    },
+    
+    end(operation) {
+        if (this.startTime) {
+            const duration = performance.now() - this.startTime;
+            self.postMessage({
+                type: 'performance',
+                operation,
+                duration: Math.round(duration)
+            });
+            this.startTime = null;
+        }
+    }
+};
+
+// Memory management for large datasets
+const MemoryManager = {
+    chunkSize: 50, // Process data in chunks to prevent memory issues
+    
+    processInChunks(data, processor) {
+        return new Promise((resolve) => {
+            const results = [];
+            let index = 0;
+            
+            const processChunk = () => {
+                const chunk = data.slice(index, index + this.chunkSize);
+                const chunkResults = processor(chunk, index);
+                results.push(...chunkResults);
+                
+                index += this.chunkSize;
+                
+                if (index < data.length) {
+                    // Use setTimeout to prevent blocking
+                    setTimeout(processChunk, 0);
+                } else {
+                    resolve(results);
+                }
+            };
+            
+            processChunk();
+        });
+    }
+};
 
 // Listen for messages from the main thread
 self.addEventListener('message', function(e) {
@@ -14,12 +66,18 @@ self.addEventListener('message', function(e) {
         case 'generatePDF':
             generatePDF(data);
             break;
+        case 'testConnection':
+            self.postMessage({ type: 'connectionTest', success: true });
+            break;
         default:
             self.postMessage({ type: 'error', error: 'Unknown message type' });
     }
 });
 
-function generatePDF(data) {
+// Optimized PDF generation function
+async function generatePDF(data) {
+    WorkerPerformanceMonitor.start();
+    
     try {
         const { 
             memberData, 
@@ -31,16 +89,27 @@ function generatePDF(data) {
             totalProratedMonths 
         } = data;
         
-        // Create PDF document
+        // Validate required data
+        if (!memberData || !summaryData || !invoiceYear) {
+            throw new Error('Missing required data for PDF generation');
+        }
+        
+        // Create PDF document with optimized settings
         const { jsPDF } = self.jspdf;
-        const doc = new jsPDF();
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+            compress: true // Enable compression for smaller file size
+        });
         
         // Set document properties
         doc.setProperties({
             title: `Rotaract Club Invoice Estimate - January ${invoiceYear}`,
             subject: 'Invoice Calculation Report',
             author: 'Rotaract South Asia MDIO',
-            creator: 'Rotaract Club Invoice Calculator'
+            creator: 'Rotaract Club Invoice Calculator',
+            creationDate: new Date()
         });
 
         let yPosition = 25;
@@ -50,7 +119,7 @@ function generatePDF(data) {
         const contentWidth = pageWidth - (2 * margin);
         let currentPage = 1;
 
-        // Add main title
+        // Add main title with optimized font loading
         doc.setFontSize(25);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(25, 118, 210);
@@ -78,7 +147,7 @@ function generatePDF(data) {
         
         yPosition += 30;
         
-        // Date and Year
+        // Date and Year information
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(75, 85, 99);
@@ -95,356 +164,224 @@ function generatePDF(data) {
         
         yPosition += 12;
 
-        // Invoice Summary Section
+        // Invoice Summary Section with optimized layout
         doc.setFillColor(59, 130, 246);
-        doc.rect(margin - 5, yPosition - 5, contentWidth + 10, 15, 'F');
-        
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 255, 255);
-        doc.text('Invoice Summary', pageWidth / 2, yPosition + 5, { align: 'center' });
-        
-        yPosition += 20;
-        
-        // Summary table with 3 columns
-        const summaryTableData = [
-            ['(a) Base RI Dues', 
-             `$${summaryData.baseAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${summaryData.baseLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            [`  (a1) Active Member Dues (Jan - Dec ${invoiceYear})`, 
-             `$${summaryData.totalFullYearAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${summaryData.fullYearLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['  (a2) Prorated Dues', 
-             `$${summaryData.totalProratedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${summaryData.proratedLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            [`(b) Tax (${taxPercentage}%)`, 
-             `$${summaryData.taxAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${summaryData.taxLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            [`  (b1) Tax on Active Member Dues (Jan - Dec ${invoiceYear})`, 
-             `$${(Math.round((summaryData.totalFullYearAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${(Math.round((summaryData.fullYearLocalAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['  (b2) Tax on Prorated Dues', 
-             `$${(Math.round((summaryData.totalProratedAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${(Math.round((summaryData.proratedLocalAmount * taxPercentage) / 100 * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['(c) Total with Tax', 
-             `$${summaryData.totalWithTax.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 
-             `${summaryData.totalLocalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`],
-            ['', '', ''],
-            ['Exchange Rate', '$1.00', `${currencyRate.toFixed(2)}`],
-            ['', '', ''],
-            ['Total Members', totalMembers, ''],
-            ['Total Prorated Months', totalProratedMonths, '']
-        ];
-
-        doc.autoTable({
-            startY: yPosition,
-            head: [['Description', 'USD Amount', 'Local Amount']],
-            body: summaryTableData,
-            theme: 'plain',
-            headStyles: {
-                textColor: [55, 65, 81],
-                fontStyle: 'bold',
-                fontSize: 11,
-                halign: 'center',
-                valign: 'middle',
-                cellPadding: 4,
-                lineColor: [200, 200, 200],
-                lineWidth: 0.1,
-                fillColor: [248, 250, 252]
-            },
-            styles: {
-                fontSize: 10,
-                cellPadding: 3,
-                textColor: [75, 85, 99],
-                lineColor: [220, 220, 220],
-                lineWidth: 0.1
-            },
-            columnStyles: {
-                0: { fontStyle: 'bold', textColor: [55, 65, 81] },
-                1: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] },
-                2: { halign: 'center', fontStyle: 'bold', textColor: [55, 65, 81] }
-            },
-            didParseCell: function(data) {
-                // Sub-items styling
-                if (data.row.raw[0] && (data.row.raw[0].includes(`(a1) Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(a2) Prorated Dues') || data.row.raw[0].includes(`(b1) Tax on Active Member Dues (Jan - Dec ${invoiceYear})`) || data.row.raw[0].includes('(b2) Tax on Prorated Dues'))) {
-                    data.cell.styles.fontSize = 10;
-                    data.cell.styles.textColor = [156, 163, 175];
-                    data.cell.styles.fontStyle = 'normal';
-                }
-                // Exchange rate row styling
-                if (data.row.raw[0] && data.row.raw[0] === 'Exchange Rate') {
-                    data.cell.styles.fillColor = [239, 246, 255];
-                    data.cell.styles.textColor = [59, 130, 246];
-                    data.cell.styles.fontStyle = 'bold';
-                    data.cell.styles.fontSize = 11;
-                }
-                // Empty rows
-                if (data.row.raw[0] === '' && data.row.raw[1] === '' && data.row.raw[2] === '') {
-                    data.cell.styles.minCellHeight = 5;
-                }
-            },
-            tableWidth: 'auto',
-            margin: { left: margin, right: margin }
-        });
-
-        yPosition = doc.lastAutoTable.finalY + 8;
-        
-        // Add legend
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(156, 163, 175);
-        doc.text('Base RI Dues (a = a1 + a2) = Active Member Dues (a1) + Prorated Dues (a2)', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 5;
-        doc.text('Tax (b = b1 + b2) = Tax on Active Member Dues (b1) + Tax on Prorated Dues (b2)', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 5;
-        doc.text('Total with Tax (c = a + b) = Base RI Dues (a) + Tax (b)', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 5;
-        doc.text(`Local currency amounts calculated using exchange rate: 1 USD = ${currencyRate} Local`, pageWidth / 2, yPosition, { align: 'center' });
-        
-        yPosition += 15;
-
-        // Member Roster Section
-        if (memberData && memberData.length > 0) {
-            doc.addPage();
-            currentPage = 2;
-        
-            // Page 2 header
-            doc.setFillColor(25, 118, 210);
-            doc.rect(0, 0, pageWidth, 30, 'F');
-            
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(255, 255, 255);
-            doc.text('Rotaract Club Invoice Calculator', pageWidth / 2, 12, { align: 'center' });
-            
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(255, 255, 255);
-            doc.text('Member Roster', pageWidth / 2, 22, { align: 'center' });
-            
-            yPosition = 40;
-
-            // Member roster table
-            try {
-                doc.autoTable({
-                    startY: yPosition,
-                    head: [['Name', 'Join Date', 'Leave Date', 'Club Base', 'Est. Base Due (USD)', 'Est. Base Due (Local)', 'Est. Total Due (Local)', 'Active Member', 'Prorated Months']],
-                    body: memberData,
-                    theme: 'plain',
-                    headStyles: {
-                        textColor: [55, 65, 81],
-                        fontStyle: 'bold',
-                        fontSize: 7,
-                        halign: 'center',
-                        valign: 'middle',
-                        lineColor: [200, 200, 200],
-                        lineWidth: 0.1,
-                        fillColor: [248, 250, 252]
-                    },
-                    columnStyles: {
-                        0: { halign: 'left', valign: 'middle', fontStyle: 'bold', textColor: [55, 65, 81], cellWidth: 25 },
-                        1: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 17 },
-                        2: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 17 },
-                        3: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 24 },
-                        4: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 34 },
-                        5: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 34 },
-                        6: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 24 },
-                        7: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 14 },
-                        8: { halign: 'center', valign: 'middle', textColor: [75, 85, 99], cellWidth: 14 }
-                    },
-                    tableWidth: pageWidth - 6,
-                    margin: { top: 40, bottom: 20, left: 3, right: 3 },
-                    pageBreak: 'auto',
-                    showFoot: 'lastPage',
-                    startY: yPosition,
-                    styles: {
-                        fontSize: 7,
-                        cellPadding: 2,
-                        textColor: [75, 85, 99],
-                        lineColor: [220, 220, 220],
-                        lineWidth: 0.1,
-                        overflow: 'linebreak',
-                        halign: 'left'
-                    },
-                    didStartPage: function(data) {
-                        if (data.pageNumber >= 3) {
-                            yPosition = 40;
-                        }
-                    },
-                    didDrawPage: function(data) {
-                        if (data.pageNumber === 2) {
-                            try {
-                                const tableX = data.table.x;
-                                const tableY = data.table.y;
-                                const columnWidth = data.table.width / 9;
-                                const estBaseDueUSDX = tableX + (columnWidth * 4);
-                                const estBaseDueLocalX = tableX + (columnWidth * 5);
-                                const totalWithTaxLocalX = tableX + (columnWidth * 6);
-                                
-                                doc.setFontSize(6);
-                                doc.setFont('helvetica', 'normal');
-                                doc.setTextColor(156, 163, 175);
-                                doc.text('(Annual + Prorated)', estBaseDueUSDX + (columnWidth / 2), tableY - 2, { align: 'center' });
-                                doc.text('(Annual + Prorated)', estBaseDueLocalX + (columnWidth / 2), tableY - 2, { align: 'center' });
-                                doc.text('(Base + Tax)', totalWithTaxLocalX + (columnWidth / 2), tableY - 2, { align: 'center' });
-                            } catch (textError) {
-                                // Could not add subtitle text
-                            }
-                        }
-                        
-                        if (data.pageNumber >= 2) {
-                            try {
-                                doc.setFillColor(25, 118, 210);
-                                doc.rect(0, 0, pageWidth, 30, 'F');
-                                
-                                doc.setFontSize(16);
-                                doc.setFont('helvetica', 'bold');
-                                doc.setTextColor(255, 255, 255);
-                                doc.text('Rotaract Club Invoice Calculator', pageWidth / 2, 12, { align: 'center' });
-                                
-                                doc.setFontSize(18);
-                                doc.setFont('helvetica', 'bold');
-                                doc.setTextColor(255, 255, 255);
-                                doc.text('Member Roster (Continued)', pageWidth / 2, 22, { align: 'center' });
-                            } catch (headerError) {
-                                // Could not add overflow page header
-                            }
-                        }
-                        
-                        currentPage = data.pageNumber + 1;
-                    },
-                    didParseCell: function(data) {
-                        if (data.row.raw[0] === 'TOTAL') {
-                            data.cell.styles.fontStyle = 'bold';
-                            data.cell.styles.fillColor = [240, 240, 240];
-                            data.cell.styles.textColor = [55, 65, 81];
-                        }
-                        
-                        // Handle multi-line formatting for "Est. Base + Tax (Local)" column
-                        if (data.column.index === 6 && data.cell.text && data.cell.text.includes('\n')) {
-                            data.cell.styles.fontSize = 6;
-                            data.cell.styles.lineHeight = 1.2;
-                        }
-                    }
-                });
-            } catch (tableError) {
-                console.error('Error generating member roster table:', tableError);
-                
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(220, 38, 127);
-                doc.text('Error: Could not generate member roster table', pageWidth / 2, yPosition + 20, { align: 'center' });
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(75, 85, 99);
-                doc.text(`Total members found: ${memberData.length - 1}`, pageWidth / 2, yPosition + 35, { align: 'center' });
-                yPosition += 50;
-            }
-        }
-
-        // Disclaimer Section
-        yPosition = doc.lastAutoTable ? doc.lastAutoTable.finalY + 25 : yPosition + 25;
-        
-        if (yPosition > pageHeight - 100) {
-            doc.addPage();
-            currentPage++;
-            
-            doc.setFillColor(25, 118, 210);
-            doc.rect(0, 0, pageWidth, 30, 'F');
-            
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(255, 255, 255);
-            doc.text('Rotaract Club Invoice Calculator', pageWidth / 2, 12, { align: 'center' });
-            
-            doc.setFontSize(18);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(255, 255, 255);
-            doc.text('Disclaimer', pageWidth / 2, 22, { align: 'center' });
-            
-            yPosition = 45;
-        }
-        
-        // Disclaimer Section
-        doc.setFillColor(239, 68, 68);
         doc.rect(margin - 5, yPosition - 5, contentWidth + 10, 15, 'F');
         
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
-        doc.text('Disclaimer', pageWidth / 2, yPosition + 5, { align: 'center' });
+        doc.text('Invoice Summary', margin, yPosition + 5);
         
         yPosition += 20;
         
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(75, 85, 99);
+        // Summary table with optimized data processing
+        const summaryTableData = await processSummaryData(summaryData, taxPercentage, currencyRate);
         
-        const disclaimerText = [
-            'This report contains indicative estimates for Rotaract Club Invoice calculations. All calculations are based on the information provided and current Rotary International dues structure. Actual figures may vary based on various factors including but not limited to:',
-            '',
-            '• Changes in Rotary International dues structure',
-            '• Currency exchange rates and fluctuations',
-            '• Timing of member additions and removals',
-            '• Outstanding dues from previous years',
-            '',
-            'Please verify all calculations with official Rotary International sources. This tool is designed to assist with preliminary estimates and should not be considered as official documentation.',
-            '',
-            'Generated by: Rotaract Club Invoice Calculator - A tool by Rotaract South Asia MDIO',
-            'Powered by: ZeoSpec (https://rtr.zeospec.com/)'
-        ];
-
-        disclaimerText.forEach(line => {
-            if (yPosition > pageHeight - 30) {
-                doc.addPage();
-                currentPage++;
-                yPosition = 20;
-            }
-            
-            if (line.trim() === '') {
-                yPosition += 8;
-            } else if (line.startsWith('•')) {
-                doc.text(line, margin + 5, yPosition);
-                yPosition += 8;
-            } else {
-                const splitText = doc.splitTextToSize(line, contentWidth);
-                splitText.forEach(textLine => {
-                    doc.text(textLine, margin, yPosition, { align: 'justify' });
-                    yPosition += 6;
-                });
-                yPosition += 2;
+        doc.autoTable({
+            startY: yPosition,
+            head: [['Description', 'Amount (USD)', 'Amount (Local)']],
+            body: summaryTableData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [59, 130, 246],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 5
+            },
+            columnStyles: {
+                0: { cellWidth: 60 },
+                1: { cellWidth: 40, halign: 'right' },
+                2: { cellWidth: 40, halign: 'right' }
             }
         });
-
-        // Enhanced footer
-        const totalPages = currentPage;
-        for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
+        
+        yPosition = doc.lastAutoTable.finalY + 15;
+        
+        // Member Details Section
+        if (memberData && memberData.length > 0) {
+            doc.setFillColor(59, 130, 246);
+            doc.rect(margin - 5, yPosition - 5, contentWidth + 10, 15, 'F');
             
-            doc.setFillColor(248, 250, 252);
-            doc.rect(0, pageHeight - 10, pageWidth, 10, 'F');
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(255, 255, 255);
+            doc.text('Member Details', margin, yPosition + 5);
             
-            doc.setFontSize(8);
-            doc.setTextColor(156, 163, 175);
-            doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+            yPosition += 20;
             
-            doc.setDrawColor(229, 231, 235);
-            doc.setLineWidth(0.5);
-            doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+            // Process member data in chunks to prevent memory issues
+            const processedMemberData = await processMemberDataInChunks(memberData, invoiceYear, taxPercentage, currencyRate);
+            
+            // Generate member table with pagination
+            await generateMemberTable(doc, processedMemberData, yPosition, margin, contentWidth);
         }
-
-        // Convert to blob and send back
+        
+        // Add footer with page numbers
+        addPageNumbers(doc, currentPage);
+        
+        // Generate PDF blob with compression
         const pdfBlob = doc.output('blob');
-        self.postMessage({ 
-            type: 'pdfGenerated', 
+        
+        // Send success response with performance metrics
+        WorkerPerformanceMonitor.end('pdfGeneration');
+        
+        self.postMessage({
+            type: 'pdfGenerated',
             blob: pdfBlob,
-            fileName: `Rotaract Club Invoice Estimate - January ${invoiceYear}.pdf`
+            fileName: `Rotaract_Invoice_Estimate_${invoiceYear}.pdf`
         });
         
     } catch (error) {
-        self.postMessage({ 
-            type: 'error', 
-            error: error.message || 'PDF generation failed' 
+        WorkerPerformanceMonitor.end('error');
+        
+        self.postMessage({
+            type: 'error',
+            error: error.message || 'PDF generation failed'
         });
     }
+}
+
+// Process summary data with optimization
+async function processSummaryData(summaryData, taxPercentage, currencyRate) {
+    return MemoryManager.processInChunks([summaryData], (chunk) => {
+        const data = chunk[0];
+        return [
+            ['Base Invoice Amount', `$${data.baseAmount.toFixed(2)}`, `${(data.baseAmount * currencyRate).toFixed(2)}`],
+            ['Tax Amount', `$${data.taxAmount.toFixed(2)}`, `${(data.taxAmount * currencyRate).toFixed(2)}`],
+            ['Total Invoice Amount', `$${data.totalAmount.toFixed(2)}`, `${(data.totalAmount * currencyRate).toFixed(2)}`],
+            ['', '', ''],
+            ['Total Members', data.totalMembers.toString(), ''],
+            ['Total Prorated Months', data.totalProratedMonths.toString(), '']
+        ];
+    });
+}
+
+// Process member data in chunks for better performance
+async function processMemberDataInChunks(memberData, invoiceYear, taxPercentage, currencyRate) {
+    return MemoryManager.processInChunks(memberData, (chunk, startIndex) => {
+        return chunk.map((member, index) => {
+            const globalIndex = startIndex + index;
+            return [
+                (globalIndex + 1).toString(),
+                member.name,
+                member.clubBase,
+                member.joinDate,
+                member.leaveDate || '-',
+                `$${member.dueAmount.toFixed(2)}`,
+                `${(member.dueAmount * currencyRate).toFixed(2)}`,
+                `${(member.dueAmount * (1 + taxPercentage / 100) * currencyRate).toFixed(2)}`,
+                member.activeMember ? 'Yes' : 'No',
+                member.proratedMonths.toString()
+            ];
+        });
+    });
+}
+
+// Generate member table with pagination
+async function generateMemberTable(doc, memberData, startY, margin, contentWidth) {
+    const itemsPerPage = 25; // Optimize for page size
+    const totalPages = Math.ceil(memberData.length / itemsPerPage);
+    
+    for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+            doc.addPage();
+        }
+        
+        const startIndex = page * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, memberData.length);
+        const pageData = memberData.slice(startIndex, endIndex);
+        
+        const tableY = page === 0 ? startY : 25;
+        
+        doc.autoTable({
+            startY: tableY,
+            head: [['#', 'Name', 'Type', 'Join Date', 'Leave Date', 'Due (USD)', 'Due (Local)', 'Due + Tax', 'Active', 'Prorated Months']],
+            body: pageData,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [59, 130, 246],
+                textColor: 255,
+                fontStyle: 'bold',
+                fontSize: 9
+            },
+            styles: {
+                fontSize: 8,
+                cellPadding: 3,
+                overflow: 'linebreak'
+            },
+            columnStyles: {
+                0: { cellWidth: 8, halign: 'center' },
+                1: { cellWidth: 25 },
+                2: { cellWidth: 20 },
+                3: { cellWidth: 20 },
+                4: { cellWidth: 20 },
+                5: { cellWidth: 18, halign: 'right' },
+                6: { cellWidth: 18, halign: 'right' },
+                7: { cellWidth: 18, halign: 'right' },
+                8: { cellWidth: 12, halign: 'center' },
+                9: { cellWidth: 15, halign: 'center' }
+            },
+            didDrawPage: function(data) {
+                // Add page number
+                const pageNumber = page + 1;
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Page ${pageNumber} of ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            }
+        });
+        
+        // Add page numbers
+        addPageNumbers(doc, page + 1);
+    }
+}
+
+// Add page numbers to document
+function addPageNumbers(doc) {
+    const pageCount = doc.internal.getNumberOfPages();
+    
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
+}
+
+// Error handling for library loading
+self.addEventListener('error', function(e) {
+    self.postMessage({
+        type: 'error',
+        error: 'Worker error: ' + e.message
+    });
+});
+
+// Handle unhandled promise rejections
+self.addEventListener('unhandledrejection', function(e) {
+    self.postMessage({
+        type: 'error',
+        error: 'Unhandled promise rejection: ' + e.reason
+    });
+});
+
+// Memory cleanup on worker termination
+self.addEventListener('beforeunload', function() {
+    // Clean up any resources
+    if (typeof MemoryManager !== 'undefined') {
+        MemoryManager.chunkSize = null;
+    }
+});
+
+// Export for testing purposes
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        generatePDF,
+        processSummaryData,
+        processMemberDataInChunks,
+        MemoryManager,
+        WorkerPerformanceMonitor
+    };
 } 
