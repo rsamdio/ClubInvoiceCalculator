@@ -23,12 +23,16 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://dues.rsamdio.org/terms.html">
     <meta property="og:site_name" content="Rotaract Club Invoice Calculator" />
-    <meta property="og:image" content="https://dues.rsamdio.org/calculatorogimg.png" />
+    <meta property="og:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="600" />
+    <meta property="og:image:height" content="400" />
     <meta property="og:description" content="Terms and Conditions for the Rotaract Club Invoice Calculator - Learn about the terms of use, limitations, and user responsibilities.">
     
     <!-- Favicon -->
-    <link rel="shortcut icon" href="favicon.png" type="image/x-icon">
-    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <link rel="icon" type="image/webp" href="converted-images/favicon.webp">
+    <link rel="icon" type="image/x-icon" href="converted-images/favicon.ico">
+    <link rel="shortcut icon" href="converted-images/favicon.ico">
 
     <!-- Preload critical resources -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
@@ -138,7 +142,11 @@
         <!-- Header -->
         <header class="text-center mb-12">
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 mb-8 border border-blue-100">
-                <img src="rsamdio.png" alt="RSAMDIO Logo" class="mx-auto h-24 mb-6 drop-shadow-lg">
+                <picture>
+                    <source srcset="converted-images/rsamdio.webp" type="image/webp">
+                    <img src="rsamdio.png" alt="RSAMDIO Logo" class="mx-auto h-24 mb-6 drop-shadow-lg" 
+                         decoding="async" fetchpriority="high">
+                </picture>
                 <h1 class="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">Terms and Conditions</h1>
                 <p class="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">Please read these terms and conditions carefully before using the Rotaract Club Invoice Calculator.</p>
             </div>
