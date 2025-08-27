@@ -105,7 +105,8 @@ const EventManager = {
     handlers: new Map(),
     
     delegate(container, selector, eventType, handler) {
-        const key = `${container.id}-${eventType}`;
+        // Include selector in key so multiple delegated handlers can coexist per event type
+        const key = `${container.id}-${eventType}-${selector}`;
         
         if (!this.handlers.has(key)) {
             const delegatedHandler = (e) => {
@@ -120,8 +121,9 @@ const EventManager = {
         }
     },
     
-    removeDelegation(container, eventType) {
-        const key = `${container.id}-${eventType}`;
+    removeDelegation(container, eventType, selector) {
+        // Match the key format used in delegate
+        const key = `${container.id}-${eventType}-${selector}`;
         const handler = this.handlers.get(key);
         if (handler) {
             container.removeEventListener(eventType, handler);
@@ -130,6 +132,15 @@ const EventManager = {
     },
     
     cleanup() {
+        this.handlers.forEach((handler, key) => {
+            try {
+                const [containerId, eventType] = key.split('-');
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.removeEventListener(eventType, handler);
+                }
+            } catch (_) { /* ignore */ }
+        });
         this.handlers.clear();
     }
 };
