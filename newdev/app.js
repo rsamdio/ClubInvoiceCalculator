@@ -451,6 +451,48 @@ function preciseDecimal(value, decimals = 2) {
     return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
+// Lazy-load external vendor scripts to reduce initial JS payload
+async function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+        try {
+            if (window.__loadedScripts && window.__loadedScripts[src]) {
+                resolve();
+                return;
+            }
+            const existing = document.querySelector(`script[data-dynamic="${src}"]`);
+            if (existing) {
+                existing.addEventListener('load', () => resolve());
+                existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.defer = true;
+            script.dataset.dynamic = src;
+            script.onload = () => {
+                window.__loadedScripts = window.__loadedScripts || {};
+                window.__loadedScripts[src] = true;
+                resolve();
+            };
+            script.onerror = () => reject(new Error(`Failed to load ${src}`));
+            document.head.appendChild(script);
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+async function ensureXLSXLoaded() {
+    if (window.XLSX) return;
+    await loadScriptOnce('./vendor/xlsx.full.min.js');
+}
+
+async function ensurePapaLoaded() {
+    if (window.Papa) return;
+    await loadScriptOnce('./vendor/papaparse.min.js');
+}
+
 // Core calculation functions
 function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr = null) {
     const joinDate = new Date(joinDateStr + 'T00:00:00');
@@ -1204,7 +1246,8 @@ function downloadCSVTemplate() {
     window.URL.revokeObjectURL(url);
 }
 
-function parseExcelFile(file) {
+async function parseExcelFile(file) {
+    await ensureXLSXLoaded();
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -1227,7 +1270,8 @@ function parseExcelFile(file) {
     });
 }
 
-function parseCSVFile(file) {
+async function parseCSVFile(file) {
+    await ensurePapaLoaded();
     return new Promise((resolve, reject) => {
         Papa.parse(file, {
             complete: function(results) {
