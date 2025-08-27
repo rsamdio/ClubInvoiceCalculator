@@ -89,12 +89,12 @@
 
     
     <!-- Preload critical external scripts -->
-    <link rel="preload" href="vendor/xlsx.full.min.js" as="script">
-    <link rel="preload" href="vendor/papaparse.min.js" as="script">
+    <link rel="preload" href="./vendor/xlsx.full.min.js" as="script">
+    <link rel="preload" href="./vendor/papaparse.min.js" as="script">
     
     <!-- Defer non-critical scripts -->
-    <script src="vendor/xlsx.full.min.js" defer></script>
-    <script src="vendor/papaparse.min.js" defer></script>
+    <script src="./vendor/xlsx.full.min.js" defer></script>
+    <script src="./vendor/papaparse.min.js" defer></script>
     <!-- Critical CSS only - rest moved to external file -->
     <style>
         /* Critical above-the-fold styles only */
@@ -140,19 +140,19 @@
     </script>
 
     <!-- Preload PDF generation libraries -->
-    <link rel="preload" href="vendor/jspdf.umd.min.js" as="script">
-    <link rel="preload" href="vendor/jspdf.plugin.autotable.min.js" as="script">
+    <link rel="preload" href="./vendor/jspdf.umd.min.js" as="script">
+    <link rel="preload" href="./vendor/jspdf.plugin.autotable.min.js" as="script">
     
     <!-- jsPDF Library for PDF Generation -->
-    <script src="vendor/jspdf.umd.min.js"></script>
-    <script src="vendor/jspdf.plugin.autotable.min.js"></script>
+    <script src="./vendor/jspdf.umd.min.js"></script>
+    <script src="./vendor/jspdf.plugin.autotable.min.js"></script>
     
     <!-- App Modules (behavior-preserving, no UI changes) -->
-    <script src="modules/security.min.js" defer></script>
-    <script src="modules/calculations.min.js" defer></script>
+    <script src="./modules/security.min.js" defer></script>
+    <script src="./modules/calculations.min.js" defer></script>
 
     <!-- External JavaScript for better performance -->
-    <script src="app.min.js" defer></script>
+    <script src="./app.min.js" defer></script>
 
     <!-- Firebase SDK -->
     <script type="module">
