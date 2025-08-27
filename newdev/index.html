@@ -88,13 +88,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     
-    <!-- Preload critical external scripts -->
-    <link rel="preload" href="./vendor/xlsx.full.min.js" as="script">
-    <link rel="preload" href="./vendor/papaparse.min.js" as="script">
-    
-    <!-- Defer non-critical scripts -->
-    <script src="./vendor/xlsx.full.min.js" defer></script>
-    <script src="./vendor/papaparse.min.js" defer></script>
+    <!-- Vendor parsers are loaded on-demand in app.js to avoid blocking initial render -->
     <!-- Critical CSS only - rest moved to external file -->
     <style>
         /* Critical above-the-fold styles only */
@@ -118,7 +112,7 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            opacity: 0;
+            opacity: 0; /* hidden by default since we have preloader */
             visibility: hidden;
             transition: all 0.3s ease;
         }
@@ -126,6 +120,111 @@
         .loading-overlay.active {
             opacity: 1;
             visibility: visible;
+        }
+        
+        /* Once app marks HTML as loaded, hide overlay by default */
+        html.loaded .loading-overlay {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        /* But allow explicit activation later (e.g., during PDF generation) */
+        html.loaded .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Minimal spinner styling to avoid FOUC before Tailwind loads */
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #bfdbfe; /* blue-200 */
+            border-top-color: #2563eb; /* blue-600 */
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Page Preloader - distinct from PDF loader */
+        .page-preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            opacity: 1;
+            visibility: visible;
+            transition: all 0.5s ease;
+        }
+        
+        .page-preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .preloader-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .preloader-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        .preloader-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .preloader-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        
+        .preloader-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .preloader-progress-bar {
+            height: 100%;
+            background: white;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Once app marks HTML as loaded, hide preloader */
+        html.loaded .page-preloader {
+            opacity: 0;
+            visibility: hidden;
         }
     </style>
 
@@ -139,20 +238,14 @@
     gtag('config', 'G-4371E35K36');
     </script>
 
-    <!-- Preload PDF generation libraries -->
-    <link rel="preload" href="./vendor/jspdf.umd.min.js" as="script">
-    <link rel="preload" href="./vendor/jspdf.plugin.autotable.min.js" as="script">
-    
-    <!-- jsPDF Library for PDF Generation -->
-    <script src="./vendor/jspdf.umd.min.js"></script>
-    <script src="./vendor/jspdf.plugin.autotable.min.js"></script>
+    <!-- PDF generation runs entirely inside a Web Worker (pdf-worker.min.js) which imports its own dependencies. -->
     
     <!-- App Modules (behavior-preserving, no UI changes) -->
     <script src="./modules/security.min.js" defer></script>
-    <script src="./modules/calculations.min.js" defer></script>
+    <script src="./modules/calculations.js" defer></script>
 
     <!-- External JavaScript for better performance -->
-    <script src="./app.min.js" defer></script>
+    <script src="./app.js" defer></script>
 
     <!-- Firebase SDK -->
     <script type="module">
@@ -281,10 +374,29 @@
 
 </head>
 <body class="antialiased">
+    <!-- Page Preloader -->
+    <div id="page-preloader" class="page-preloader">
+        <div class="preloader-content">
+            <div class="preloader-logo">
+                <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" fill="white" opacity="0.2"/>
+                    <circle cx="50" cy="50" r="35" fill="white" opacity="0.4"/>
+                    <circle cx="50" cy="50" r="25" fill="white"/>
+                    <path d="M35 50 L45 60 L65 40" stroke="#667eea" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="preloader-title">Rotaract Club Invoice Calculator</div>
+            <div class="preloader-subtitle">Loading your invoice calculator...</div>
+            <div class="preloader-progress">
+                <div class="preloader-progress-bar" id="preloader-progress"></div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
-            <div class="loading-spinner w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto mb-4"></div>
+            <div class="loading-spinner mx-auto mb-4"></div>
             <h3 class="text-lg font-bold text-gray-800 mb-2">Generating Detailed Report</h3>
             <p id="loading-message" class="text-gray-600 font-medium mb-4">Preparing...</p>
             
@@ -1168,7 +1280,38 @@
     </div>
 
     <script>
-                    // requestIdleCallback - Now provided by app.js
+        // requestIdleCallback - Now provided by app.js
+        
+        // Preloader progress simulation
+        (function() {
+            const progressBar = document.getElementById('preloader-progress');
+            if (progressBar) {
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90; // Don't complete until page is ready
+                    progressBar.style.width = progress + '%';
+                }, 200);
+                
+                // Clear interval when page loads
+                window.addEventListener('load', () => {
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                });
+            }
+        })();
+        
+        // Ensure preloader is visible on every page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const pagePreloader = document.getElementById('page-preloader');
+            if (pagePreloader) {
+                // Reset preloader state
+                pagePreloader.classList.remove('hidden');
+                pagePreloader.style.display = 'flex';
+                pagePreloader.style.opacity = '1';
+                pagePreloader.style.visibility = 'visible';
+            }
+        });
         
         window.addEventListener('beforeunload', () => {
             if (window.appFunctions && window.appFunctions.cleanup) {
@@ -1176,12 +1319,40 @@
             }
         });
         
-        document.addEventListener('DOMContentLoaded', () => {
-            // Hide loading overlay
+        window.addEventListener('load', () => {
+            // Hide page preloader with smooth transition
+            const pagePreloader = document.getElementById('page-preloader');
+            if (pagePreloader) {
+                pagePreloader.classList.add('hidden');
+                setTimeout(() => {
+                    pagePreloader.style.display = 'none';
+                }, 500);
+            }
+            
+            // Mark document as loaded to hide initial overlay without FOUC
+            document.documentElement.classList.add('loaded');
+            // Also remove any explicit active state if set earlier
             const loadingOverlay = document.getElementById('loading-overlay');
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
             }
+        });
+        
+        // Fallback: Hide preloader when DOM is ready (for fast loads/cache)
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const pagePreloader = document.getElementById('page-preloader');
+                if (pagePreloader && !pagePreloader.classList.contains('hidden')) {
+                    pagePreloader.classList.add('hidden');
+                    setTimeout(() => {
+                        pagePreloader.style.display = 'none';
+                    }, 500);
+                }
+            }, 100); // Small delay to ensure everything is ready
+        });
+        
+        // Main initialization when page loads
+        window.addEventListener('load', () => {
             const addMemberForm = document.getElementById('add-member-form');
             const memberNameInput = document.getElementById('member-name');
             const memberTypeInput = document.getElementById('member-type');
@@ -1765,7 +1936,7 @@
                     // Create Web Worker for PDF generation
                     if (!pdfWorker) {
                         try {
-                            pdfWorker = new Worker('pdf-worker.min.js');
+                            pdfWorker = new Worker('pdf-worker.js');
                             
                             // Handle Web Worker messages
                             pdfWorker.onmessage = function(e) {
