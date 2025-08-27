@@ -942,7 +942,7 @@ function showWelcomeMessage(message) {
         };
     }
     
-q    // Auto-hide after 5 seconds
+    // Auto-hide after 5 seconds
     setTimeout(() => {
         welcomeArea.classList.add('hidden');
     }, 5000);
