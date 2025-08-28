@@ -2767,6 +2767,11 @@ function loadCloudData(data) {
         loadSettings(data.settings);
     }
     
+    // Recalculate all dues to ensure PDF generation works correctly
+    setTimeout(() => {
+        recalculateAllDues();
+    }, 200);
+    
     // Success message is now handled by the popup feedback
 }
 
@@ -2793,6 +2798,9 @@ function loadMemberRoster(memberRoster) {
             getSelectedInvoiceYear(),
             member.leaveDate
         );
+        
+        // Set the due amount in dataset for PDF generation
+        row.dataset.due = duesBreakdown.total;
 
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-left text-sm text-gray-900">${SecurityUtils.sanitizeHTML(member.name)}</td>

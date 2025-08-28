@@ -1789,13 +1789,12 @@
                     }
                     
                     // Get summary data from the existing calculations
-                    const baseAmount = parseFloat(document.getElementById('base-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
                     const taxAmount = parseFloat(document.getElementById('tax-breakdown').textContent.replace(/[^0-9.-]+/g, '')) || 0;
                     const totalAmount = parseFloat(document.getElementById('total-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
                     const totalMembers = document.getElementById('total-members').textContent || '0';
                     const totalProratedMonths = document.getElementById('total-prorated-months').textContent || '0';
                     const taxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
-                    const invoiceYear = document.getElementById('invoice-year-select').value;
+                    const invoiceYear = getSelectedInvoiceYear();
 
                     // Extract Full Year and Prorated amounts from the base amount breakdown
                     let totalFullYearAmount = 0;
@@ -1922,7 +1921,7 @@
                     const pdfData = {
                         memberData: memberData,
                         summaryData: {
-                            baseAmount: baseAmount,
+                            baseAmount: totalFullYearAmount + totalProratedAmount, // Use calculated base amount
                             taxAmount: taxAmount,
                             totalWithTax: totalAmount,
                             totalFullYearAmount: totalFullYearAmount,
@@ -1964,22 +1963,68 @@
                                     // Log invoice summary to Firestore if available
                                     try {
                                         if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logInvoiceSummary) {
+                                            // Get fresh, current values from the web application for accurate logging
+                                            const currentBaseAmount = parseFloat(document.getElementById('base-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                                            const currentTaxAmount = parseFloat(document.getElementById('tax-breakdown').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                                            const currentTotalAmount = parseFloat(document.getElementById('total-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                                            const currentTotalMembers = document.getElementById('total-members').textContent || '0';
+                                            const currentTotalProratedMonths = document.getElementById('total-prorated-months').textContent || '0';
+                                            const currentTaxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
+                                            const currentCurrencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 87;
+                                            const currentInvoiceYear = getSelectedInvoiceYear();
+                                            
+                                            // Recalculate current prorated values to ensure accuracy
+                                            let currentTotalFullYearAmount = 0;
+                                            let currentTotalProratedAmount = 0;
+                                            
+                                            const memberRowsForLogging = document.getElementById('member-roster-body').querySelectorAll('tr');
+                                            memberRowsForLogging.forEach(row => {
+                                                const cells = row.querySelectorAll('td');
+                                                if (cells.length >= 7) {
+                                                    const estBaseDue = cells[4].textContent.trim();
+                                                    const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
+                                                    if (dueMatch) {
+                                                        const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
+                                                        const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
+                                                        
+                                                        currentTotalFullYearAmount += fullYearAmount;
+                                                        currentTotalProratedAmount += proratedAmount;
+                                                    }
+                                                }
+                                            });
+                                            
+                                            // Calculate current local amounts
+                                            const currentFullYearLocalAmount = Math.round(currentTotalFullYearAmount * currentCurrencyRate * 100) / 100;
+                                            const currentProratedLocalAmount = Math.round(currentTotalProratedAmount * currentCurrencyRate * 100) / 100;
+                                            const currentBaseLocalAmount = currentFullYearLocalAmount + currentProratedLocalAmount;
+                                            
+                                            // Calculate current tax amounts (USD)
+                                            const currentTaxOnFullYearDues = Math.round((currentTotalFullYearAmount * currentTaxPercentage) / 100 * 100) / 100;
+                                            const currentTaxOnProratedDues = Math.round((currentTotalProratedAmount * currentTaxPercentage) / 100 * 100) / 100;
+                                            const currentTotalTaxAmount = currentTaxOnFullYearDues + currentTaxOnProratedDues;
+                                            
+                                            // Calculate current local currency tax
+                                            const currentTaxOnLocalAnnualDues = Math.round((currentFullYearLocalAmount * currentTaxPercentage) / 100 * 100) / 100;
+                                            const currentTaxOnLocalProratedDues = Math.round((currentProratedLocalAmount * currentTaxPercentage) / 100 * 100) / 100;
+                                            const currentTaxLocalAmount = currentTaxOnLocalAnnualDues + currentTaxOnLocalProratedDues;
+                                            const currentTotalLocalAmount = currentBaseLocalAmount + currentTaxLocalAmount;
+                                            
                                             const summaryForLog = {
-                                                invoiceYear: pdfData.invoiceYear,
-                                                taxPercentage: pdfData.taxPercentage,
-                                                currencyRate: pdfData.currencyRate,
-                                                totalMembers: Number(pdfData.totalMembers) || 0,
-                                                totalProratedMonths: Number(pdfData.totalProratedMonths) || 0,
-                                                baseAmount: pdfData.summaryData?.baseAmount ?? null,
-                                                taxAmount: pdfData.summaryData?.taxAmount ?? null,
-                                                totalWithTax: pdfData.summaryData?.totalWithTax ?? null,
-                                                totalFullYearAmount: pdfData.summaryData?.totalFullYearAmount ?? null,
-                                                totalProratedAmount: pdfData.summaryData?.totalProratedAmount ?? null,
-                                                baseLocalAmount: pdfData.summaryData?.baseLocalAmount ?? null,
-                                                taxLocalAmount: pdfData.summaryData?.taxLocalAmount ?? null,
-                                                totalLocalAmount: pdfData.summaryData?.totalLocalAmount ?? null,
-                                                fullYearLocalAmount: pdfData.summaryData?.fullYearLocalAmount ?? null,
-                                                proratedLocalAmount: pdfData.summaryData?.proratedLocalAmount ?? null
+                                                invoiceYear: currentInvoiceYear,
+                                                taxPercentage: Math.round(currentTaxPercentage * 100) / 100,
+                                                currencyRate: Math.round(currentCurrencyRate * 100) / 100,
+                                                totalMembers: Number(currentTotalMembers) || 0,
+                                                totalProratedMonths: Number(currentTotalProratedMonths) || 0,
+                                                baseAmount: Math.round((currentTotalFullYearAmount + currentTotalProratedAmount) * 100) / 100,
+                                                taxAmount: Math.round(currentTotalTaxAmount * 100) / 100,
+                                                totalWithTax: Math.round(currentTotalAmount * 100) / 100,
+                                                totalFullYearAmount: Math.round(currentTotalFullYearAmount * 100) / 100,
+                                                totalProratedAmount: Math.round(currentTotalProratedAmount * 100) / 100,
+                                                baseLocalAmount: Math.round(currentBaseLocalAmount * 100) / 100,
+                                                taxLocalAmount: Math.round(currentTaxLocalAmount * 100) / 100,
+                                                totalLocalAmount: Math.round(currentTotalLocalAmount * 100) / 100,
+                                                fullYearLocalAmount: Math.round(currentFullYearLocalAmount * 100) / 100,
+                                                proratedLocalAmount: Math.round(currentProratedLocalAmount * 100) / 100
                                             };
                                             window.appFunctions.logInvoiceSummary(window.currentUser.uid, summaryForLog);
                                         }
@@ -2004,6 +2049,9 @@
                                     setTimeout(() => {
                                         downloadPdfBtn.disabled = false;
                                         pdfStatus.classList.add('hidden');
+                                        
+                                        // Get fresh reference to loading overlay
+                                        const loadingOverlay = document.getElementById('loading-overlay');
                                         if (loadingOverlay) {
                                             loadingOverlay.classList.remove('active');
                                         }
@@ -2015,6 +2063,9 @@
                                     // Hide loading status and overlay
                                     downloadPdfBtn.disabled = false;
                                     pdfStatus.classList.add('hidden');
+                                    
+                                    // Get fresh reference to loading overlay
+                                    const loadingOverlay = document.getElementById('loading-overlay');
                                     if (loadingOverlay) {
                                         loadingOverlay.classList.remove('active');
                                     }
@@ -2031,6 +2082,9 @@
                                 // Hide loading status and overlay
                                 downloadPdfBtn.disabled = false;
                                 pdfStatus.classList.add('hidden');
+                                
+                                // Get fresh reference to loading overlay
+                                const loadingOverlay = document.getElementById('loading-overlay');
                                 if (loadingOverlay) {
                                     loadingOverlay.classList.remove('active');
                                 }
@@ -2044,6 +2098,9 @@
                             // Hide loading status and overlay
                             downloadPdfBtn.disabled = false;
                             pdfStatus.classList.add('hidden');
+                            
+                            // Get fresh reference to loading overlay
+                            const loadingOverlay = document.getElementById('loading-overlay');
                             if (loadingOverlay) {
                                 loadingOverlay.classList.remove('active');
                             }
@@ -2093,6 +2150,9 @@
                     // Hide loading status and overlay
                     downloadPdfBtn.disabled = false;
                     pdfStatus.classList.add('hidden');
+                    
+                    // Get fresh reference to loading overlay
+                    const loadingOverlay = document.getElementById('loading-overlay');
                     if (loadingOverlay) {
                         loadingOverlay.classList.remove('active');
                     }
