@@ -781,7 +781,7 @@ function recalculateAllDues() {
             return;
         }
         
-        const selectedYear = parseInt(invoiceYearSelect.value, 10);
+        const selectedYear = getSelectedInvoiceYear();
         if (isNaN(selectedYear)) {
             return;
         }
