@@ -1013,6 +1013,11 @@ function showFileUploadError(message) {
     const errorContainer = document.getElementById('file-upload-error');
     if (!errorContainer) return;
     
+    // Log file upload error activity
+    if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+        window.appFunctions.logUserActivity(window.currentUser.uid, 'file_upload_error');
+    }
+    
     if (currentErrorTimeout) {
         clearTimeout(currentErrorTimeout);
         currentErrorTimeout = null;
@@ -2290,6 +2295,11 @@ async function handleLogin() {
 
 async function handleLogout() {
     try {
+        // Log sign out activity before signing out
+        if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+            await window.appFunctions.logUserActivity(window.currentUser.uid, 'sign_out');
+        }
+        
         await window.firebaseSignOut(window.firebaseAuth);
         showSuccessMessage('Successfully logged out!');
     } catch (error) {
@@ -2312,7 +2322,10 @@ async function logUserActivity(userId, activityType) {
             FirebaseAnalyticsChecker.logEvent('user_activity', {
                 user_id: userId,
                 activity_type: activityType,
-                session_id: generateSessionId()
+                session_id: generateSessionId(),
+                // Add more context for better analytics
+                activity_context: 'club_invoice_calculator',
+                user_email: user.email || 'no_email'
             });
 
             // Update user's main document with latest login info
@@ -3142,12 +3155,27 @@ const FirebaseAnalyticsChecker = {
         }
         
         try {
-            window.firebaseLogEvent(window.firebaseAnalytics, eventName, {
-                ...parameters,
-                timestamp: Date.now()
-            });
+            // Firebase Analytics has specific parameter requirements
+            // Custom parameters should be prefixed with 'custom_' for better visibility
+            const analyticsParams = {
+                // Standard parameters that Firebase Analytics recognizes
+                event_category: 'user_activity',
+                event_label: parameters.activity_type || 'unknown',
+                
+                // Custom parameters with proper naming
+                custom_user_id: parameters.user_id || 'anonymous',
+                custom_activity_type: parameters.activity_type || 'unknown',
+                custom_session_id: parameters.session_id || 'no_session',
+                custom_timestamp: Date.now(),
+                
+                // Include original parameters for backward compatibility
+                ...parameters
+            };
+            
+            window.firebaseLogEvent(window.firebaseAnalytics, eventName, analyticsParams);
             return true;
         } catch (error) {
+            console.error('Firebase Analytics logEvent error:', error);
             return false;
         }
     }

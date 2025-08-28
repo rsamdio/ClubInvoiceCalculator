@@ -1523,12 +1523,22 @@
                 if (appFunctions && appFunctions.recalculateAllDues) {
                     appFunctions.recalculateAllDues();
                 }
+                
+                // Log settings change activity
+                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                    window.appFunctions.logUserActivity(window.currentUser.uid, 'settings_change');
+                }
             });
             
             taxPercentageInput.addEventListener('input', async () => {
                 const appFunctions = await waitForAppFunctions();
                 if (appFunctions && appFunctions.debouncedUpdateTotal) {
                     appFunctions.debouncedUpdateTotal();
+                }
+                
+                // Log settings change activity
+                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                    window.appFunctions.logUserActivity(window.currentUser.uid, 'settings_change');
                 }
             });
 
@@ -1539,6 +1549,11 @@
                     const appFunctions = await waitForAppFunctions();
                     if (appFunctions && appFunctions.debouncedUpdateTotal) {
                         appFunctions.debouncedUpdateTotal();
+                    }
+                    
+                    // Log settings change activity
+                    if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                        window.appFunctions.logUserActivity(window.currentUser.uid, 'settings_change');
                     }
                 });
             }
@@ -1609,6 +1624,11 @@
                 if (appFunctions && appFunctions.changePageSize) {
                     appFunctions.changePageSize(e.target.value);
                 }
+                
+                // Log pagination change activity
+                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                    window.appFunctions.logUserActivity(window.currentUser.uid, 'page_navigation');
+                }
             });
             
             prevPageBtn.addEventListener('click', async () => {
@@ -1616,12 +1636,22 @@
                 if (appFunctions && appFunctions.goToPreviousPage) {
                     appFunctions.goToPreviousPage();
                 }
+                
+                // Log pagination change activity
+                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                    window.appFunctions.logUserActivity(window.currentUser.uid, 'page_navigation');
+                }
             });
             
             nextPageBtn.addEventListener('click', async () => {
                 const appFunctions = await waitForAppFunctions();
                 if (appFunctions && appFunctions.goToNextPage) {
                     appFunctions.goToNextPage();
+                }
+                
+                // Log pagination change activity
+                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                    window.appFunctions.logUserActivity(window.currentUser.uid, 'page_navigation');
                 }
             });
 
@@ -1636,6 +1666,11 @@
                     if (appFunctions && appFunctions.changePageSize) {
                         appFunctions.changePageSize(e.target.value);
                     }
+                    
+                    // Log pagination change activity
+                    if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                        window.appFunctions.logUserActivity(window.currentUser.uid, 'page_navigation');
+                    }
                 });
             }
             
@@ -1645,6 +1680,11 @@
                     if (appFunctions && appFunctions.goToPreviousPage) {
                         appFunctions.goToPreviousPage();
                     }
+                    
+                    // Log pagination change activity
+                    if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                        window.appFunctions.logUserActivity(window.currentUser.uid, 'page_navigation');
+                    }
                 });
             }
             
@@ -1653,6 +1693,11 @@
                     const appFunctions = await waitForAppFunctions();
                     if (appFunctions && appFunctions.goToNextPage) {
                         appFunctions.goToNextPage();
+                    }
+                    
+                    // Log pagination change activity
+                    if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
+                        window.appFunctions.logUserActivity(window.currentUser.uid, 'page_navigation');
                     }
                 });
             }
