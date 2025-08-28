@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /betadevtest
+Disallow: /newdev
 
 # Sitemap location
 Sitemap: https://dues.rsamdio.org/sitemap.xml
