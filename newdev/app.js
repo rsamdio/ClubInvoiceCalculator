@@ -665,7 +665,7 @@ function updateTotal() {
         let totalMembersWithFullYear = 0;
         let totalProratedMonths = 0;
         
-        const selectedYear = parseInt(DOMCache.get('invoice-year-select')?.value || new Date().getFullYear() + 1, 10);
+        const selectedYear = getSelectedInvoiceYear();
         const memberRosterBody = DOMCache.get('member-roster-body');
         const memberRows = memberRosterBody ? memberRosterBody.querySelectorAll('tr') : [];
         
@@ -863,7 +863,7 @@ function addMember(e) {
     const joinDate = joinDateInput.value;
     const leaveDate = leaveDateInput.value;
 
-    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
+    const selectedYear = getSelectedInvoiceYear();
     const duesBreakdown = calculateIndividualDue(joinDate, clubBase, selectedYear, leaveDate);
     const memberId = `member-${Date.now()}`;
     const row = document.createElement('tr');
@@ -1456,7 +1456,7 @@ function addBulkMembers() {
     
     if (!window.parsedMembers || window.parsedMembers.length === 0) return;
 
-    const selectedYear = parseInt(DOMCache.get('invoice-year-select')?.value || new Date().getFullYear() + 1, 10);
+    const selectedYear = getSelectedInvoiceYear();
     const memberRosterBody = DOMCache.get('member-roster-body');
     
     // Use DocumentFragment for better performance
@@ -1759,7 +1759,9 @@ let yearSelectorInitialized = false;
 // Year Selector Functions
 function populateYearSelector() {
     const invoiceYearSelect = document.getElementById('invoice-year-select');
-    if (!invoiceYearSelect) {
+    const dropdownMenu = document.getElementById('invoice-year-dropdown');
+    
+    if (!invoiceYearSelect || !dropdownMenu) {
         return;
     }
     
@@ -1769,30 +1771,140 @@ function populateYearSelector() {
     }
     
     // Clear existing options to prevent duplicates
-    invoiceYearSelect.innerHTML = '';
+    dropdownMenu.innerHTML = '';
     
     const currentYear = new Date().getFullYear();
     const startInvoiceYear = 2023;
     const endInvoiceYear = currentYear + 25;
     
     for (let year = startInvoiceYear; year <= endInvoiceYear; year++) {
-        const option = document.createElement('option');
-        option.value = year;
+        const option = document.createElement('div');
+        option.className = 'dropdown-option';
+        option.dataset.value = year;
         option.textContent = year;
-        invoiceYearSelect.appendChild(option);
+        dropdownMenu.appendChild(option);
     }
-    invoiceYearSelect.value = currentYear + 1;
+    
+    // Set initial value
+    const selectedValue = currentYear + 1;
+    invoiceYearSelect.querySelector('.selected-value').textContent = selectedValue;
     updateInvoiceDateDisplay();
     
-    // Add event listener for year changes
-    invoiceYearSelect.addEventListener('change', () => {
-        updateInvoiceDateDisplay();
-        // Use immediate recalculation for year changes to ensure responsiveness
-        recalculateAllDues();
-    });
+    // Add event listeners for custom dropdown
+    setupCustomDropdown(invoiceYearSelect, dropdownMenu);
     
     // Mark as initialized
     yearSelectorInitialized = true;
+}
+
+function setupCustomDropdown(trigger, menu) {
+    let isOpen = false;
+    
+    // Toggle dropdown
+    trigger.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDropdown();
+    });
+    
+    // Handle option selection
+    menu.addEventListener('click', (e) => {
+        if (e.target.classList.contains('dropdown-option')) {
+            const value = e.target.dataset.value;
+            selectOption(value, e.target);
+            toggleDropdown();
+        }
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+    
+    // Keyboard navigation
+    trigger.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleDropdown();
+        }
+    });
+    
+    function toggleDropdown() {
+        if (isOpen) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    }
+    
+    function openDropdown() {
+        isOpen = true;
+        trigger.classList.add('active');
+        menu.classList.add('open');
+        
+        // Highlight current selection
+        const currentValue = trigger.querySelector('.selected-value').textContent;
+        menu.querySelectorAll('.dropdown-option').forEach(option => {
+            option.classList.remove('selected');
+            if (option.dataset.value === currentValue) {
+                option.classList.add('selected');
+            }
+        });
+    }
+    
+    function closeDropdown() {
+        isOpen = false;
+        trigger.classList.remove('active');
+        menu.classList.remove('open');
+    }
+    
+    function selectOption(value, element) {
+        // Update trigger display
+        trigger.querySelector('.selected-value').textContent = value;
+        
+        // Update selected state
+        menu.querySelectorAll('.dropdown-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        element.classList.add('selected');
+        
+        // Trigger change event
+        updateInvoiceDateDisplay();
+        recalculateAllDues();
+    }
+}
+
+// Helper function to get selected year from custom dropdown
+function getSelectedInvoiceYear() {
+    const invoiceYearSelect = document.getElementById('invoice-year-select');
+    if (invoiceYearSelect) {
+        const selectedValue = invoiceYearSelect.querySelector('.selected-value');
+        return selectedValue ? parseInt(selectedValue.textContent, 10) : new Date().getFullYear() + 1;
+    }
+    return new Date().getFullYear() + 1;
+}
+
+// Helper function to set selected year in custom dropdown
+function setSelectedInvoiceYear(year) {
+    const invoiceYearSelect = document.getElementById('invoice-year-select');
+    if (invoiceYearSelect) {
+        const selectedValue = invoiceYearSelect.querySelector('.selected-value');
+        if (selectedValue) {
+            selectedValue.textContent = year;
+            // Update the selected state in dropdown menu
+            const dropdownMenu = document.getElementById('invoice-year-dropdown');
+            if (dropdownMenu) {
+                dropdownMenu.querySelectorAll('.dropdown-option').forEach(option => {
+                    option.classList.remove('selected');
+                    if (option.dataset.value === year.toString()) {
+                        option.classList.add('selected');
+                    }
+                });
+            }
+        }
+    }
 }
 
 function updateInvoiceDateDisplay() {
@@ -1800,7 +1912,7 @@ function updateInvoiceDateDisplay() {
     const invoiceDateDisplay = document.getElementById('invoice-date-display');
     
     if (invoiceYearSelect && invoiceDateDisplay) {
-        const selectedYear = invoiceYearSelect.value;
+        const selectedYear = invoiceYearSelect.querySelector('.selected-value').textContent;
         invoiceDateDisplay.textContent = `Jan 1st, ${selectedYear}`;
     }
 }
@@ -1921,7 +2033,7 @@ function saveMember(memberId) {
     row.dataset.leaveDate = newLeaveDate;
     row.dataset.memberType = newMemberType;
 
-    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
+    const selectedYear = getSelectedInvoiceYear();
     const duesBreakdown = calculateIndividualDue(newJoinDate, newMemberType, selectedYear, newLeaveDate);
     row.dataset.due = duesBreakdown.total;
 
@@ -1966,7 +2078,7 @@ function cancelEdit(memberId) {
     const joinDate = row.dataset.joinDate;
     const leaveDate = row.dataset.leaveDate;
     const memberType = row.dataset.memberType;
-    const selectedYear = parseInt(document.getElementById('invoice-year-select').value, 10);
+    const selectedYear = getSelectedInvoiceYear();
     const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
 
     row.cells[0].textContent = name;
@@ -2678,7 +2790,7 @@ function loadMemberRoster(memberRoster) {
         const duesBreakdown = calculateIndividualDue(
             member.joinDate, 
             member.memberType, 
-            parseInt(document.getElementById('invoice-year-select').value, 10),
+            getSelectedInvoiceYear(),
             member.leaveDate
         );
 
@@ -2803,7 +2915,7 @@ function loadSettings(settings) {
         document.getElementById('currency-rate').value = settings.currencyRate;
     }
     if (settings.invoiceYear) {
-        document.getElementById('invoice-year-select').value = settings.invoiceYear;
+        setSelectedInvoiceYear(settings.invoiceYear);
     }
 }
 
@@ -2840,12 +2952,11 @@ function getCurrentData() {
 
     const taxPercentageEl = document.getElementById('tax-percentage');
     const currencyRateEl = document.getElementById('currency-rate');
-    const invoiceYearEl = document.getElementById('invoice-year-select');
 
     const settings = {
         taxPercentage: taxPercentageEl ? (parseFloat(taxPercentageEl.value) || 18) : 18,
         currencyRate: currencyRateEl ? (parseFloat(currencyRateEl.value) || 87) : 87,
-        invoiceYear: invoiceYearEl ? invoiceYearEl.value : new Date().getFullYear().toString()
+        invoiceYear: getSelectedInvoiceYear().toString()
     };
 
     return { memberRoster, settings };
