@@ -546,6 +546,49 @@
         <!-- Visual Separator -->
         <hr class="section-divider">
 
+        <!-- Footer -->
+        <footer class="mt-12 py-6 bg-gradient-to-br from-gray-25 to-gray-50 border-t border-gray-100">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+                    <!-- Copyright & Organization -->
+                    <div class="text-center md:text-left">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Rotaract South Asia MDIO</h4>
+                        <p class="text-xs text-gray-400">© <span id="current-year"></span> All rights reserved.</p>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="text-center">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Contact</h4>
+                        <p class="text-xs text-gray-400 mb-1">PDRR Arun Teja Godavarthi<br>rotaract3191drr@gmail.com</p>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div class="text-center md:text-right">
+                        <h4 class="text-sm font-medium text-gray-500 mb-2">Disclaimer</h4>
+                        <p class="text-xs text-gray-400">All calculations are indicative estimates. Actual figures may vary based on various factors.</p>
+                    </div>
+                </div>
+
+                <!-- Bottom Bar -->
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0">
+                        <p class="text-xs text-gray-400 text-center sm:text-left">This tool is designed to help Rotaractors estimate their Club Invoice calculations efficiently and accurately.</p>
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-400">Powered by</span>
+                                <a href="https://rtr.zeospec.com/" target="_blank" rel="noopener noreferrer" class="text-xs font-medium text-gray-500 hover:text-gray-600 transition-colors">ZeoSpec</a>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <a href="newdev/terms.html" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">Terms</a>
+                                <span class="text-xs text-gray-400">•</span>
+                                <a href="newdev/privacy.html" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">Privacy</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
     </main>
 
     <!-- Optimized JavaScript with lazy loading -->
@@ -564,6 +607,12 @@
 
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function() {
+            // Set current year in footer
+            const currentYearElement = document.getElementById('current-year');
+            if (currentYearElement) {
+                currentYearElement.textContent = new Date().getFullYear();
+            }
+            
             // Observe loading elements
             document.querySelectorAll('.loading').forEach(el => observer.observe(el));
 
