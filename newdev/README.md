@@ -96,15 +96,40 @@ const firebaseConfig = {
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    
+    function isSignedIn() {
+      return request.auth != null;
     }
-    match /invoice_summaries/{docId} {
-      allow read, write: if request.auth != null;
+    
+    function isAdmin() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Users: a user can create/update/read their own doc; admins can read/write any user
+    match /users/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Admins: non-admins can only read their own admin doc (for access check).
+    // Admins can read/modify any admin record.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();
     }
   }
 }
 ```
+
+### Data Structure
+- **users/{uid}**: User documents containing:
+  - `memberRoster`: Array of member objects
+  - `invoiceSummaries`: Array of invoice summary objects
+  - `settings`: User preferences and configuration
+- **admins/{uid}**: Admin documents for access control
 
 ## Performance
 

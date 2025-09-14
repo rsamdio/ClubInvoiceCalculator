@@ -705,13 +705,46 @@
                         <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
                         <p class="text-gray-600 mt-1">Manage users and administrators</p>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="text-right">
-                            <div class="text-sm text-gray-500">Total Admins</div>
+                </div>
+            </div>
+
+            <!-- Comprehensive Statistics -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Total Users -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500">Total Users</div>
+                            <div id="total-users" class="text-2xl font-bold text-gray-900">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Admins -->
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500">Total Admins</div>
                             <div id="total-admins" class="text-2xl font-bold text-green-600">-</div>
                         </div>
                     </div>
                 </div>
+
+
             </div>
 
             <!-- Navigation Tabs -->
@@ -831,7 +864,15 @@
 
                     <!-- Member Roster -->
                     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8 p-8">
-                        <h3 class="text-xl font-bold text-gray-800 mb-6">Member Roster</h3>
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-gray-800">Member Roster</h3>
+                            <button id="export-member-roster-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2" style="display: none;">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                </svg>
+                                <span>Export CSV</span>
+                            </button>
+                        </div>
                         <div id="member-roster-content">
                             <!-- Member roster will be populated here -->
                         </div>
@@ -970,34 +1011,24 @@
         // Remember last viewed user for the User Data tab
         let lastViewedUserId = null;
 
-        // Global cache for Firestore data to reduce reads
+        // Global cache for Firestore data to reduce reads (optimized structure)
         const firestoreCache = {
-            users: {
+            admins: {
                 data: null,
                 lastFetched: null,
-                cacheDuration: 5 * 60 * 1000, // 5 minutes
-                admins: {
-                    data: null,
-                    lastFetched: null,
-                    cacheDuration: 10 * 60 * 1000 // 10 minutes
-                }
-            },
-            summaries: {
-                data: null,
-                lastFetched: null,
-                cacheDuration: 2 * 60 * 1000 // 2 minutes
+                cacheDuration: 30 * 60 * 1000 // 30 minutes for admins
             },
             stats: {
                 data: null,
                 lastFetched: null,
-                cacheDuration: 5 * 60 * 1000 // 5 minutes
+                cacheDuration: 5 * 60 * 1000 // 5 minutes for statistics
             }
         };
 
-        // Cache management functions
-        function isCacheValid(cacheKey, subKey = null) {
-            const cache = subKey ? firestoreCache[cacheKey][subKey] : firestoreCache[cacheKey];
-            if (!cache.data || !cache.lastFetched) return false;
+        // Cache management functions (simplified for optimized structure)
+        function isCacheValid(cacheKey) {
+            const cache = firestoreCache[cacheKey];
+            if (!cache || !cache.data || !cache.lastFetched) return false;
             return (Date.now() - cache.lastFetched) < cache.cacheDuration;
         }
 
@@ -1009,14 +1040,130 @@
             updateCacheStatusDisplay();
         }
 
-        function clearCache(cacheKey, subKey = null) {
-            if (subKey) {
-                firestoreCache[cacheKey][subKey].data = null;
-                firestoreCache[cacheKey][subKey].lastFetched = null;
-            } else {
+        function clearCache(cacheKey) {
+            if (firestoreCache[cacheKey]) {
                 firestoreCache[cacheKey].data = null;
                 firestoreCache[cacheKey].lastFetched = null;
             }
+        }
+
+        // Read counter for monitoring Firebase usage
+        let readCount = 0;
+        const trackReads = (count) => {
+            readCount += count;
+        };
+
+        // Count query functions for statistics
+        async function getUsersCount() {
+            try {
+                const usersRef = window.firebaseCollection(window.firebaseDB, 'users');
+                const countSnapshot = await window.firebaseGetCountFromServer(usersRef);
+                trackReads(1); // Count queries cost 1 read
+                return countSnapshot.data().count;
+            } catch (error) {
+                return 0;
+            }
+        }
+
+        async function getAdminsCount() {
+            try {
+                const adminsRef = window.firebaseCollection(window.firebaseDB, 'admins');
+                const countSnapshot = await window.firebaseGetCountFromServer(adminsRef);
+                trackReads(1); // Count queries cost 1 read
+                return countSnapshot.data().count;
+            } catch (error) {
+                return 0;
+            }
+        }
+
+
+
+        // Optimized statistics loading with count queries
+        async function loadDashboardStatistics() {
+            try {
+                // Check cache first
+                if (firestoreCache.stats && firestoreCache.stats.data && 
+                    (Date.now() - firestoreCache.stats.lastFetched) < firestoreCache.stats.cacheDuration) {
+                    return firestoreCache.stats.data;
+                }
+                const [usersCount, adminsCount] = await Promise.all([
+                    getUsersCount(),
+                    getAdminsCount()
+                ]);
+
+                const stats = {
+                    totalUsers: usersCount,
+                    totalAdmins: adminsCount
+                };
+
+                // Cache the statistics
+                if (!firestoreCache.stats) firestoreCache.stats = {};
+                firestoreCache.stats.data = stats;
+                firestoreCache.stats.lastFetched = Date.now();
+
+                return stats;
+            } catch (error) {
+                return { totalUsers: 0, totalAdmins: 0 };
+            }
+        }
+
+        // Update statistics display
+        function updateStatisticsDisplay(stats) {
+            try {
+                // Update basic stats from count queries
+                updateElement('total-users', stats.totalUsers);
+                updateElement('total-admins', stats.totalAdmins);
+            } catch (error) {
+                // Silent error handling
+            }
+        }
+
+        // Helper function to update DOM elements
+        function updateElement(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        // Global data storage for optimized loading
+        let allAdminsData = [];
+
+        // Optimized loadAllAdmins function
+        async function loadAllAdmins() {
+            try {
+                // Check cache first
+                if (firestoreCache.admins && firestoreCache.admins.data && 
+                    (Date.now() - firestoreCache.admins.lastFetched) < firestoreCache.admins.cacheDuration) {
+                    allAdminsData = firestoreCache.admins.data;
+                    return;
+                }
+                const adminsRef = window.firebaseCollection(window.firebaseDB, 'admins');
+                const querySnapshot = await window.firebaseGetDocs(adminsRef);
+                trackReads(querySnapshot.size);
+                
+                allAdminsData = [];
+                querySnapshot.forEach((doc) => {
+                    const adminData = {
+                        id: doc.id,
+                        ...doc.data()
+                    };
+                    allAdminsData.push(adminData);
+                });
+                
+                // Cache the data
+                if (!firestoreCache.admins) firestoreCache.admins = {};
+                firestoreCache.admins.data = allAdminsData;
+                firestoreCache.admins.lastFetched = Date.now();
+            } catch (error) {
+                allAdminsData = [];
+                throw error;
+            }
+        }
+
+        // Display all admins using the global data
+        function displayAllAdmins() {
+            displayAdmins(allAdminsData);
         }
 
         // Optimized Firebase authentication initialization
@@ -1025,7 +1172,7 @@
                 if (user) {
                     currentUser = user;
                     updateAuthUI(user);
-                    checkAdminAccess(user.uid);
+                    checkAdminAccess(user.email);
                 } else {
                     currentUser = null;
                     isAdmin = false;
@@ -1042,7 +1189,9 @@
             const profileDropdown = document.getElementById('profile-dropdown');
             
             // Add event listeners with cached elements
-            if (loginBtn) loginBtn.addEventListener('click', handleLogin);
+            if (loginBtn) {
+                loginBtn.addEventListener('click', handleLogin);
+            }
             if (logoutBtn) {
                 // Remove any existing listeners to prevent duplicates
                 const newLogoutBtn = logoutBtn.cloneNode(true);
@@ -1137,11 +1286,11 @@
         async function handleLogin() {
             const authSection = document.getElementById('auth-section');
             const loadingState = document.getElementById('loading-state');
-            
+
             try {
                 authSection.classList.add('hidden');
                 loadingState.classList.remove('hidden');
-                
+
                 try {
                     await window.firebaseSignIn(window.firebaseAuth, window.firebaseProvider);
                 } catch (popupError) {
@@ -1177,12 +1326,12 @@
             }
         }
 
-        async function checkAdminAccess(userId) {
+        async function checkAdminAccess(userEmail) {
             document.getElementById('admin-access-check').classList.remove('hidden');
             
             try {
-                // Check if user is admin
-                const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDB, 'admins', userId));
+                // Check if user is admin using UID-based document ID
+                const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDB, 'admins', currentUser.uid));
                 
                 if (adminDoc.exists()) {
                     isAdmin = true;
@@ -1218,8 +1367,19 @@
         }
 
         async function loadDashboardData() {
-            // Load basic stats
-            updateBaseStats();
+            try {
+                showNotification('Loading dashboard data...', 'info');
+                
+                // Load only statistics (fast, minimal reads)
+                // Admins will be loaded lazily when user switches to Administrators tab
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
+                
+                showNotification('Dashboard data loaded successfully!', 'success');
+                
+            } catch (error) {
+                showNotification('Failed to load dashboard data. Please try again.', 'error');
+            }
         }
 
         // Search user by email
@@ -1246,12 +1406,10 @@
             }
 
             try {
-                // Query users collection by email
-                const usersQuery = window.firebaseQuery(
-                    window.firebaseCollection(window.firebaseDB, 'users'),
-                    window.firebaseWhere('email', '==', email.trim().toLowerCase())
-                );
-                const querySnapshot = await window.firebaseGetDocs(usersQuery);
+                // Query users collection to find user by email field
+                const usersRef = window.firebaseCollection(window.firebaseDB, 'users');
+                const q = window.firebaseQuery(usersRef, window.firebaseWhere('email', '==', email.trim()));
+                const querySnapshot = await window.firebaseGetDocs(q);
 
                 if (querySnapshot.empty) {
                     showNoUserFound();
@@ -1274,8 +1432,13 @@
                     // Store current user data
                     currentSearchedUser = userData;
 
-                    // Load user's invoice summaries
-                    await loadUserInvoices(userData.email);
+                    // Extract invoice summaries from user document (array field)
+                    currentUserInvoices = userData.invoiceSummaries || [];
+                    currentUserInvoices.sort((a, b) => {
+                        const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                        const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                        return timestampB - timestampA; // Descending order (newest first)
+                    });
 
                     // Display user data
                     displayUserData(userData);
@@ -1301,27 +1464,24 @@
             }
         }
 
-        // Load user's invoice summaries
-        async function loadUserInvoices(email) {
+        // Load user's invoice summaries from subcollection
+        async function loadUserInvoices(userId) {
             try {
-                const summariesQuery = window.firebaseQuery(
-                    window.firebaseCollection(window.firebaseDB, 'invoice_summaries'),
-                    window.firebaseWhere('email', '==', email)
-                );
-                const querySnapshot = await window.firebaseGetDocs(summariesQuery);
-                currentUserInvoices = [];
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    currentUserInvoices.push({
-                        id: doc.id,
-                        ...data
+                // Load user document to get invoiceSummaries array field
+                const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userId);
+                const userDoc = await window.firebaseGetDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentUserInvoices = userData.invoiceSummaries || [];
+                    currentUserInvoices.sort((a, b) => {
+                        const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                        const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                        return timestampB - timestampA; // Descending order (newest first)
                     });
-                });
-                currentUserInvoices.sort((a, b) => {
-                    const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                    const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                    return timestampB - timestampA; // Descending order (newest first)
-                });
+                } else {
+                    currentUserInvoices = [];
+                }
             } catch (error) {
                 showNotification('Error loading invoice summaries: ' + error.message, 'error');
                 currentUserInvoices = [];
@@ -1424,6 +1584,10 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Year</label>
                         <p class="text-lg text-gray-900">${userData.settings.invoiceYear || 'Not set'}</p>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
+                        <p class="text-sm text-gray-600">${formatDate(userData.lastUpdated)}</p>
+                    </div>
                 `;
             } else {
                 settingsContent.innerHTML = `
@@ -1437,6 +1601,20 @@
         // Display member roster
         function displayMemberRoster(userData) {
             const rosterContent = document.getElementById('member-roster-content');
+            
+            // Update the header with count and show export button
+            const rosterContainer = rosterContent.closest('.bg-white');
+            if (rosterContainer) {
+                const rosterHeader = rosterContainer.querySelector('h3');
+                const exportBtn = document.getElementById('export-member-roster-btn');
+                if (rosterHeader) {
+                    const totalMembers = userData.memberRoster ? userData.memberRoster.length : 0;
+                    rosterHeader.textContent = `Member Roster (${totalMembers} Members)`;
+                }
+                if (exportBtn) {
+                    exportBtn.style.display = userData.memberRoster && userData.memberRoster.length > 0 ? 'flex' : 'none';
+                }
+            }
             
             if (userData.memberRoster && userData.memberRoster.length > 0) {
                 // Calculate pagination
@@ -1504,9 +1682,75 @@
             }
         }
 
+        // Export member roster as CSV
+        function exportMemberRosterAsCSV() {
+            if (!currentSearchedUser || !currentSearchedUser.memberRoster || currentSearchedUser.memberRoster.length === 0) {
+                showNotification('No member roster data to export', 'error');
+                return;
+            }
+
+            try {
+                // Prepare CSV headers
+                const headers = ['Name', 'Join Date', 'Leave Date', 'Member Type'];
+                
+                // Prepare CSV data
+                const csvData = [headers];
+                
+                currentSearchedUser.memberRoster.forEach(member => {
+                    csvData.push([
+                        member.name || '',
+                        member.joinDate || '',
+                        member.leaveDate || 'Active',
+                        member.memberType || ''
+                    ]);
+                });
+                
+                // Convert to CSV string
+                const csvContent = csvData.map(row => 
+                    row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+                ).join('\n');
+                
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    
+                    // Generate filename with user email and timestamp
+                    const userEmail = currentSearchedUser.email || 'user';
+                    const timestamp = new Date().toISOString().slice(0, 10);
+                    const filename = `member-roster-${userEmail}-${timestamp}.csv`;
+                    
+                    link.setAttribute('download', filename);
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    showNotification(`Member roster exported successfully as ${filename}`, 'success');
+                } else {
+                    showNotification('CSV export not supported in this browser', 'error');
+                }
+            } catch (error) {
+                showNotification('Failed to export member roster', 'error');
+            }
+        }
+
         // Display invoice summaries
         function displayInvoiceSummaries() {
             const summariesContent = document.getElementById('invoice-summaries-content');
+            
+            // Update the header with count
+            const summariesContainer = summariesContent.closest('.bg-white');
+            if (summariesContainer) {
+                const summariesHeader = summariesContainer.querySelector('h3');
+                if (summariesHeader) {
+                    const totalInvoices = currentUserInvoices.length;
+                    summariesHeader.textContent = `Invoice Summaries (${totalInvoices} Invoices)`;
+                }
+            }
             
             if (currentUserInvoices.length > 0) {
                 // Calculate pagination
@@ -1526,26 +1770,32 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax %</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency Rate</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prorated Months</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Amount</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Amount (USD)</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Amount (USD)</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total (USD)</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Local Total</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Base Local</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Local</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Local</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                ${currentPageInvoices.map(summary => `
+                                ${currentPageInvoices.map(summary => {
+                                    const currencyRate = summary.currencyRate || summary.settings?.currencyRate;
+                                    return `
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.invoiceYear || 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalMembers || 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.taxPercentage || summary.settings?.taxPercentage || 'N/A'}%</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.currencyRate || summary.settings?.currencyRate || 'N/A'}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${currencyRate || 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalProratedMonths || summary.proratedMonths || summary.settings?.totalProratedMonths || summary.settings?.proratedMonths || 'N/A'}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${formatNumber(summary.totals?.baseAmount || 0)}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${formatNumber(summary.totals?.taxAmount || 0)}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${formatNumber(summary.totals?.totalWithTax || 0)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalTotal(summary.totals?.totalWithTax || 0, summary.currencyRate || summary.settings?.currencyRate)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalAmount(summary.totals?.baseLocalAmount || 0, currencyRate)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalAmount(summary.totals?.taxLocalAmount || 0, currencyRate)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalAmount(summary.totals?.totalLocalAmount || 0, currencyRate)}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(summary.timestamp)}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <button data-invoice-id="${summary.id}" class="delete-invoice-btn inline-flex items-center px-2 py-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
@@ -1556,7 +1806,8 @@
                                             </button>
                                         </td>
                                     </tr>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -1636,16 +1887,26 @@
             try {
                 const adminDocRef = window.firebaseDoc(window.firebaseDB, 'admins', currentSearchedUser.id);
                 await window.firebaseSetDoc(adminDocRef, {
-                    userId: currentSearchedUser.id,
                     email: currentSearchedUser.email,
                     displayName: currentSearchedUser.displayName,
                     isAdmin: true,
-                    updatedBy: currentUser.uid,
+                    updatedBy: currentUser.email,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
 
                 currentSearchedUser.isAdmin = true;
                 displayUserData(currentSearchedUser);
+                
+                // Clear caches and refresh after promoting user
+                clearCache('stats');
+                clearCache('admins');
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
+                
+                // Reload and display admins to show the newly promoted admin
+                await loadAllAdmins();
+                displayAllAdmins();
+                
                 showNotification('User promoted to admin successfully!', 'success');
             } catch (error) {
                 showNotification('Failed to promote user.', 'error');
@@ -1672,6 +1933,17 @@
 
                 currentSearchedUser.isAdmin = false;
                 displayUserData(currentSearchedUser);
+                
+                // Clear caches and refresh after demoting user
+                clearCache('stats');
+                clearCache('admins');
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
+                
+                // Reload and display admins to remove the demoted admin
+                await loadAllAdmins();
+                displayAllAdmins();
+                
                 showNotification('User demoted from admin successfully!', 'success');
             } catch (error) {
                 showNotification('Failed to demote user.', 'error');
@@ -1694,45 +1966,26 @@
 
             try {
                 const userEmail = currentSearchedUser.email;
-                const userId = currentSearchedUser.id;
                 
                 // Show loading notification
                 showNotification('Deleting user and all associated data...', 'info');
                 
-                // 1. Delete all invoice summaries for this user
-                try {
-                    showNotification('Deleting invoice summaries...', 'info');
-                    const summariesQuery = window.firebaseQuery(
-                        window.firebaseCollection(window.firebaseDB, 'invoice_summaries'),
-                        window.firebaseWhere('email', '==', userEmail)
-                    );
-                    const summariesSnapshot = await window.firebaseGetDocs(summariesQuery);
-                    
-                    const deletePromises = summariesSnapshot.docs.map(doc => 
-                        window.firebaseDeleteDoc(doc.ref)
-                    );
-                    
-                    await Promise.all(deletePromises);
-                    showNotification(`Deleted ${summariesSnapshot.size} invoice summaries`, 'success');
-                } catch (error) {
-                    showNotification('Warning: Some invoice summaries may not have been deleted', 'error');
-                    // Continue with other deletions even if this fails
-                }
+                // 1. Invoice summaries are stored as array field in user document, so they'll be deleted with the user document
                 
                 // 2. Delete admin record if exists
                 try {
                     showNotification('Deleting admin record...', 'info');
-                    await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'admins', userId));
+                    await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'admins', currentSearchedUser.id));
                     showNotification('Admin record deleted', 'success');
                 } catch (error) {
                     showNotification('Warning: Admin record may not have been deleted', 'error');
                     // Admin record might not exist, continue
                 }
                 
-                // 3. Delete user document
+                // 3. Delete user document (this will also delete invoice summaries array field)
                 try {
                     showNotification('Deleting user data...', 'info');
-                    await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'users', userId));
+                    await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'users', currentSearchedUser.id));
                     showNotification('User data deleted', 'success');
                 } catch (error) {
                     throw error; // Re-throw as this is critical
@@ -1748,8 +2001,10 @@
                 document.getElementById('user-data-display').classList.add('hidden');
                 document.getElementById('no-user-found').classList.add('hidden');
                 
-                // Refresh admin count in dashboard header
-                updateBaseStats();
+                // Clear statistics cache and refresh after deleting user
+                clearCache('stats');
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
                 
             } catch (error) {
                 showNotification('Failed to delete user. Some data may have been deleted. Please check the console for details.', 'error');
@@ -1769,16 +2024,33 @@
             if (!confirmed) return;
 
             try {
-                // Delete invoice summary document
-                await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'invoice_summaries', invoiceId));
+                // Get the user document
+                const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', currentSearchedUser.id);
+                const userDoc = await window.firebaseGetDoc(userDocRef);
                 
-                // Remove from local array
-                currentUserInvoices = currentUserInvoices.filter(invoice => invoice.id !== invoiceId);
-                
-                showNotification('Invoice summary deleted successfully!', 'success');
-                
-                // Re-display the invoice summaries with updated data
-                displayInvoiceSummaries();
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const invoiceSummaries = userData.invoiceSummaries || [];
+                    
+                    // Filter out the invoice to delete
+                    const updatedInvoiceSummaries = invoiceSummaries.filter(invoice => invoice.id !== invoiceId);
+                    
+                    // Update the user document with the filtered array
+                    await window.firebaseUpdateDoc(userDocRef, {
+                        invoiceSummaries: updatedInvoiceSummaries,
+                        lastUpdated: new Date().toISOString()
+                    });
+                    
+                    // Remove from local array
+                    currentUserInvoices = currentUserInvoices.filter(invoice => invoice.id !== invoiceId);
+                    
+                    showNotification('Invoice summary deleted successfully!', 'success');
+                    
+                    // Re-display the invoice summaries with updated data
+                    displayInvoiceSummaries();
+                } else {
+                    showNotification('User document not found.', 'error');
+                }
             } catch (error) {
                 showNotification('Failed to delete invoice summary.', 'error');
             }
@@ -1791,49 +2063,6 @@
         // (Removed loadUsers function - we only load individual user data via search)
 
         // Load admins
-        async function loadAdmins(showLoading = false, forceRefresh = false) {
-            const refreshBtn = document.getElementById('refresh-admins-btn');
-            let originalText = null;
-
-            try {
-                if (showLoading && refreshBtn) {
-                    originalText = refreshBtn.innerHTML;
-                    refreshBtn.innerHTML = `
-                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Loading...
-                    `;
-                    refreshBtn.disabled = true;
-                }
-                
-                // Load admins from Firestore
-                const adminsQuery = window.firebaseQuery(
-                    window.firebaseCollection(window.firebaseDB, 'admins'),
-                    window.firebaseOrderBy('updatedAt', 'desc')
-                );
-                
-                const querySnapshot = await window.firebaseGetDocs(adminsQuery);
-                const adminsData = [];
-
-                querySnapshot.forEach((doc) => {
-                    adminsData.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
-                });
-
-                displayAdmins(adminsData);
-            } catch (error) {
-                showNotification('Failed to load admins.', 'error');
-            } finally {
-                if (showLoading && refreshBtn && originalText) {
-                    refreshBtn.innerHTML = originalText;
-                    refreshBtn.disabled = false;
-                }
-            }
-        }
 
         // Display admins
         function displayAdmins(adminsData) {
@@ -1868,15 +2097,7 @@
                             ${adminsData.map(admin => `
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-10 w-10">
-                                                <img class="h-10 w-10 rounded-full" src="${admin.photoURL ? escapeAttribute(admin.photoURL) : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDEyQzE0LjIwOTEgMTIgMTYgMTAuMjA5MSAxNiA4QzE2IDUuNzkwODYgMTQuMjA5MSA0IDEyIDRDOS43OTA4NiA0IDggNS43OTA4NiA4IDhDOCAxMC4yMDkxIDkuNzkwODYgMTIgMTJaIiBmaWxsPSIjNkI3MjgwIi8+CjxwYXRoIGQ9Ik0xMiAxNEM5LjMzIDE0IDcgMTYuMzMgNyAxOVYyMEgxN1YxOUMxNyAxNi4zMyAxNC42NyAxNCAxMiAxNFoiIGZpbGw9IiM2QjcyODAiLz4KPC9zdmc+'}" alt="${escapeAttribute(admin.displayName || 'Admin')}" width="40" height="40" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-                                            </div>
-                                            <div class="ml-4">
-                                                <div class="text-sm font-medium text-gray-900">${escapeHTML(admin.displayName || 'Unknown')}</div>
-                                                <div class="text-sm text-gray-500">${escapeHTML(admin.userId)}</div>
-                                            </div>
-                                        </div>
+                                        <div class="text-sm font-medium text-gray-900">${escapeHTML(admin.displayName || 'Unknown')}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(admin.email || 'No email')}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(admin.updatedBy || 'Unknown')}</td>
@@ -1912,29 +2133,21 @@
             try {
                 await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'admins', adminId));
                 showNotification('Administrator demoted successfully!', 'success');
-                loadAdmins(); // Reload the list
+                
+                // Clear caches and refresh statistics
+                clearCache('admins');
+                clearCache('stats');
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
+                
+                // Reload and display admins list
+                await loadAllAdmins();
+                displayAllAdmins();
             } catch (error) {
                 showNotification('Failed to demote administrator.', 'error');
             }
         }
 
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
-
-        // This function is no longer needed with the new design
 
         function formatNumber(num) {
             if (num === null || num === undefined) return '0.00';
@@ -1955,6 +2168,18 @@
             }
         }
 
+        function formatLocalAmount(localAmount, currencyRate) {
+            if (!localAmount || localAmount === 0) {
+                return 'N/A';
+            }
+            try {
+                const amount = parseFloat(localAmount);
+                return amount.toFixed(2);
+            } catch (error) {
+                return 'N/A';
+            }
+        }
+
         // Pagination control functions
         function changeMemberRosterPage(newPage) {
             if (newPage >= 1 && newPage <= Math.ceil((currentSearchedUser?.memberRoster?.length || 0) / memberRosterPerPage)) {
@@ -1970,7 +2195,7 @@
             }
         }
 
-        function switchTab(tabName) {
+        async function switchTab(tabName) {
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
@@ -2018,7 +2243,11 @@
                     document.getElementById('no-user-found').classList.add('hidden');
                 }
             } else if (tabName === 'admins') {
-                loadAdmins();
+                // Use optimized admin loading
+                if (allAdminsData.length === 0) {
+                    await loadAllAdmins();
+                }
+                displayAllAdmins();
             }
         }
 
@@ -2108,9 +2337,28 @@
             if (elements.promoteBtn) elements.promoteBtn.addEventListener('click', promoteUser);
             if (elements.demoteBtn) elements.demoteBtn.addEventListener('click', demoteUser);
             if (elements.deleteBtn) elements.deleteBtn.addEventListener('click', deleteUser);
+            
+            // Member roster export
+            const exportMemberRosterBtn = document.getElementById('export-member-roster-btn');
+            if (exportMemberRosterBtn) exportMemberRosterBtn.addEventListener('click', exportMemberRosterAsCSV);
 
             // Admin refresh
-            if (elements.refreshAdminsBtn) elements.refreshAdminsBtn.addEventListener('click', () => loadAdmins(true));
+            if (elements.refreshAdminsBtn) elements.refreshAdminsBtn.addEventListener('click', async () => {
+                try {
+                    // Clear cache and reload
+                    clearCache('admins');
+                    await loadAllAdmins();
+                    displayAllAdmins();
+                    
+                    // Also refresh statistics
+                    const stats = await loadDashboardStatistics();
+                    updateStatisticsDisplay(stats);
+                    
+                    showNotification('Admins refreshed successfully!', 'success');
+                } catch (error) {
+                    showNotification('Failed to refresh admins.', 'error');
+                }
+            });
             
             // Setup keyboard shortcuts
             setupKeyboardShortcuts();
@@ -2130,19 +2378,6 @@
         }
 
         // Update top-level stats (only admins count for privacy)
-        async function updateBaseStats() {
-            try {
-                const adminsColl = window.firebaseCollection(window.firebaseDB, 'admins');
-                const adminsCountSnap = await window.firebaseGetCountFromServer(adminsColl);
-                const adminsCount = adminsCountSnap.data().count || 0;
-                const adminsEl = document.getElementById('total-admins');
-                if (adminsEl) adminsEl.textContent = String(adminsCount);
-            } catch (_) {
-                // Fallback to dash on error
-                const adminsEl = document.getElementById('total-admins');
-                if (adminsEl) adminsEl.textContent = '-';
-            }
-        }
 
         // Initialize when Firebase is ready
         function waitForFirebase() {
@@ -2402,7 +2637,7 @@
 
         // Global error handler for confirmation system
         window.addEventListener('error', function(e) {
-            if (e.target && e.target.closest('#confirm-overlay')) {
+            if (e.target && e.target.closest && e.target.closest('#confirm-overlay')) {
                 hideConfirm();
             }
         });
@@ -2411,20 +2646,7 @@
         window.addEventListener('popstate', hideConfirm);
         window.addEventListener('beforeunload', hideConfirm);
 
-        // Debug function to check confirmation system status
-        function debugConfirmSystem() {
-            const overlay = document.getElementById('confirm-overlay');
-            // Debug information removed for production
-        }
 
-        // Legacy functions for backward compatibility
-        function showConfirmationModal(options = {}) {
-            return showConfirm(options);
-        }
-
-        function showConfirmationPopup(options = {}) {
-            return showConfirm(options);
-        }
 
         // Performance optimizations
         function optimizePerformance() {

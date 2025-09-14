@@ -203,9 +203,7 @@ const ErrorHandler = {
     },
     
     handleError(error, context = 'unknown') {
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            console.error(`Error in ${context}:`, error);
-        }
+        // Error logging removed for production
         
         if (window.gtag) {
             gtag('event', 'exception', {
@@ -928,7 +926,6 @@ function addMember(e) {
     const duration = PerformanceMonitor.endTimer('addMember');
     PerformanceMonitor.trackUserInteraction('add_member', duration);
     
-    // Note: Auto-save removed. Use "Save to Cloud" button to save data.
 }
 
 // Feedback functions
@@ -1142,7 +1139,6 @@ function initializeApp() {
                 updateTotal();
                 updatePagination();
                 
-                // Note: Auto-save removed. Use "Save to Cloud" button to save data.
             }
         });
     }
@@ -1527,7 +1523,6 @@ function addBulkMembers() {
     const duration = PerformanceMonitor.endTimer('addBulkMembers');
     PerformanceMonitor.trackUserInteraction('bulk_upload', duration);
     
-    // Note: Auto-save removed. Use "Save to Cloud" button to save data.
     
     // Show success animation and return to upload area
     showSuccessAnimation();
@@ -2066,7 +2061,6 @@ function saveMember(memberId) {
         window.appFunctions.logUserActivity(window.currentUser.uid, 'edit_member');
     }
     
-    // Note: Auto-save removed. Use "Save to Cloud" button to save data.
     
     // Show success feedback
     row.style.backgroundColor = '#f0f9ff';
@@ -2143,7 +2137,6 @@ function finishEditing(row, memberId) {
                 updateTotal();
                 updatePagination();
                 
-                // Note: Auto-save removed. Use "Save to Cloud" button to save data.
             });
         }
     }, 0);
@@ -2165,7 +2158,6 @@ function resetCalculator() {
         window.appFunctions.logUserActivity(window.currentUser.uid, 'reset_roster');
     }
     
-    // Note: Auto-save removed. Use "Save to Cloud" button to save data.
 }
 
 // Firebase Authentication and Data Storage Functions
@@ -2329,7 +2321,7 @@ async function logUserActivity(userId, activityType) {
             });
 
             // Update user's main document with latest login info
-            const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userId);
+            const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
             await window.firebaseSetDoc(userDocRef, {
                 displayName: user.displayName || 'Unknown',
                 email: user.email || 'No email',
@@ -2348,8 +2340,8 @@ function generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-async function logInvoiceSummary(userId, invoiceSummary) {
-    if (!window.isAuthenticated || !userId || !window.currentUser) {
+async function logInvoiceSummary(userUid, invoiceSummary) {
+    if (!window.isAuthenticated || !userUid || !window.currentUser) {
         return;
     }
 
@@ -2357,8 +2349,8 @@ async function logInvoiceSummary(userId, invoiceSummary) {
         const user = window.currentUser;
         const currentTime = new Date().toISOString();
 
-        const summaryDoc = {
-            userId: userId,
+        const summaryData = {
+            id: `summary-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             displayName: user.displayName || 'Unknown',
             email: user.email || 'No email',
             timestamp: currentTime,
@@ -2386,16 +2378,39 @@ async function logInvoiceSummary(userId, invoiceSummary) {
             }
         };
 
-        const summariesRef = window.firebaseCollection(window.firebaseDB, 'invoice_summaries');
-        await window.firebaseAddDoc(summariesRef, summaryDoc);
+        // Get current user document to append to invoiceSummaries array
+        const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userUid);
+        const userDoc = await window.firebaseGetDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const existingSummaries = userData.invoiceSummaries || [];
+            
+            // Add new summary to the array
+            existingSummaries.push(summaryData);
+            
+            // Update the user document with the new invoiceSummaries array
+            await window.firebaseUpdateDoc(userDocRef, {
+                invoiceSummaries: existingSummaries,
+                lastUpdated: currentTime
+            });
+        } else {
+            // If user document doesn't exist, create it with the invoice summary
+            await window.firebaseSetDoc(userDocRef, {
+                invoiceSummaries: [summaryData],
+                lastUpdated: currentTime,
+                created: currentTime
+            });
+        }
 
     } catch (error) {
         ErrorHandler.handleError(error, 'firebase');
     }
 }
 
+
 async function saveUserBasicInfo(user) {
-    if (!user || !user.uid) {
+    if (!user || !user.uid || !user.email) {
         return;
     }
 
@@ -2414,7 +2429,7 @@ async function saveUserBasicInfo(user) {
             createdAt: user.metadata?.creationTime || currentTime
         };
 
-        // Save to users collection
+        // Save to user collection using UID as document ID
         const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
         await window.firebaseSetDoc(userDocRef, userBasicInfo, { merge: true });
 
@@ -2423,8 +2438,8 @@ async function saveUserBasicInfo(user) {
     }
 }
 
-async function saveUserData(userId, data) {
-    if (!window.isAuthenticated || !userId) {
+async function saveUserData(userUid, data) {
+    if (!window.isAuthenticated || !userUid) {
         return;
     }
 
@@ -2465,10 +2480,10 @@ async function saveUserData(userId, data) {
         settings: cleanSettings
     };
 
-    await logUserActivity(userId, 'data_save');
+    await logUserActivity(user?.uid, 'data_save');
 
     try {
-        const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userId);
+        const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userUid);
         await window.firebaseSetDoc(userDocRef, cleanData, { merge: true });
         
 
@@ -2477,20 +2492,20 @@ async function saveUserData(userId, data) {
     }
 }
 
-async function loadUserData(userId) {
-    if (!window.isAuthenticated || !userId) {
+async function loadUserData(userUid) {
+    if (!window.isAuthenticated || !userUid) {
         return;
     }
 
     try {
         // Log user activity for data loading
-        await logUserActivity(userId, 'data_load');
+        await logUserActivity(window.currentUser?.uid, 'data_load');
         
         // Ensure allMemberRows is initialized
         window.allMemberRows = window.allMemberRows || [];
         
-        // Get user document from Firebase
-        const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userId);
+        // Get user document from Firebase using UID as document ID
+        const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userUid);
         const userDoc = await window.firebaseGetDoc(userDocRef);
         
         if (userDoc.exists()) {
@@ -2875,7 +2890,6 @@ function loadMemberRoster(memberRoster) {
                     updateTotal();
                     updatePagination();
                     
-                    // Note: Auto-save removed. Use "Save to Cloud" button to save data.
                 });
             }
         });
@@ -2915,7 +2929,6 @@ function loadMemberRoster(memberRoster) {
                     updateTotal();
                     updatePagination();
                     
-                    // Note: Auto-save removed. Use "Save to Cloud" button to save data.
                 }
             });
         }
@@ -3175,7 +3188,6 @@ const FirebaseAnalyticsChecker = {
             window.firebaseLogEvent(window.firebaseAnalytics, eventName, analyticsParams);
             return true;
         } catch (error) {
-            console.error('Firebase Analytics logEvent error:', error);
             return false;
         }
     }
