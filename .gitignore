@@ -1,0 +1,2 @@
+# Ignore Firebase config files containing secrets (local and prod)
+**/firebase-config-local.js
