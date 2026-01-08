@@ -1011,6 +1011,32 @@
         // Remember last viewed user for the User Data tab
         let lastViewedUserId = null;
 
+        // Admin cache for user search results
+        const adminCache = {
+            users: null,
+            lastFetch: null,
+            ttl: 2 * 60 * 1000, // 2 minutes
+            
+            isValid() {
+                return this.users && this.lastFetch && 
+                       (Date.now() - this.lastFetch) < this.ttl;
+            },
+            
+            get() {
+                return this.isValid() ? this.users : null;
+            },
+            
+            set(data) {
+                this.users = data;
+                this.lastFetch = Date.now();
+            },
+            
+            clear() {
+                this.users = null;
+                this.lastFetch = null;
+            }
+        };
+
         // Global cache for Firestore data to reduce reads (optimized structure)
         const firestoreCache = {
             admins: {
@@ -1406,6 +1432,25 @@
             }
 
             try {
+                // Check cache first
+                const cached = adminCache.get();
+                if (cached) {
+                    const user = cached.find(u => u.email === email.trim());
+                    if (user) {
+                        // Use cached data
+                        currentSearchedUser = user;
+                        currentUserInvoices = user.invoiceSummaries || [];
+                        currentUserInvoices.sort((a, b) => {
+                            const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                            const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                            return timestampB - timestampA; // Descending order (newest first)
+                        });
+                        displayUserData(user);
+                        showNotification(`Found user: ${user.displayName || user.email}`, 'success');
+                        return;
+                    }
+                }
+
                 // Query users collection to find user by email field
                 const usersRef = window.firebaseCollection(window.firebaseDB, 'users');
                 const q = window.firebaseQuery(usersRef, window.firebaseWhere('email', '==', email.trim()));
@@ -1444,6 +1489,16 @@
                     displayUserData(userData);
 
                     showNotification(`Found user: ${userData.displayName || userData.email}`, 'success');
+                    
+                    // Cache the result
+                    const currentCache = adminCache.get() || [];
+                    const existingIndex = currentCache.findIndex(u => u.id === userData.id);
+                    if (existingIndex >= 0) {
+                        currentCache[existingIndex] = userData;
+                    } else {
+                        currentCache.push(userData);
+                    }
+                    adminCache.set(currentCache);
                 }
             } catch (error) {
                 showNotification('Error searching for user: ' + error.message, 'error');

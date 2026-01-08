@@ -449,6 +449,50 @@ function preciseDecimal(value, decimals = 2) {
     return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
+// Debounce save operations to reduce write costs
+let saveDebounceTimer = null;
+const SAVE_DEBOUNCE_DELAY = 2000; // 2 seconds
+
+function debouncedSaveUserData(userUid, data) {
+    // Clear existing timer
+    if (saveDebounceTimer) {
+        clearTimeout(saveDebounceTimer);
+    }
+    
+    // Set new timer
+    saveDebounceTimer = setTimeout(async () => {
+        await saveUserData(userUid, data);
+        saveDebounceTimer = null;
+    }, SAVE_DEBOUNCE_DELAY);
+}
+
+// Client-side data cache to reduce Firestore reads
+const DataCache = {
+    cache: new Map(),
+    ttl: 5 * 60 * 1000, // 5 minutes
+    
+    get(key) {
+        const item = this.cache.get(key);
+        if (!item) return null;
+        if (Date.now() > item.expiry) {
+            this.cache.delete(key);
+            return null;
+        }
+        return item.data;
+    },
+    
+    set(key, data) {
+        this.cache.set(key, {
+            data,
+            expiry: Date.now() + this.ttl
+        });
+    },
+    
+    clear() {
+        this.cache.clear();
+    }
+};
+
 // Lazy-load external vendor scripts to reduce initial JS payload
 async function loadScriptOnce(src) {
     return new Promise((resolve, reject) => {
@@ -2215,6 +2259,9 @@ function initializeFirebaseAuth() {
             // Clear any existing data
             window.allMemberRows = [];
             
+            // Clear cache on sign out
+            DataCache.clear();
+            
             // Update UI
             updateLoginUI(null);
         }
@@ -2291,6 +2338,9 @@ async function handleLogout() {
         if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
             await window.appFunctions.logUserActivity(window.currentUser.uid, 'sign_out');
         }
+        
+        // Clear cache on logout
+        DataCache.clear();
         
         await window.firebaseSignOut(window.firebaseAuth);
         showSuccessMessage('Successfully logged out!');
@@ -2389,9 +2439,19 @@ async function logInvoiceSummary(userUid, invoiceSummary) {
             // Add new summary to the array
             existingSummaries.push(summaryData);
             
-            // Update the user document with the new invoiceSummaries array
+            // Sort by timestamp (newest first) and keep only last 10
+            const sortedSummaries = existingSummaries.sort((a, b) => {
+                const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                return timestampB - timestampA; // Descending order (newest first)
+            });
+            
+            // Keep only the last 10 summaries
+            const recentSummaries = sortedSummaries.slice(0, 10);
+            
+            // Update the user document with the trimmed invoiceSummaries array
             await window.firebaseUpdateDoc(userDocRef, {
-                invoiceSummaries: existingSummaries,
+                invoiceSummaries: recentSummaries,
                 lastUpdated: currentTime
             });
         } else {
@@ -2484,8 +2544,24 @@ async function saveUserData(userUid, data) {
 
     try {
         const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userUid);
-        await window.firebaseSetDoc(userDocRef, cleanData, { merge: true });
         
+        // Check if document exists first
+        const userDoc = await window.firebaseGetDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+            // Use field-level update for existing documents
+            await window.firebaseUpdateDoc(userDocRef, {
+                displayName: cleanData.displayName,
+                email: cleanData.email,
+                lastLogin: cleanData.lastLogin,
+                lastUpdated: cleanData.lastUpdated,
+                memberRoster: cleanData.memberRoster,
+                settings: cleanData.settings
+            });
+        } else {
+            // Use setDoc for new documents
+            await window.firebaseSetDoc(userDocRef, cleanData);
+        }
 
     } catch (error) {
         showErrorMessage('Failed to save data. Please try again.');
@@ -2494,6 +2570,22 @@ async function saveUserData(userUid, data) {
 
 async function loadUserData(userUid) {
     if (!window.isAuthenticated || !userUid) {
+        return;
+    }
+
+    // Check cache first
+    const cacheKey = `user_${userUid}`;
+    const cachedData = DataCache.get(cacheKey);
+    if (cachedData) {
+        // Use cached data
+        window.allMemberRows = window.allMemberRows || [];
+        
+        if (cachedData.memberRoster && Array.isArray(cachedData.memberRoster) && cachedData.memberRoster.length > 0) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            showDataChoiceDialog(cachedData);
+        } else {
+            showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
+        }
         return;
     }
 
@@ -2510,6 +2602,9 @@ async function loadUserData(userUid) {
         
         if (userDoc.exists()) {
             const data = userDoc.data();
+            
+            // Cache the data
+            DataCache.set(cacheKey, data);
             
             // Check if there's cloud data to show dialog
             if (data.memberRoster && Array.isArray(data.memberRoster) && data.memberRoster.length > 0) {
@@ -3041,11 +3136,11 @@ function handleManualSave() {
     
     try {
         const data = getCurrentData();
-        saveUserData(window.currentUser.uid, data);
+        debouncedSaveUserData(window.currentUser.uid, data);
         
-        // Show success message near the save button
+        // Show immediate feedback
         const saveButton = document.getElementById('save-button');
-        showSuccessMessage('Data saved to cloud successfully!', saveButton);
+        showSuccessMessage('Saving to cloud...', saveButton);
     } catch (error) {
         // Error saving data
         showErrorMessage('Failed to save data to cloud. Please try again.');
