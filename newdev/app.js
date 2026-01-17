@@ -469,7 +469,7 @@ function debouncedSaveUserData(userUid, data) {
 // Client-side data cache to reduce Firestore reads
 const DataCache = {
     cache: new Map(),
-    ttl: 5 * 60 * 1000, // 5 minutes
+    ttl: 10 * 60 * 1000, // 10 minutes
     
     get(key) {
         const item = this.cache.get(key);
@@ -486,6 +486,23 @@ const DataCache = {
             data,
             expiry: Date.now() + this.ttl
         });
+    },
+    
+    clear() {
+        this.cache.clear();
+    }
+};
+
+// Document existence cache to track user document existence in memory
+const documentExistsCache = {
+    cache: new Set(),
+    
+    has(uid) {
+        return this.cache.has(uid);
+    },
+    
+    add(uid) {
+        this.cache.add(uid);
     },
     
     clear() {
@@ -2233,11 +2250,11 @@ function initializeFirebaseAuth() {
                 // Save user's basic information first
                 await saveUserBasicInfo(user);
                 
-                // Log user sign in
-                await logUserActivity(user.uid, 'sign_in');
-                
                 // Load user data with proper error handling
                 await loadUserData(user.uid);
+                
+                // Batch log sign in and data load activities together
+                await logUserActivities(user.uid, ['sign_in', 'data_load']);
                 
             } catch (error) {
                 showErrorMessage('Failed to initialize user data. Please refresh and try again.');
@@ -2261,6 +2278,7 @@ function initializeFirebaseAuth() {
             
             // Clear cache on sign out
             DataCache.clear();
+            documentExistsCache.clear();
             
             // Update UI
             updateLoginUI(null);
@@ -2341,6 +2359,7 @@ async function handleLogout() {
         
         // Clear cache on logout
         DataCache.clear();
+        documentExistsCache.clear();
         
         await window.firebaseSignOut(window.firebaseAuth);
         showSuccessMessage('Successfully logged out!');
@@ -2372,12 +2391,80 @@ async function logUserActivity(userId, activityType) {
 
             // Update user's main document with latest login info
             const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
-            await window.firebaseSetDoc(userDocRef, {
-                displayName: user.displayName || 'Unknown',
-                email: user.email || 'No email',
-                lastLogin: user.metadata?.lastSignInTime || currentTime,
-                lastUpdated: currentTime
-            }, { merge: true });
+            try {
+                await window.firebaseUpdateDoc(userDocRef, {
+                    displayName: user.displayName || 'Unknown',
+                    email: user.email || 'No email',
+                    lastLogin: user.metadata?.lastSignInTime || currentTime,
+                    lastUpdated: currentTime
+                });
+            } catch (error) {
+                // Document doesn't exist, create it
+                if (error.code === 'not-found') {
+                    await window.firebaseSetDoc(userDocRef, {
+                        displayName: user.displayName || 'Unknown',
+                        email: user.email || 'No email',
+                        lastLogin: user.metadata?.lastSignInTime || currentTime,
+                        lastUpdated: currentTime,
+                        createdAt: currentTime
+                    });
+                } else {
+                    throw error;
+                }
+            }
+        });
+
+    } catch (error) {
+        // Handle error gracefully - don't interrupt user experience
+        ErrorHandler.handleError(error, 'firebase');
+    }
+}
+
+async function logUserActivities(userId, activities) {
+    if (!window.isAuthenticated || !userId || !window.currentUser || !activities || !Array.isArray(activities) || activities.length === 0) {
+        return;
+    }
+
+    try {
+        await CircuitBreaker.execute('firebase', async () => {
+            // Get current user data
+            const user = window.currentUser;
+            const currentTime = new Date().toISOString();
+            
+            // Log all activities to analytics
+            activities.forEach(activityType => {
+                FirebaseAnalyticsChecker.logEvent('user_activity', {
+                    user_id: userId,
+                    activity_type: activityType,
+                    session_id: generateSessionId(),
+                    activity_context: 'club_invoice_calculator',
+                    user_email: user.email || 'no_email'
+                });
+            });
+
+            // Update user's main document with latest info (single write for all activities)
+            const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
+            try {
+                await window.firebaseUpdateDoc(userDocRef, {
+                    displayName: user.displayName || 'Unknown',
+                    email: user.email || 'No email',
+                    lastLogin: user.metadata?.lastSignInTime || currentTime,
+                    lastUpdated: currentTime
+                });
+            } catch (error) {
+                // Document doesn't exist, create it
+                if (error.code === 'not-found') {
+                    await window.firebaseSetDoc(userDocRef, {
+                        displayName: user.displayName || 'Unknown',
+                        email: user.email || 'No email',
+                        lastLogin: user.metadata?.lastSignInTime || currentTime,
+                        lastUpdated: currentTime,
+                        createdAt: currentTime
+                    });
+                } else {
+                    throw error;
+                }
+            }
         });
 
     } catch (error) {
@@ -2428,40 +2515,42 @@ async function logInvoiceSummary(userUid, invoiceSummary) {
             }
         };
 
-        // Get current user document to append to invoiceSummaries array
+        // Use transaction to atomically read and update invoice summaries
         const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userUid);
-        const userDoc = await window.firebaseGetDoc(userDocRef);
-        
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-            const existingSummaries = userData.invoiceSummaries || [];
+        await window.firebaseRunTransaction(window.firebaseDB, async (transaction) => {
+            const userDoc = await transaction.get(userDocRef);
             
-            // Add new summary to the array
-            existingSummaries.push(summaryData);
-            
-            // Sort by timestamp (newest first) and keep only last 10
-            const sortedSummaries = existingSummaries.sort((a, b) => {
-                const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-                const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
-                return timestampB - timestampA; // Descending order (newest first)
-            });
-            
-            // Keep only the last 10 summaries
-            const recentSummaries = sortedSummaries.slice(0, 10);
-            
-            // Update the user document with the trimmed invoiceSummaries array
-            await window.firebaseUpdateDoc(userDocRef, {
-                invoiceSummaries: recentSummaries,
-                lastUpdated: currentTime
-            });
-        } else {
-            // If user document doesn't exist, create it with the invoice summary
-            await window.firebaseSetDoc(userDocRef, {
-                invoiceSummaries: [summaryData],
-                lastUpdated: currentTime,
-                created: currentTime
-            });
-        }
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const existingSummaries = userData.invoiceSummaries || [];
+                
+                // Add new summary to the array
+                existingSummaries.push(summaryData);
+                
+                // Sort by timestamp (newest first) and keep only last 10
+                const sortedSummaries = existingSummaries.sort((a, b) => {
+                    const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                    const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                    return timestampB - timestampA; // Descending order (newest first)
+                });
+                
+                // Keep only the last 10 summaries
+                const recentSummaries = sortedSummaries.slice(0, 10);
+                
+                // Update the user document with the trimmed invoiceSummaries array
+                transaction.update(userDocRef, {
+                    invoiceSummaries: recentSummaries,
+                    lastUpdated: currentTime
+                });
+            } else {
+                // If user document doesn't exist, create it with the invoice summary
+                transaction.set(userDocRef, {
+                    invoiceSummaries: [summaryData],
+                    lastUpdated: currentTime,
+                    created: currentTime
+                });
+            }
+        });
 
     } catch (error) {
         ErrorHandler.handleError(error, 'firebase');
@@ -2491,7 +2580,23 @@ async function saveUserBasicInfo(user) {
 
         // Save to user collection using UID as document ID
         const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
-        await window.firebaseSetDoc(userDocRef, userBasicInfo, { merge: true });
+        try {
+            await window.firebaseUpdateDoc(userDocRef, {
+                displayName: userBasicInfo.displayName,
+                email: userBasicInfo.email,
+                lastLogin: userBasicInfo.lastLogin,
+                lastUpdated: userBasicInfo.lastUpdated,
+                photoURL: userBasicInfo.photoURL,
+                emailVerified: userBasicInfo.emailVerified
+            });
+            } catch (error) {
+                // Document doesn't exist, create it
+                if (error.code === 'not-found') {
+                    await window.firebaseSetDoc(userDocRef, userBasicInfo);
+                } else {
+                    throw error;
+                }
+            }
 
     } catch (error) {
         ErrorHandler.handleError(error, 'firebase');
@@ -2545,22 +2650,52 @@ async function saveUserData(userUid, data) {
     try {
         const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', userUid);
         
-        // Check if document exists first
-        const userDoc = await window.firebaseGetDoc(userDocRef);
-        
-        if (userDoc.exists()) {
-            // Use field-level update for existing documents
-            await window.firebaseUpdateDoc(userDocRef, {
-                displayName: cleanData.displayName,
-                email: cleanData.email,
-                lastLogin: cleanData.lastLogin,
-                lastUpdated: cleanData.lastUpdated,
-                memberRoster: cleanData.memberRoster,
-                settings: cleanData.settings
-            });
+        // Use document existence cache to avoid redundant reads
+        if (documentExistsCache.has(userUid)) {
+            // Document exists, use updateDoc directly
+            try {
+                await window.firebaseUpdateDoc(userDocRef, {
+                    displayName: cleanData.displayName,
+                    email: cleanData.email,
+                    lastLogin: cleanData.lastLogin,
+                    lastUpdated: cleanData.lastUpdated,
+                    memberRoster: cleanData.memberRoster,
+                    settings: cleanData.settings
+                });
+            } catch (error) {
+                // Handle case where cache is stale (document was deleted externally)
+                if (error.code === 'not-found') {
+                    // Cache was stale, remove from cache and create document
+                    documentExistsCache.cache.delete(userUid);
+                    await window.firebaseSetDoc(userDocRef, cleanData);
+                    documentExistsCache.add(userUid);
+                } else {
+                    throw error;
+                }
+            }
         } else {
-            // Use setDoc for new documents
-            await window.firebaseSetDoc(userDocRef, cleanData);
+            // Try updateDoc first (cheaper than getDoc + setDoc)
+            try {
+                await window.firebaseUpdateDoc(userDocRef, {
+                    displayName: cleanData.displayName,
+                    email: cleanData.email,
+                    lastLogin: cleanData.lastLogin,
+                    lastUpdated: cleanData.lastUpdated,
+                    memberRoster: cleanData.memberRoster,
+                    settings: cleanData.settings
+                });
+                // Document exists, add to cache
+                documentExistsCache.add(userUid);
+            } catch (error) {
+                // Document doesn't exist, create it
+                if (error.code === 'not-found') {
+                    await window.firebaseSetDoc(userDocRef, cleanData);
+                    // Document created, add to cache
+                    documentExistsCache.add(userUid);
+                } else {
+                    throw error;
+                }
+            }
         }
 
     } catch (error) {
@@ -2590,8 +2725,7 @@ async function loadUserData(userUid) {
     }
 
     try {
-        // Log user activity for data loading
-        await logUserActivity(window.currentUser?.uid, 'data_load');
+        // Activity logging is now batched with sign_in in the auth state change handler
         
         // Ensure allMemberRows is initialized
         window.allMemberRows = window.allMemberRows || [];
@@ -2605,6 +2739,9 @@ async function loadUserData(userUid) {
             
             // Cache the data
             DataCache.set(cacheKey, data);
+            
+            // Update document existence cache since we confirmed the document exists
+            documentExistsCache.add(userUid);
             
             // Check if there's cloud data to show dialog
             if (data.memberRoster && Array.isArray(data.memberRoster) && data.memberRoster.length > 0) {
@@ -3327,6 +3464,7 @@ window.appFunctions = {
     saveUserData,
     loadUserData,
     logUserActivity,
+    logUserActivities,
     logInvoiceSummary,
     saveUserBasicInfo,
     setupManualSave,

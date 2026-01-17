@@ -569,7 +569,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-        import { getFirestore, collection, query, orderBy, limit, getDocs, where, doc, getDoc, deleteDoc, updateDoc, setDoc, addDoc, getCountFromServer } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, collection, query, orderBy, limit, getDocs, where, doc, getDoc, deleteDoc, updateDoc, setDoc, addDoc, getCountFromServer, startAfter } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
         import { firebaseConfig } from './firebase-config.js';
 
         // Initialize Firebase
@@ -589,6 +589,7 @@
         window.firebaseQuery = query;
         window.firebaseOrderBy = orderBy;
         window.firebaseLimit = limit;
+        window.firebaseStartAfter = startAfter;
         window.firebaseGetDocs = getDocs;
         window.firebaseGetCountFromServer = getCountFromServer;
         window.firebaseWhere = where;
@@ -1011,14 +1012,15 @@
         // Remember last viewed user for the User Data tab
         let lastViewedUserId = null;
 
-        // Admin cache for user search results
+        // Admin cache for user search results with enhanced query caching
         const adminCache = {
             users: null,
             lastFetch: null,
-            ttl: 2 * 60 * 1000, // 2 minutes
+            ttl: 5 * 60 * 1000, // 5 minutes
+            queryCache: new Map(), // Separate cache for individual email queries
             
             isValid() {
-                return this.users && this.lastFetch && 
+                return this.users && this.lastFetch &&
                        (Date.now() - this.lastFetch) < this.ttl;
             },
             
@@ -1031,9 +1033,26 @@
                 this.lastFetch = Date.now();
             },
             
+            getQuery(email) {
+                const cached = this.queryCache.get(email.toLowerCase().trim());
+                if (cached && (Date.now() - cached.timestamp) < this.ttl) {
+                    return cached.data;
+                }
+                this.queryCache.delete(email.toLowerCase().trim());
+                return null;
+            },
+            
+            setQuery(email, data) {
+                this.queryCache.set(email.toLowerCase().trim(), {
+                    data: data,
+                    timestamp: Date.now()
+                });
+            },
+            
             clear() {
                 this.users = null;
                 this.lastFetch = null;
+                this.queryCache.clear();
             }
         };
 
@@ -1155,20 +1174,32 @@
         // Global data storage for optimized loading
         let allAdminsData = [];
 
-        // Optimized loadAllAdmins function
-        async function loadAllAdmins() {
+        // Optimized loadAllAdmins function with pagination
+        async function loadAllAdmins(pageSize = 50, lastDoc = null) {
             try {
-                // Check cache first
-                if (firestoreCache.admins && firestoreCache.admins.data && 
+                // Check cache first (only for first page)
+                if (!lastDoc && firestoreCache.admins && firestoreCache.admins.data && 
                     (Date.now() - firestoreCache.admins.lastFetched) < firestoreCache.admins.cacheDuration) {
                     allAdminsData = firestoreCache.admins.data;
                     return;
                 }
                 const adminsRef = window.firebaseCollection(window.firebaseDB, 'admins');
-                const querySnapshot = await window.firebaseGetDocs(adminsRef);
+                // Construct query with pagination if needed
+                let q;
+                if (lastDoc) {
+                    q = window.firebaseQuery(adminsRef, window.firebaseStartAfter(lastDoc), window.firebaseLimit(pageSize));
+                } else {
+                    q = window.firebaseQuery(adminsRef, window.firebaseLimit(pageSize));
+                }
+                
+                const querySnapshot = await window.firebaseGetDocs(q);
                 trackReads(querySnapshot.size);
                 
-                allAdminsData = [];
+                // For first page, reset array; for subsequent pages, append
+                if (!lastDoc) {
+                    allAdminsData = [];
+                }
+                
                 querySnapshot.forEach((doc) => {
                     const adminData = {
                         id: doc.id,
@@ -1177,12 +1208,19 @@
                     allAdminsData.push(adminData);
                 });
                 
-                // Cache the data
-                if (!firestoreCache.admins) firestoreCache.admins = {};
-                firestoreCache.admins.data = allAdminsData;
-                firestoreCache.admins.lastFetched = Date.now();
+                // Cache the data (only for first page)
+                if (!lastDoc) {
+                    if (!firestoreCache.admins) firestoreCache.admins = {};
+                    firestoreCache.admins.data = allAdminsData;
+                    firestoreCache.admins.lastFetched = Date.now();
+                }
+                
+                // Return last document for pagination
+                return querySnapshot.docs.length > 0 ? querySnapshot.docs[querySnapshot.docs.length - 1] : null;
             } catch (error) {
-                allAdminsData = [];
+                if (!lastDoc) {
+                    allAdminsData = [];
+                }
                 throw error;
             }
         }
@@ -1432,12 +1470,29 @@
             }
 
             try {
-                // Check cache first
+                // Check query cache first (more specific than general cache)
+                const emailKey = email.trim().toLowerCase();
+                const cachedUser = adminCache.getQuery(emailKey);
+                if (cachedUser) {
+                    currentSearchedUser = cachedUser;
+                    currentUserInvoices = cachedUser.invoiceSummaries || [];
+                    currentUserInvoices.sort((a, b) => {
+                        const timestampA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+                        const timestampB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+                        return timestampB - timestampA; // Descending order (newest first)
+                    });
+                    displayUserData(cachedUser);
+                    showNotification(`Found user: ${cachedUser.displayName || cachedUser.email}`, 'success');
+                    return;
+                }
+                
+                // Fallback to general cache
                 const cached = adminCache.get();
                 if (cached) {
-                    const user = cached.find(u => u.email === email.trim());
+                    const user = cached.find(u => u.email.toLowerCase() === emailKey);
                     if (user) {
-                        // Use cached data
+                        // Use cached data and also cache in query cache
+                        adminCache.setQuery(emailKey, user);
                         currentSearchedUser = user;
                         currentUserInvoices = user.invoiceSummaries || [];
                         currentUserInvoices.sort((a, b) => {
@@ -1490,7 +1545,8 @@
 
                     showNotification(`Found user: ${userData.displayName || userData.email}`, 'success');
                     
-                    // Cache the result
+                    // Cache the result in both query cache and general cache
+                    adminCache.setQuery(emailKey, userData);
                     const currentCache = adminCache.get() || [];
                     const existingIndex = currentCache.findIndex(u => u.id === userData.id);
                     if (existingIndex >= 0) {
