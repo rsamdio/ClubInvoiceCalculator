@@ -1,228 +1,213 @@
-[![Netlify Status](https://api.netlify.com/api/v1/badges/a55b4ac6-6b6f-4857-bb6b-aa526abc7081/deploy-status)](https://app.netlify.com/projects/rotaractdues/deploys)
-
 # Rotaract Club Invoice Calculator
 
-An interactive tool developed by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease. This tool provides a user-friendly interface to manage a member roster, calculate dues, and generate detailed reports.
+A modern, responsive web application for calculating club membership invoices with Firebase integration, real-time data synchronization, and comprehensive member management.
 
-**Live Demo:** [**dues.rsamdio.org**](https://dues.rsamdio.org/)
-
-## 🚀 Features
+## Features
 
 ### Core Functionality
-*   **Easy to Use:** Simple and intuitive interface for quick calculations with real-time updates
-*   **Bulk Upload Support:** Upload member rosters via Excel (.xlsx, .xls) or CSV files for efficient processing
-*   **Real-time Calculations:** Instantly view estimated dues as you add or modify member information
-*   **Individual Member Management:** Add, edit, and remove individual members from the roster with inline editing capabilities
-*   **Prorated Dues Calculation:** Accurately calculates prorated dues based on join and leave dates
-*   **Tax Configuration:** Allows users to input a tax percentage to see the total invoice amount including tax
+- **Member Management**: Add, edit, and manage club members with join/leave dates
+- **Invoice Calculation**: Automatic calculation of prorated and full-year invoices
+- **Tax Handling**: Configurable tax percentage with detailed breakdown
+- **Currency Conversion**: Real-time currency rate conversion
+- **Bulk Import**: Excel/CSV file upload for bulk member addition
+- **PDF Export**: Generate professional invoice PDFs
+- **Data Persistence**: Cloud storage with Firebase Firestore
 
-### Advanced Features
-*   **PDF Report Generation:** Generate detailed PDF reports of the invoice summary and member roster with professional formatting
-*   **Pagination Support:** Efficiently handle large member rosters with customizable page sizes (10, 25, 50, 100 members per page)
-*   **Form Validation:** Comprehensive client-side validation with real-time error feedback
-*   **Instructional Pop-up:** A helpful guide for new users to get started quickly
-*   **Responsive Design:** Works seamlessly on all devices, from desktops to mobile phones
-*   **Performance Optimized:** Uses web workers for non-blocking PDF generation and debounced calculations
-*   **Template Downloads:** Pre-built CSV templates for easy data import
-*   **Data Export:** Export member data in various formats for record keeping
+### Performance Optimizations
+- DOM caching for frequently accessed elements
+- Event delegation for dynamic content
+- Memory leak prevention
+- Resource preloading
+- Error handling with circuit breaker pattern
+- Performance monitoring and analytics
 
 ### User Experience
-*   **Auto-save Functionality:** Form data persistence across browser sessions
-*   **Keyboard Navigation:** Full keyboard support for accessibility
-*   **Loading States:** Visual feedback during file processing and PDF generation
-*   **Error Handling:** Comprehensive error messages and recovery options
-*   **Mobile-First Design:** Optimized touch interface for mobile devices
+- Responsive design for all devices
+- Real-time calculations
+- Progressive loading
+- Offline capability
+- Error recovery
+- User-friendly feedback
 
-## 🛠️ Technologies Used
+## Quick Start
 
-### Frontend
-*   **HTML5:** Semantic markup and modern web standards
-*   **Tailwind CSS:** Utility-first CSS framework for responsive design
-*   **JavaScript (ES6+):** Modern JavaScript with async/await and modules
-*   **Web Workers:** Background processing for PDF generation
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd ClubInvoiceCalculator
+   ```
 
-### Libraries & Dependencies
-*   **XLSX.js:** Excel file parsing and manipulation
-*   **PapaParse.js:** Fast CSV parsing with error handling
-*   **jsPDF & jspdf-autotable:** Professional PDF generation with table support
-*   **Google Analytics:** Usage tracking and analytics
+2. **Deploy to Firebase Hosting**
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   firebase init hosting
+   firebase deploy
+   ```
 
-### Performance & SEO
-*   **Lazy Loading:** Optimized resource loading
-*   **SEO Optimization:** Comprehensive meta tags and structured data
-*   **PWA Ready:** Progressive Web App capabilities
-*   **CDN Integration:** Fast content delivery via CDN
+3. **Configure Firebase**
+   - Update `firebase-config.js` with your Firebase project credentials
+   - Enable Authentication and Firestore in Firebase Console
+   - Set up security rules for Firestore
 
-## 📦 Getting Started
-
-### Prerequisites
-*   Modern web browser (Chrome, Firefox, Safari, Edge)
-*   No server setup required - runs entirely in the browser
-
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/zeospec/ClubInvoiceCalculator.git
-    ```
-
-2.  **Navigate to the project directory:**
-    ```bash
-    cd ClubInvoiceCalculator
-    ```
-
-3.  **Open `index.html` in your web browser:**
-    ```bash
-    # On macOS/Linux
-    open index.html
-    
-    # On Windows
-    start index.html
-    
-    # Or simply double-click the file
-    ```
-
-**No special setup, build process, or server is required!**
-
-## 📖 Usage Guide
+## Usage
 
 ### Adding Members
+1. Click "Add Member" button
+2. Fill in member details (name, join date, member type)
+3. Click "Add" to save
 
-#### Individual Member Addition
-1.  Use the "Add New Member" form on the left column
-2.  Input member details:
-    *   **Name:** Full name (letters and spaces only)
-    *   **Club Base:** Select Community-Based or University-Based
-    *   **Join Date:** Date when member joined (YYYY-MM-DD format)
-    *   **Leave Date:** Optional - date when member left (YYYY-MM-DD format)
-3.  Click "Add Member" to add to the roster
+### Bulk Import
+1. Download the CSV template
+2. Fill in member data
+3. Upload the file
+4. Review and confirm import
 
-#### Bulk Upload
-1.  Click "Browse Files" or drag and drop your Excel/CSV file
-2.  Ensure your file follows the expected format:
-    *   **Column A:** Member Name (e.g., John Doe)
-    *   **Column B:** Join Date (YYYY-MM-DD format)
-    *   **Column C:** Club Base (Community-Based or University-Based)
-    *   **Column D:** Leave Date (YYYY-MM-DD format, leave blank if still active)
-3.  Review the preview and confirm upload
-4.  Templates are available for download:
-    *   **CSV Template:** Download for offline use
-    *   **Google Sheets Template:** For online collaboration
+### Calculating Invoices
+1. Set tax percentage and currency rate
+2. Select invoice year
+3. View automatic calculations
+4. Download PDF invoice
 
-### Managing the Invoice
+### Data Management
+- **Save to Cloud**: Login with Google account to save data
+- **Load from Cloud**: Automatically loads saved data on login
+- **Export Data**: Download CSV for backup
 
-#### Invoice Summary Configuration
-*   Select the desired "Invoice of January" year
-*   Adjust the "Tax Percentage (%)" as needed
-*   View real-time updates of "Base RI Dues" and "Total with Tax"
-*   See breakdown of full-year and prorated dues
+## Configuration
 
-#### Member Roster Management
-*   **View Members:** All added members listed in a paginated table
-*   **Edit Members:** Click the edit button (✏️) next to each member for inline editing
-*   **Delete Members:** Use the delete button (🗑️) to remove members
-*   **Reset Roster:** Clear all members using the "Reset Roster" button
-*   **Search & Filter:** Navigate through large rosters with pagination controls
+### Firebase Setup
+```javascript
+// firebase-config.js
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-project.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id",
+  measurementId: "your-measurement-id"
+};
+```
 
-### Generating Reports
+### Security Rules
+```javascript
+// Firestore security rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    
+    // Users: a user can create/update/read their own doc; admins can read/write any user
+    match /users/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow read, update: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Admins: non-admins can only read their own admin doc (for access check).
+    // Admins can read/modify any admin record.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAdmin();
+    }
+  }
+}
+```
 
-#### PDF Report Features
-*   **Professional Formatting:** Clean, official-looking reports
-*   **Complete Summary:** Invoice totals, member counts, and breakdowns
-*   **Member Details:** Full roster with individual calculations
-*   **Custom Branding:** RSAMDIO branding and professional styling
-*   **Print Ready:** Optimized for printing and sharing
+### Data Structure
+- **users/{uid}**: User documents containing:
+  - `memberRoster`: Array of member objects
+  - `invoiceSummaries`: Array of invoice summary objects
+  - `settings`: User preferences and configuration
+- **admins/{uid}**: Admin documents for access control
 
-## 🔧 Configuration
+## Performance
 
-### File Format Requirements
+### Optimizations Implemented
+- **DOM Caching**: Reduces query overhead
+- **Event Delegation**: Efficient event handling
+- **Memory Management**: Prevents memory leaks
+- **Resource Preloading**: Faster loading times
+- **Error Recovery**: Graceful failure handling
 
-#### Excel Files (.xlsx, .xls)
-- Must contain exactly 4 columns in order: Name, Join Date, Club Base, Leave Date
-- First row can be headers (will be automatically skipped)
-- Dates must be in YYYY-MM-DD format
+### Monitoring
+- Firebase Analytics integration
+- Performance metrics tracking
+- Error logging and reporting
+- User interaction analytics
 
-#### CSV Files (.csv)
-- Comma-separated values
-- Same column structure as Excel files
-- UTF-8 encoding recommended
+## Security
 
-### Browser Compatibility
-- **Chrome:** 60+ (Recommended)
-- **Firefox:** 55+
-- **Safari:** 12+
-- **Edge:** 79+
+### Content Security Policy
+- Strict CSP implementation
+- XSS protection
+- Frame protection
+- Resource restrictions
 
-## 🤝 Contributing
+### Data Protection
+- User authentication required
+- Data isolation by user
+- Secure Firebase rules
+- Input validation and sanitization
 
-We welcome contributions from the Rotaract community! Please follow these steps:
+## Browser Support
 
-1.  **Fork the repository**
-2.  **Create a feature branch:**
-    ```bash
-    git checkout -b feature/your-feature-name
-    ```
-3.  **Make your changes** following the existing code style
-4.  **Test thoroughly** on different browsers and devices
-5.  **Commit your changes:**
-    ```bash
-    git commit -m 'Add some feature'
-    ```
-6.  **Push to your branch:**
-    ```bash
-    git push origin feature/your-feature-name
-    ```
-7.  **Open a pull request** with a detailed description
+- Chrome 80+
+- Firefox 75+
+- Safari 13+
+- Edge 80+
 
-### Development Guidelines
-- Follow existing code style and conventions
-- Add comments for complex logic
-- Test on multiple browsers
-- Ensure mobile responsiveness
-- Update documentation for new features
-
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-#### File Upload Problems
-- **File not loading:** Ensure file format is .xlsx, .xls, or .csv
-- **Wrong data:** Check column order and date format
-- **Large files:** Consider splitting into smaller files for better performance
+**Firebase Connection Issues**
+- Check internet connection
+- Verify Firebase configuration
+- Ensure Firestore is enabled
 
-#### Calculation Issues
-- **Incorrect dues:** Verify join/leave dates are in YYYY-MM-DD format
-- **Tax not applying:** Ensure tax percentage is a valid number
-- **Real-time updates not working:** Refresh the page and try again
+**Performance Issues**
+- Clear browser cache
+- Close other tabs
+- Check network connection
 
-#### Browser Issues
-- **PDF not generating:** Try a different browser or update your current browser
-- **Slow performance:** Close other tabs and refresh the page
-- **Mobile issues:** Use landscape orientation for better experience
+**Data Not Loading**
+- Verify authentication
+- Check Firestore permissions
+- Refresh the page
 
-## 📄 License
+### Error Recovery
+- Automatic retry mechanism
+- Graceful degradation
+- User-friendly error messages
+- Offline capability
 
-This project is developed and maintained by Rotaract South Asia MDIO.
+## Support
 
-## ⚠️ Disclaimer
+For technical support or feature requests, please contact the development team.
 
-All calculations are indicative estimates. Actual figures may vary based on various factors including but not limited to variation in data and RI Policies. This tool is designed to assist with planning and should not be considered as official financial advice.
+## License
 
-## 📞 Contact
+This project is licensed under the MIT License.
 
-**PDRR Arun Teja Godavarthi**  
-Email: rotaract3191drr@gmail.com
+## newdev rebuild notes
 
-**Technical Support**  
-For technical issues or feature requests, please open an issue on GitHub.
+- Local vendor libraries are placed under `newdev/vendor/` and referenced from HTML and the PDF worker.
+- Minified assets are generated via `build_minify.py`. Run:
 
-## 📊 Project Status
+```
+python3 newdev/build_minify.py
+```
 
-- **Last Updated:** January 7, 2025
-- **Version:** 2.0.0
-- **Status:** Active Development
-- **Deployment:** Netlify (Production)
-
-## Copyright
-
-© 2025 Rotaract South Asia MDIO. All rights reserved.
+- Production HTML references `styles.min.css`, `app.min.js`, `modules/security.min.js`, `modules/calculations.min.js`, and `pdf-worker.min.js`.
+- Tailwind is still loaded via CDN to preserve exact UI/UX. Consider migrating to a local Tailwind build to remove the CDN without changing classes.
