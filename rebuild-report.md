@@ -20,7 +20,7 @@ Date: 2025-08-27
   - Tailwind remains via `https://cdn.tailwindcss.com` to preserve exact class behavior and avoid a potentially breaking local build.
   - Custom stylesheet minified: `styles.min.css` (referenced in all pages).
 - Firebase:
-  - ESM imports remain from official Firebase CDN per best practices and to avoid bundling complexity: `https://www.gstatic.com/firebasejs/10.7.1/...`.
+  - ESM imports remain from official Firebase CDN per best practices and to avoid bundling complexity: `https://www.gstatic.com/firebasejs/12.9.0/...`.
 
 ## Performance Improvements
 - Asset minification (measured file sizes):
