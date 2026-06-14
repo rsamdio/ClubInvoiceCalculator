@@ -198,7 +198,7 @@ Manual QA (no automated test suite):
 
 - [ ] Load `index.html` and `admin.html` without console errors
 - [ ] Add / edit / remove single member; totals update
-- [ ] CSV and XLSX bulk upload with preview
+- [ ] CSV, XLSX, and Google Sheets bulk upload with preview
 - [ ] Change tax %, currency rate, invoice year; totals recalculate
 - [ ] Google sign-in; save and reload cloud data
 - [ ] Generate PDF; verify summary logged for authenticated users
@@ -211,3 +211,110 @@ Manual QA (no automated test suite):
 - Create git commits unless the user asks.
 - Edit unrelated files when making a focused fix.
 - Remove CSP meta tags without understanding downstream script dependencies.
+
+---
+
+## Planned feature: Google Sheets bulk import
+
+**Status:** Implemented.
+
+### Decisions (locked)
+
+| Question | Decision |
+|----------|----------|
+| Access model | **Public-only v1** — sheet must be shared “Anyone with the link can view” |
+| Import behavior | **Append** to existing roster (same as CSV/XLSX today) |
+| Row limit | **None** — import all valid rows |
+| Template guidance | **Yes** — UI includes step-by-step share instructions tied to the existing RSAMDIO template |
+
+### User flow
+
+1. User clicks **Make a Copy in Google Sheets** (existing template link in bulk upload card).
+2. User fills roster using columns A–D (same format as CSV template).
+3. User shares the sheet: **Share → General access → Anyone with the link → Viewer**.
+4. User copies the sheet URL and pastes it into the new import field.
+5. App fetches public CSV export, validates, shows preview, user confirms → rows append via `addBulkMembers()`.
+
+Template URL (already in `index.html`):
+
+`https://docs.google.com/spreadsheets/d/1pn3XA_MQyHFYIA4rn1i77qes_ujE533Orw7_fC8VFc4/copy`
+
+### Technical approach
+
+**Public CSV export (no OAuth, no backend):**
+
+```
+https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID}
+```
+
+- Parse `spreadsheetId` and optional `gid` from pasted URL.
+- `fetch` CSV → PapaParse (already lazy-loaded) → raw row arrays.
+- Reuse existing pipeline: `validateMemberData` → `showPreview` → `addBulkMembers`.
+
+**Refactor first:** extract `processBulkRows(rows)` from `handleFileUpload` so file and Sheets share one path.
+
+**Date normalization required:** Google Sheets CSV may export dates as `M/D/YYYY` — add `normalizeDate()` before validation (helps Excel too).
+
+### New code (suggested)
+
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `parseGoogleSheetsUrl(url)` | `app.js` | Extract ID + gid; reject invalid hosts |
+| `fetchGoogleSheetRows(url)` | `app.js` | Fetch export URL → parse CSV to rows |
+| `handleGoogleSheetsImport(url)` | `app.js` | Orchestrate loading, errors, preview (mirror `handleFileUpload`) |
+| `processBulkRows(rows)` | `app.js` | Shared validate → preview |
+| `normalizeDate(value)` | `app.js` or `modules/security.js` | Convert common date formats to `YYYY-MM-DD` |
+
+Export new handlers on `window.appFunctions`.
+
+### UI additions (`index.html` bulk upload card)
+
+- “or” divider below file upload area.
+- URL text input + **Import from Google Sheets** button.
+- Collapsible help: copy template → fill → Share (Viewer) → paste link.
+- Wire event listener alongside existing file upload listeners (~line 1673).
+- Clear URL input in `resetBulkUpload()`.
+
+### CSP update
+
+Add to `connect-src` in `index.html`:
+
+`https://docs.google.com`
+
+### Security
+
+- Validate URL host is `docs.google.com/spreadsheets` only.
+- Do not persist pasted URLs in Firestore.
+- Sanitize preview/roster output (existing `SecurityUtils`).
+- Generic error if sheet is private or fetch fails.
+
+### Error messages
+
+| Case | Message |
+|------|---------|
+| Not public | Could not access sheet. Set sharing to “Anyone with the link can view”. |
+| Bad URL | Paste a valid Google Sheets link (`docs.google.com/spreadsheets/…`). |
+| Empty | No member rows found. |
+| CORS/network | Could not load sheet. Download as CSV and upload instead. |
+
+### Analytics
+
+Extend `logUserActivity` on confirm: `bulk_upload` with source metadata (`file` vs `google_sheets`) if feasible.
+
+### Implementation phases
+
+1. Refactor bulk pipeline + date normalization (no UI change).
+2. Google Sheets fetch + parse + `handleGoogleSheetsImport`.
+3. UI + CSP + help copy + `resetBulkUpload` update.
+4. Manual QA (public sheet, private sheet, bad URL, regression on CSV/XLSX).
+
+### Files to touch
+
+`app.js`, `index.html`, optionally `modules/security.js`, `styles.css`, `AGENTS.md`, `README.md`.
+
+### Out of scope for v1
+
+- Private sheets / OAuth / Google Sheets API.
+- Firebase Cloud Function proxy.
+- Replace-roster mode.
+

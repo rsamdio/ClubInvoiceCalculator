@@ -1276,6 +1276,7 @@ window.appFunctions = {
     validateMemberData,
     showPreview,
     handleFileUpload,
+    handleGoogleSheetsImport,
     addBulkMembers,
     resetBulkUpload,
     showSuccessAnimation,
@@ -1321,7 +1322,7 @@ async function parseExcelFile(file) {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                 
                 // Remove header row and process data
-                const processedData = jsonData.slice(1).filter(row => row.length >= 3);
+                const processedData = filterBulkDataRows(jsonData);
                 resolve(processedData);
             } catch (error) {
                 reject(error);
@@ -1341,8 +1342,131 @@ async function parseCSVFile(file) {
                     reject(new Error('CSV parsing error: ' + results.errors[0].message));
                     return;
                 }
-                // Remove header row and process data
-                const processedData = results.data.slice(1).filter(row => row.length >= 3);
+                resolve(filterBulkDataRows(results.data));
+            },
+            error: function(error) {
+                reject(error);
+            }
+        });
+    });
+}
+
+function filterBulkDataRows(rows) {
+    return rows.slice(1).filter(row => row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== ''));
+}
+
+function normalizeBulkDate(value) {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number' && !isNaN(value)) {
+        const utcDays = Math.floor(value - 25569);
+        const date = new Date(utcDays * 86400000);
+        if (isNaN(date.getTime())) return String(value);
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    const str = String(value).trim();
+    if (!str) return '';
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+    const slashMatch = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (slashMatch) {
+        const month = slashMatch[1].padStart(2, '0');
+        const day = slashMatch[2].padStart(2, '0');
+        const year = slashMatch[3];
+        return `${year}-${month}-${day}`;
+    }
+
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime()) && parsed.getFullYear() >= 1900 && parsed.getFullYear() <= 2100) {
+        const y = parsed.getFullYear();
+        const m = String(parsed.getMonth() + 1).padStart(2, '0');
+        const d = String(parsed.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    return str;
+}
+
+function parseGoogleSheetsUrl(url) {
+    const trimmed = url.trim();
+    let parsed;
+    try {
+        parsed = new URL(trimmed);
+    } catch (_) {
+        throw new Error('Paste a valid Google Sheets link (docs.google.com/spreadsheets/…).');
+    }
+
+    if (parsed.hostname !== 'docs.google.com') {
+        throw new Error('Paste a valid Google Sheets link (docs.google.com/spreadsheets/…).');
+    }
+
+    const pathMatch = parsed.pathname.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+    if (!pathMatch) {
+        throw new Error('Paste a valid Google Sheets link (docs.google.com/spreadsheets/…).');
+    }
+
+    const spreadsheetId = pathMatch[1];
+    let gid = '0';
+    const gidFromHash = parsed.hash.match(/gid=(\d+)/);
+    const gidFromQuery = parsed.searchParams.get('gid');
+    if (gidFromHash) {
+        gid = gidFromHash[1];
+    } else if (gidFromQuery) {
+        gid = gidFromQuery;
+    }
+
+    return { spreadsheetId, gid };
+}
+
+async function fetchGoogleSheetRows(sheetUrl) {
+    const { spreadsheetId, gid } = parseGoogleSheetsUrl(sheetUrl);
+    const exportUrls = [
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`,
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=${gid}`
+    ];
+
+    let lastError = null;
+    for (const exportUrl of exportUrls) {
+        try {
+            const rows = await fetchAndParseGoogleSheetCsv(exportUrl);
+            return rows;
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw lastError || new Error('Could not load sheet. Download as CSV and upload instead, or check that sharing is set to "Anyone with the link can view".');
+}
+
+async function fetchAndParseGoogleSheetCsv(exportUrl) {
+    const response = await fetch(exportUrl);
+    if (!response.ok) {
+        throw new Error('Could not access sheet. Set sharing to "Anyone with the link can view".');
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    const text = await response.text();
+    if (text.trim().startsWith('<!') || contentType.includes('text/html')) {
+        throw new Error('Could not access sheet. Set sharing to "Anyone with the link can view".');
+    }
+
+    await ensurePapaLoaded();
+    return new Promise((resolve, reject) => {
+        Papa.parse(text, {
+            complete: function(results) {
+                if (results.errors.length > 0) {
+                    reject(new Error('CSV parsing error: ' + results.errors[0].message));
+                    return;
+                }
+                const processedData = filterBulkDataRows(results.data);
+                if (processedData.length === 0) {
+                    reject(new Error('No member rows found.'));
+                    return;
+                }
                 resolve(processedData);
             },
             error: function(error) {
@@ -1352,12 +1476,74 @@ async function parseCSVFile(file) {
     });
 }
 
+function processBulkRows(data, options = {}) {
+    const validation = validateMemberData(data);
+
+    if (validation.errors.length > 0) {
+        const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
+        showFileUploadError(errorMessage);
+        if (typeof options.onError === 'function') {
+            options.onError();
+        }
+        return false;
+    }
+
+    window.parsedMembers = validation.validatedMembers;
+    showPreview(validation.validatedMembers);
+    return true;
+}
+
+async function handleGoogleSheetsImport(url) {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const sheetsUrlInput = document.getElementById('sheets-url-input');
+    const trimmedUrl = (url || '').trim();
+
+    if (!trimmedUrl) {
+        showFileUploadError('Please paste a Google Sheets link.');
+        return;
+    }
+
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('active');
+    }
+
+    try {
+        const rows = await fetchGoogleSheetRows(trimmedUrl);
+        window.bulkUploadSource = 'google_sheets';
+        processBulkRows(rows, {
+            onError: () => {
+                if (sheetsUrlInput) sheetsUrlInput.value = trimmedUrl;
+            }
+        });
+    } catch (error) {
+        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+            showFileUploadError('Could not load sheet. Download as CSV and upload instead, or check that sharing is set to "Anyone with the link can view".');
+        } else {
+            showFileUploadError(error.message);
+        }
+    } finally {
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+    }
+}
+
 function validateMemberData(data) {
     const validatedMembers = [];
     const errors = [];
 
     data.forEach((row, index) => {
-        const [name, joinDate, memberType, leaveDate] = row;
+        const rawName = row[0];
+        const rawJoinDate = row[1];
+        const rawMemberType = row[2];
+        const rawLeaveDate = row[3];
+
+        const name = rawName !== null && rawName !== undefined ? String(rawName).trim() : '';
+        const joinDate = normalizeBulkDate(rawJoinDate);
+        const memberType = rawMemberType !== null && rawMemberType !== undefined ? String(rawMemberType).trim() : '';
+        const leaveDate = rawLeaveDate !== null && rawLeaveDate !== undefined && String(rawLeaveDate).trim() !== ''
+            ? normalizeBulkDate(rawLeaveDate)
+            : '';
         
         // Validate name using security utility
         if (!SecurityUtils.validateMemberName(name)) {
@@ -1395,10 +1581,10 @@ function validateMemberData(data) {
         }
 
         validatedMembers.push({
-            name: SecurityUtils.sanitizeText(name.trim()),
+            name: SecurityUtils.sanitizeText(name),
             joinDate: joinDate,
-            clubBase: memberType.trim(),
-            leaveDate: leaveDate && leaveDate.trim() !== '' ? leaveDate : null
+            clubBase: memberType,
+            leaveDate: leaveDate || null
         });
     });
 
@@ -1420,15 +1606,17 @@ function showPreview(members) {
     
     const previewContent = document.getElementById('preview-content');
     const fileUploadArea = document.getElementById('file-upload-area');
+    const bulkUploadSources = document.getElementById('bulk-upload-sources');
     const uploadPreview = document.getElementById('upload-preview');
     
-    const previewHTML = members.map((member, index) => {
+    const previewHTML = members.map((member) => {
         const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
         const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
+        const safeName = SecurityUtils.sanitizeHTML(member.name);
         return `
             <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
                 <div class="flex-1">
-                    <span class="font-medium text-gray-800">${member.name}</span>
+                    <span class="font-medium text-gray-800">${safeName}</span>
                     <span class="text-gray-500 ml-3">${member.joinDate}${leaveDateText}</span>
                     <span class="text-gray-500 ml-3">${typeText}</span>
                 </div>
@@ -1444,7 +1632,10 @@ function showPreview(members) {
         actionButtons.style.display = 'flex';
     }
     
-    // Hide upload area with smooth transition
+    // Hide upload sources with smooth transition
+    if (bulkUploadSources) {
+        bulkUploadSources.classList.add('hidden');
+    }
     fileUploadArea.classList.add('hidden');
     
     // Show preview after a short delay
@@ -1491,20 +1682,15 @@ function handleFileUpload(file) {
     }
 
     parsePromise.then(data => {
-        const validation = validateMemberData(data);
-        
-        if (validation.errors.length > 0) {
-            const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
-            showFileUploadError(errorMessage);
-            fileInput.value = ''; // Clear the file input so the same file can be selected again
-            return;
-        }
-
-        window.parsedMembers = validation.validatedMembers;
-        showPreview(validation.validatedMembers);
+        window.bulkUploadSource = 'file';
+        processBulkRows(data, {
+            onError: () => {
+                fileInput.value = '';
+            }
+        });
     }).catch(error => {
         showFileUploadError('Error parsing file: ' + error.message);
-        fileInput.value = ''; // Clear the file input so the same file can be selected again
+        fileInput.value = '';
     }).finally(() => {
         // Hide loading state
         if (loadingOverlay) {
@@ -1577,7 +1763,8 @@ function addBulkMembers() {
     
     // Log user activity if authenticated
     if (window.isAuthenticated && window.currentUser) {
-        logUserActivity(window.currentUser.uid, 'bulk_upload');
+        const activityType = window.bulkUploadSource === 'google_sheets' ? 'bulk_upload_sheets' : 'bulk_upload';
+        logUserActivity(window.currentUser.uid, activityType);
     }
     
     // End performance monitoring
@@ -1591,12 +1778,18 @@ function addBulkMembers() {
 
 function resetBulkUpload() {
     window.parsedMembers = [];
+    window.bulkUploadSource = 'file';
     const uploadPreview = document.getElementById('upload-preview');
     const fileInput = document.getElementById('file-input');
     const fileUploadArea = document.getElementById('file-upload-area');
+    const bulkUploadSources = document.getElementById('bulk-upload-sources');
+    const sheetsUrlInput = document.getElementById('sheets-url-input');
     
     uploadPreview.classList.add('hidden');
     fileInput.value = '';
+    if (sheetsUrlInput) {
+        sheetsUrlInput.value = '';
+    }
     
     // Clear any file upload errors
     const errorContainer = document.getElementById('file-upload-error');
@@ -1612,6 +1805,9 @@ function resetBulkUpload() {
     
     // Return to upload area after a short delay
     setTimeout(() => {
+        if (bulkUploadSources) {
+            bulkUploadSources.classList.remove('hidden');
+        }
         fileUploadArea.classList.remove('hidden');
     }, 300);
 }
@@ -3442,6 +3638,7 @@ window.appFunctions = {
     validateMemberData,
     showPreview,
     handleFileUpload,
+    handleGoogleSheetsImport,
     addBulkMembers,
     resetBulkUpload,
     showSuccessAnimation,
