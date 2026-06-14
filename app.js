@@ -655,7 +655,7 @@ function formatDuesBreakdown(duesBreakdown) {
 
 function formatLocalDuesBreakdown(duesBreakdown) {
     const { fullYear, prorated, total } = duesBreakdown;
-    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 89;
+    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
     
     if (total === 0) {
         return '<span class="text-gray-400">0.00</span>';
@@ -681,7 +681,7 @@ function formatLocalDuesBreakdown(duesBreakdown) {
 
 function formatLocalDuesWithTaxBreakdown(duesBreakdown) {
     const { fullYear, prorated, total } = duesBreakdown;
-    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 89;
+    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
     const taxPercentage = parseFloat(document.getElementById('tax-percentage')?.value) || 0;
     
     if (total === 0) {
@@ -775,7 +775,7 @@ function updateTotal() {
         if (totalProratedMonthsEl) totalProratedMonthsEl.textContent = totalProratedMonths;
         
         // Update local currency amounts with proper rounding
-        const currencyRate = parseFloat(DOMCache.get('currency-rate')?.value) || 89;
+        const currencyRate = parseFloat(DOMCache.get('currency-rate')?.value) || 96;
         const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
         const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
         const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
@@ -1243,13 +1243,13 @@ try {
 		}
 		if (typeof window.DuesFormatter.formatLocal === 'function') {
 			formatLocalDuesBreakdown = function(duesBreakdown) {
-				const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 89;
+				const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
 				return window.DuesFormatter.formatLocal(duesBreakdown, currencyRate);
 			};
 		}
 		if (typeof window.DuesFormatter.formatLocalWithTax === 'function') {
 			formatLocalDuesWithTaxBreakdown = function(duesBreakdown) {
-				const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 89;
+				const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
 				const taxPercentage = parseFloat(document.getElementById('tax-percentage')?.value) || 0;
 				return window.DuesFormatter.formatLocalWithTax(duesBreakdown, currencyRate, taxPercentage);
 			};
@@ -2629,7 +2629,7 @@ async function saveUserData(userUid, data) {
 
     const cleanSettings = {
         taxPercentage: data.settings && typeof data.settings.taxPercentage === 'number' ? data.settings.taxPercentage : 18,
-        currencyRate: data.settings && typeof data.settings.currencyRate === 'number' ? data.settings.currencyRate : 89,
+        currencyRate: data.settings && typeof data.settings.currencyRate === 'number' ? data.settings.currencyRate : 96,
         invoiceYear: data.settings && data.settings.invoiceYear ? String(data.settings.invoiceYear) : new Date().getFullYear().toString()
     };
 
@@ -3221,7 +3221,7 @@ function getCurrentData() {
 
     const settings = {
         taxPercentage: taxPercentageEl ? (parseFloat(taxPercentageEl.value) || 18) : 18,
-        currencyRate: currencyRateEl ? (parseFloat(currencyRateEl.value) || 89) : 89,
+        currencyRate: currencyRateEl ? (parseFloat(currencyRateEl.value) || 96) : 96,
         invoiceYear: getSelectedInvoiceYear().toString()
     };
 
