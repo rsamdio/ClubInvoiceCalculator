@@ -1,3 +1,5 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/cd4a7109-c2f6-4cf0-ad8d-48c5e68e98ad/deploy-status)](https://app.netlify.com/projects/rotaractdues/deploys)
+
 # Rotaract Club Invoice Calculator
 
 A modern, responsive web application for calculating club membership invoices with Firebase integration, real-time data synchronization, and comprehensive member management.
