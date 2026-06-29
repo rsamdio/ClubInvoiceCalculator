@@ -103,10 +103,12 @@ Invoice year = January 1 of the selected year.
 
 | Join timing | Result |
 |-------------|--------|
-| Previous year (`joinYear === invoiceYear - 1`) | Full year + prorated months from join (day > 1 → start next month) |
+| Previous year (`joinYear === invoiceYear - 1`) | Full year (invoice year) + prorated catch-up for prior-year months (Jan 1 join = 12 months proration + full year) |
 | Current invoice year | $0 (dues start next year) |
 | Before previous year | Full year dues (unless left before invoice date → $0) |
 | Leave date before invoice date | $0 or prorated-only depending on join year |
+| Leave on Jan 1 of invoice year | Still active (invoice generated on Jan 1) |
+| Mid-year leave after invoice date | No reduction (invoice is a Jan 1 snapshot) |
 
 Tax and local currency are applied in `updateTotal()` using `taxPercentage` and `currencyRate`.
 

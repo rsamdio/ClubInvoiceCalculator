@@ -38,20 +38,27 @@ const SecurityUtils = {
         return true;
     },
     
-    // Validate date format
+    // Validate date format (calendar-correct, local midnight)
     validateDate: function(dateString) {
         if (!dateString || typeof dateString !== 'string') return false;
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(dateString)) return false;
-        
-        const date = new Date(dateString);
-        return date instanceof Date && !isNaN(date) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100;
+
+        const parts = dateString.split('-').map(Number);
+        const date = new Date(parts[0], parts[1] - 1, parts[2]);
+        return (
+            date.getFullYear() === parts[0] &&
+            date.getMonth() === parts[1] - 1 &&
+            date.getDate() === parts[2] &&
+            parts[0] >= 1900 &&
+            parts[0] <= 2100
+        );
     },
     
     // Validate member name
     validateMemberName: function(name) {
         if (!name || typeof name !== 'string') return false;
-        const sanitizedName = this.sanitizeText(name).trim();
+        const sanitizedName = this.sanitizeText(name).replace(/^\uFEFF/, '').trim();
         return sanitizedName.length >= 2 && sanitizedName.length <= 100 && /^[a-zA-Z\s\-'\.]+$/.test(sanitizedName);
     }
 };
@@ -289,11 +296,57 @@ const CircuitBreaker = {
 };
 
 // Global variables
-let parsedMembers = [];
+let bulkImportGeneration = 0;
+let bulkAddInProgress = false;
+let bulkImportActive = false;
+let pendingExcelWorkbook = null;
+let pendingGoogleSpreadsheetId = null;
+let pendingSheetPickerOptions = null;
+
+const DEFAULT_BULK_COLUMN_INDEX = {
+    name: 0,
+    joinDate: 1,
+    clubBase: 2,
+    leaveDate: 3
+};
+
+const BULK_COLUMN_HEADERS = {
+    name: ['member name', 'full name', 'member'],
+    joinDate: ['join date', 'joining date', 'date joined'],
+    clubBase: ['club base', 'member type', 'club type'],
+    leaveDate: ['leave date', 'date left', 'termination date', 'end date', 'exit date']
+};
+
+const BULK_HEADER_LABELS = new Set([
+    'member name', 'full name', 'name',
+    'join date', 'joining date', 'date joined',
+    'club base', 'member type', 'club type',
+    'leave date', 'date left'
+]);
+let appInitialized = false;
+
+function clearSessionRoster() {
+    const memberRosterBody = document.getElementById('member-roster-body');
+    if (memberRosterBody) {
+        memberRosterBody.innerHTML = '';
+    }
+    window.allMemberRows = [];
+    allMemberRows = window.allMemberRows;
+    currentPage = 1;
+    rosterSearchQuery = '';
+    const rosterSearchInput = document.getElementById('roster-search-input');
+    if (rosterSearchInput) {
+        rosterSearchInput.value = '';
+    }
+    updateRosterSearchStatus();
+    updateTotal();
+    updatePagination();
+}
 let lastSelectedClubBase = '';
 let lastSelectedJoinDate = '';
 let currentPage = 1;
 let pageSize = 10;
+let rosterSearchQuery = '';
 // Global array to track all member rows
 window.allMemberRows = window.allMemberRows || [];
 let allMemberRows = window.allMemberRows;
@@ -453,14 +506,17 @@ function preciseDecimal(value, decimals = 2) {
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_DELAY = 2000; // 2 seconds
 
-function debouncedSaveUserData(userUid, data) {
-    // Clear existing timer
+function debouncedSaveUserData(userUid) {
     if (saveDebounceTimer) {
         clearTimeout(saveDebounceTimer);
     }
-    
-    // Set new timer
+
     saveDebounceTimer = setTimeout(async () => {
+        if (!window.isAuthenticated || !window.currentUser || window.currentUser.uid !== userUid) {
+            saveDebounceTimer = null;
+            return;
+        }
+        const data = getCurrentData();
         await saveUserData(userUid, data);
         saveDebounceTimer = null;
     }, SAVE_DEBOUNCE_DELAY);
@@ -553,7 +609,15 @@ async function ensurePapaLoaded() {
 }
 
 // Core calculation functions
+function normalizeLeaveDateStr(leaveDateStr) {
+    if (leaveDateStr === null || leaveDateStr === undefined) return null;
+    const trimmed = String(leaveDateStr).trim();
+    if (!trimmed || trimmed === 'null' || trimmed === 'undefined') return null;
+    return trimmed;
+}
+
 function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr = null) {
+    leaveDateStr = normalizeLeaveDateStr(leaveDateStr);
     const joinDate = new Date(joinDateStr + 'T00:00:00');
     const invoiceDate = new Date(invoiceYear, 0, 1);
     const baseDues = clubBase === 'Community-Based' ? 8 : 5;
@@ -580,25 +644,17 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
         let proratedDues = Math.round(proratedDuePerMonth * monthsInJoinYear * 100) / 100;
 
         // Handle leave date if provided
-        if (leaveDateStr && leaveDateStr.trim() !== '') {
+        if (leaveDateStr) {
             const leaveDate = new Date(leaveDateStr + 'T00:00:00');
             if (leaveDate < invoiceDate) {
-                const leaveMonth = leaveDate.getMonth();
-                const leaveDay = leaveDate.getDate();
-                
-                // Leave date logic: The month is always included regardless of leave date
-                // This is because the member was present on the 1st of the month when the invoice was calculated
-                let effectiveLeaveMonth = leaveMonth;
-                // No need to subtract 1 - the month is always included regardless of leave date
-                
-                // Ensure we don't go below the join month
+                let effectiveLeaveMonth = leaveDate.getMonth();
                 effectiveLeaveMonth = Math.max(effectiveLeaveMonth, effectiveJoinMonth);
                 
                 if (effectiveLeaveMonth < effectiveJoinMonth) {
                     return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
                 }
                 
-                let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth + 1; // +1 to include both start and end months
+                let actualMonthsInJoinYear = effectiveLeaveMonth - effectiveJoinMonth + 1;
                 actualMonthsInJoinYear = Math.max(0, actualMonthsInJoinYear);
                 proratedDues = Math.round(proratedDuePerMonth * actualMonthsInJoinYear * 100) / 100;
                 
@@ -716,119 +772,113 @@ function formatLocalDuesWithTaxBreakdown(duesBreakdown) {
 // UI update functions
 function updateTotal() {
     PerformanceMonitor.startTimer('updateTotal');
-    
-    requestIdleCallback(() => {
-        let baseTotal = 0;
-        let totalFullYear = 0;
-        let totalProrated = 0;
-        let totalMembersWithFullYear = 0;
-        let totalProratedMonths = 0;
-        
-        const selectedYear = getSelectedInvoiceYear();
-        const memberRosterBody = DOMCache.get('member-roster-body');
-        const memberRows = memberRosterBody ? memberRosterBody.querySelectorAll('tr') : [];
-        
-        memberRows.forEach(row => {
-            const joinDate = row.dataset.joinDate;
-            const leaveDate = row.dataset.leaveDate;
-            const memberType = row.dataset.memberType;
-            const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
-            
-            baseTotal += duesBreakdown.total;
-            totalFullYear += duesBreakdown.fullYear;
-            totalProrated += duesBreakdown.prorated;
-            
-            if (duesBreakdown.fullYear > 0) {
-                totalMembersWithFullYear++;
-            }
-            
-            totalProratedMonths += duesBreakdown.proratedMonths || 0;
-        });
-        
-        const taxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
-        
-        // Calculate tax separately on annual and prorated dues
-        const taxOnAnnualDues = Math.round((totalFullYear * taxPercentage) / 100 * 100) / 100;
-        const taxOnProratedDues = Math.round((totalProrated * taxPercentage) / 100 * 100) / 100;
-        const taxAmount = taxOnAnnualDues + taxOnProratedDues;
-        const totalWithTax = Math.round((baseTotal + taxAmount) * 100) / 100;
-        
-        // Update display elements using DOM cache
-        const baseInvoiceAmountEl = DOMCache.get('base-invoice-amount');
-        const totalInvoiceAmountEl = DOMCache.get('total-invoice-amount');
-        const taxBreakdownEl = DOMCache.get('tax-breakdown');
-        const duesBreakdownEl = document.getElementById('dues-breakdown');
-        const totalMembersEl = DOMCache.get('total-members');
-        const totalProratedMonthsEl = DOMCache.get('total-prorated-months');
-        
-        if (baseInvoiceAmountEl) baseInvoiceAmountEl.textContent = `$${baseTotal.toFixed(2)}`;
-        if (totalInvoiceAmountEl) totalInvoiceAmountEl.textContent = `$${totalWithTax.toFixed(2)}`;
-        if (taxBreakdownEl) taxBreakdownEl.textContent = `Tax: $${taxOnAnnualDues.toFixed(2)} + $${taxOnProratedDues.toFixed(2)} (${taxPercentage}%)`;
-        
-        if (duesBreakdownEl) {
-            const preciseFullYear = Math.round(totalFullYear * 100) / 100;
-            const preciseProrated = Math.round(totalProrated * 100) / 100;
-            duesBreakdownEl.textContent = `Annual: $${preciseFullYear.toFixed(2)} + Prorated: $${preciseProrated.toFixed(2)}`;
+
+    let baseTotal = 0;
+    let totalFullYear = 0;
+    let totalProrated = 0;
+    let totalMembersWithFullYear = 0;
+    let totalProratedMonths = 0;
+
+    const selectedYear = getSelectedInvoiceYear();
+    const memberRosterBody = DOMCache.get('member-roster-body');
+    const memberRows = memberRosterBody ? memberRosterBody.querySelectorAll('tr') : [];
+
+    memberRows.forEach(row => {
+        if (row.classList.contains('editing')) return;
+
+        const joinDate = row.dataset.joinDate;
+        const leaveDate = normalizeLeaveDateStr(row.dataset.leaveDate);
+        const memberType = row.dataset.memberType;
+        const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+
+        baseTotal += duesBreakdown.total;
+        totalFullYear += duesBreakdown.fullYear;
+        totalProrated += duesBreakdown.prorated;
+
+        if (duesBreakdown.fullYear > 0) {
+            totalMembersWithFullYear++;
         }
-        
-        if (totalMembersEl) totalMembersEl.textContent = totalMembersWithFullYear;
-        if (totalProratedMonthsEl) totalProratedMonthsEl.textContent = totalProratedMonths;
-        
-        // Update local currency amounts with proper rounding
-        const currencyRate = parseFloat(DOMCache.get('currency-rate')?.value) || 96;
-        const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
-        const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
-        const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
-        
-        // Calculate local currency tax separately on annual and prorated dues
-        const taxOnLocalAnnualDues = Math.round((fullYearLocalAmount * taxPercentage) / 100 * 100) / 100;
-        const taxOnLocalProratedDues = Math.round((proratedLocalAmount * taxPercentage) / 100 * 100) / 100;
-        const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
-        const totalLocalAmount = baseLocalAmount + taxLocalAmount;
-        
-        // Update local currency display elements using DOM cache where possible
-        const baseInvoiceAmountLocalEl = document.getElementById('base-invoice-amount-local');
-        const totalInvoiceAmountLocalEl = document.getElementById('total-invoice-amount-local');
-        const taxBreakdownLocalEl = document.getElementById('tax-breakdown-local');
-        const duesBreakdownLocalEl = document.getElementById('dues-breakdown-local');
-        
-        if (baseInvoiceAmountLocalEl) baseInvoiceAmountLocalEl.textContent = `${baseLocalAmount.toFixed(2)}`;
-        if (totalInvoiceAmountLocalEl) totalInvoiceAmountLocalEl.textContent = `${totalLocalAmount.toFixed(2)}`;
-        if (taxBreakdownLocalEl) taxBreakdownLocalEl.textContent = `Tax: ${taxOnLocalAnnualDues.toFixed(2)} + ${taxOnLocalProratedDues.toFixed(2)} (${taxPercentage}%)`;
-        if (duesBreakdownLocalEl) duesBreakdownLocalEl.textContent = `Annual: ${fullYearLocalAmount.toFixed(2)} + Prorated: ${proratedLocalAmount.toFixed(2)}`;
-        
-        // Update local currency cells in member roster
-        memberRows.forEach(row => {
-            if (row.classList.contains('editing')) return;
-            
-            const joinDate = row.dataset.joinDate;
-            const leaveDate = row.dataset.leaveDate;
-            const memberType = row.dataset.memberType;
-            const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
-            
-            const localDueCell = row.querySelector('.local-due-cell');
-            if (localDueCell) {
-                localDueCell.innerHTML = formatLocalDuesBreakdown(duesBreakdown);
-            }
-            
-            const localDueWithTaxCell = row.querySelector('.local-due-with-tax-cell');
-            if (localDueWithTaxCell) {
-                localDueWithTaxCell.innerHTML = formatLocalDuesWithTaxBreakdown(duesBreakdown);
-            }
-        });
-        
-        // Show/hide empty state
-        const emptyState = document.getElementById('empty-state');
+
+        totalProratedMonths += duesBreakdown.proratedMonths || 0;
+    });
+
+    const taxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
+
+    const taxOnAnnualDues = Math.round((totalFullYear * taxPercentage) / 100 * 100) / 100;
+    const taxOnProratedDues = Math.round((totalProrated * taxPercentage) / 100 * 100) / 100;
+    const taxAmount = taxOnAnnualDues + taxOnProratedDues;
+    const totalWithTax = Math.round((baseTotal + taxAmount) * 100) / 100;
+
+    const baseInvoiceAmountEl = DOMCache.get('base-invoice-amount');
+    const totalInvoiceAmountEl = DOMCache.get('total-invoice-amount');
+    const taxBreakdownEl = DOMCache.get('tax-breakdown');
+    const duesBreakdownEl = document.getElementById('dues-breakdown');
+    const totalMembersEl = DOMCache.get('total-members');
+    const totalProratedMonthsEl = DOMCache.get('total-prorated-months');
+
+    if (baseInvoiceAmountEl) baseInvoiceAmountEl.textContent = `$${baseTotal.toFixed(2)}`;
+    if (totalInvoiceAmountEl) totalInvoiceAmountEl.textContent = `$${totalWithTax.toFixed(2)}`;
+    if (taxBreakdownEl) taxBreakdownEl.textContent = `Tax: $${taxOnAnnualDues.toFixed(2)} + $${taxOnProratedDues.toFixed(2)} (${taxPercentage}%)`;
+
+    if (duesBreakdownEl) {
+        const preciseFullYear = Math.round(totalFullYear * 100) / 100;
+        const preciseProrated = Math.round(totalProrated * 100) / 100;
+        duesBreakdownEl.textContent = `Annual: $${preciseFullYear.toFixed(2)} + Prorated: $${preciseProrated.toFixed(2)}`;
+    }
+
+    if (totalMembersEl) totalMembersEl.textContent = totalMembersWithFullYear;
+    if (totalProratedMonthsEl) totalProratedMonthsEl.textContent = totalProratedMonths;
+
+    const currencyRate = parseFloat(DOMCache.get('currency-rate')?.value) || 96;
+    const fullYearLocalAmount = Math.round(totalFullYear * currencyRate * 100) / 100;
+    const proratedLocalAmount = Math.round(totalProrated * currencyRate * 100) / 100;
+    const baseLocalAmount = fullYearLocalAmount + proratedLocalAmount;
+
+    const taxOnLocalAnnualDues = Math.round((fullYearLocalAmount * taxPercentage) / 100 * 100) / 100;
+    const taxOnLocalProratedDues = Math.round((proratedLocalAmount * taxPercentage) / 100 * 100) / 100;
+    const taxLocalAmount = taxOnLocalAnnualDues + taxOnLocalProratedDues;
+    const totalLocalAmount = baseLocalAmount + taxLocalAmount;
+
+    const baseInvoiceAmountLocalEl = document.getElementById('base-invoice-amount-local');
+    const totalInvoiceAmountLocalEl = document.getElementById('total-invoice-amount-local');
+    const taxBreakdownLocalEl = document.getElementById('tax-breakdown-local');
+    const duesBreakdownLocalEl = document.getElementById('dues-breakdown-local');
+
+    if (baseInvoiceAmountLocalEl) baseInvoiceAmountLocalEl.textContent = `${baseLocalAmount.toFixed(2)}`;
+    if (totalInvoiceAmountLocalEl) totalInvoiceAmountLocalEl.textContent = `${totalLocalAmount.toFixed(2)}`;
+    if (taxBreakdownLocalEl) taxBreakdownLocalEl.textContent = `Tax: ${taxOnLocalAnnualDues.toFixed(2)} + ${taxOnLocalProratedDues.toFixed(2)} (${taxPercentage}%)`;
+    if (duesBreakdownLocalEl) duesBreakdownLocalEl.textContent = `Annual: ${fullYearLocalAmount.toFixed(2)} + Prorated: ${proratedLocalAmount.toFixed(2)}`;
+
+    memberRows.forEach(row => {
+        if (row.classList.contains('editing')) return;
+
+        const joinDate = row.dataset.joinDate;
+        const leaveDate = normalizeLeaveDateStr(row.dataset.leaveDate);
+        const memberType = row.dataset.memberType;
+        const duesBreakdown = calculateIndividualDue(joinDate, memberType, selectedYear, leaveDate);
+
+        const localDueCell = row.querySelector('.local-due-cell');
+        if (localDueCell) {
+            localDueCell.innerHTML = formatLocalDuesBreakdown(duesBreakdown);
+        }
+
+        const localDueWithTaxCell = row.querySelector('.local-due-with-tax-cell');
+        if (localDueWithTaxCell) {
+            localDueWithTaxCell.innerHTML = formatLocalDuesWithTaxBreakdown(duesBreakdown);
+        }
+    });
+
+    const emptyState = document.getElementById('empty-state');
+    if (emptyState) {
         if (memberRows.length === 0) {
             emptyState.classList.remove('hidden');
         } else {
             emptyState.classList.add('hidden');
         }
-        
-        // End performance monitoring
-        const duration = PerformanceMonitor.endTimer('updateTotal');
-        PerformanceMonitor.trackUserInteraction('update_total', duration);
-    });
+    }
+
+    const duration = PerformanceMonitor.endTimer('updateTotal');
+    PerformanceMonitor.trackUserInteraction('update_total', duration);
 }
 
 const debouncedUpdateTotal = debounce(updateTotal, 300);
@@ -859,7 +909,7 @@ function recalculateAllDues() {
                 }
                 
                 const joinDate = row.dataset.joinDate;
-                const leaveDate = row.dataset.leaveDate;
+                const leaveDate = normalizeLeaveDateStr(row.dataset.leaveDate);
                 const memberType = row.dataset.memberType;
                 
                 if (!joinDate || !memberType) {
@@ -931,7 +981,7 @@ function addMember(e) {
     row.dataset.memberId = memberId; // Add this line
     row.dataset.due = duesBreakdown.total;
     row.dataset.joinDate = joinDate;
-    row.dataset.leaveDate = leaveDate;
+    row.dataset.leaveDate = leaveDate || '';
     row.dataset.memberType = clubBase;
     row.dataset.name = name;
     row.classList.add('member-row');
@@ -1098,6 +1148,9 @@ function showFileUploadError(message) {
 
 // Initialize application
 function initializeApp() {
+    if (appInitialized) return;
+    appInitialized = true;
+
     PerformanceMonitor.startTimer('initializeApp');
     
     // Initialize DOM cache
@@ -1145,6 +1198,26 @@ function initializeApp() {
     // Initialize year selector
     populateYearSelector();
     updatePagination();
+
+    const rosterSearchInput = document.getElementById('roster-search-input');
+    const rosterSearchClear = document.getElementById('roster-search-clear');
+    const debouncedRosterSearch = debounce((value) => setRosterSearch(value), 200);
+
+    if (rosterSearchInput) {
+        rosterSearchInput.addEventListener('input', (e) => {
+            debouncedRosterSearch(e.target.value);
+        });
+        rosterSearchInput.addEventListener('search', (e) => {
+            setRosterSearch(e.target.value);
+        });
+    }
+
+    if (rosterSearchClear) {
+        rosterSearchClear.addEventListener('click', () => {
+            clearRosterSearch();
+            updatePagination();
+        });
+    }
     
     // Add event listeners for calculation triggers
     const taxPercentageInput = DOMCache.get('tax-percentage');
@@ -1277,6 +1350,8 @@ window.appFunctions = {
     showPreview,
     handleFileUpload,
     handleGoogleSheetsImport,
+    confirmBulkSheetPicker,
+    cancelBulkSheetPicker,
     addBulkMembers,
     resetBulkUpload,
     showSuccessAnimation,
@@ -1309,7 +1384,16 @@ function downloadCSVTemplate() {
     window.URL.revokeObjectURL(url);
 }
 
-async function parseExcelFile(file) {
+async function parseExcelFile(file, sheetName = null) {
+    const workbook = await readExcelWorkbookFromFile(file);
+    if (!sheetName && workbook.SheetNames.length > 1) {
+        return { needsSheetSelection: true, sheetNames: workbook.SheetNames.slice(), workbook };
+    }
+    const selectedSheet = sheetName || workbook.SheetNames[0];
+    return rowsFromExcelWorkbook(workbook, selectedSheet);
+}
+
+async function readExcelWorkbookFromFile(file) {
     await ensureXLSXLoaded();
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -1317,13 +1401,7 @@ async function parseExcelFile(file) {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                
-                // Remove header row and process data
-                const processedData = filterBulkDataRows(jsonData);
-                resolve(processedData);
+                resolve(workbook);
             } catch (error) {
                 reject(error);
             }
@@ -1331,6 +1409,15 @@ async function parseExcelFile(file) {
         reader.onerror = reject;
         reader.readAsArrayBuffer(file);
     });
+}
+
+function rowsFromExcelWorkbook(workbook, sheetName) {
+    const worksheet = workbook.Sheets[sheetName];
+    if (!worksheet) {
+        throw new Error(`Worksheet "${sheetName}" not found.`);
+    }
+    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: '' });
+    return prepareBulkDataRows(jsonData);
 }
 
 async function parseCSVFile(file) {
@@ -1342,7 +1429,7 @@ async function parseCSVFile(file) {
                     reject(new Error('CSV parsing error: ' + results.errors[0].message));
                     return;
                 }
-                resolve(filterBulkDataRows(results.data));
+                resolve(prepareBulkDataRows(results.data));
             },
             error: function(error) {
                 reject(error);
@@ -1351,8 +1438,177 @@ async function parseCSVFile(file) {
     });
 }
 
-function filterBulkDataRows(rows) {
-    return rows.slice(1).filter(row => row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== ''));
+// Bulk import pipeline:
+// 1. parse file → 2. row 0 = column headers, row 1+ = members → 3. validate → 4. preview → 5. add
+
+function stripBulkCellText(value) {
+    return String(value ?? '').replace(/^\uFEFF/, '').trim();
+}
+
+function normalizeHeaderLabel(value) {
+    return stripBulkCellText(value).toLowerCase().replace(/\s+/g, ' ');
+}
+
+function headerAliasMatches(label, alias) {
+    if (!label || !alias) return false;
+    return label === alias || (alias.length >= 4 && label.includes(alias));
+}
+
+function buildBulkColumnIndex(headerRow) {
+    if (!headerRow || !headerRow.length) return null;
+
+    const labels = headerRow.map(normalizeHeaderLabel);
+    const mapping = {};
+    let matched = 0;
+
+    for (const [field, aliases] of Object.entries(BULK_COLUMN_HEADERS)) {
+        const idx = labels.findIndex((label) =>
+            aliases.some((alias) => headerAliasMatches(label, alias))
+        );
+        if (idx >= 0) {
+            mapping[field] = idx;
+            matched++;
+        }
+    }
+
+    if (
+        matched >= 3 &&
+        mapping.name !== undefined &&
+        mapping.joinDate !== undefined &&
+        mapping.clubBase !== undefined
+    ) {
+        return mapping;
+    }
+
+    return null;
+}
+
+function isBulkHeaderLabel(value) {
+    return BULK_HEADER_LABELS.has(normalizeHeaderLabel(value));
+}
+
+function shouldSkipBulkRow(row) {
+    const mapping = buildBulkColumnIndex(row);
+    if (!mapping) {
+        return false;
+    }
+
+    const nameCell = stripBulkCellText(row[mapping.name]);
+    const joinCell = row[mapping.joinDate];
+    const clubCell = row[mapping.clubBase];
+
+    if (isBulkHeaderLabel(nameCell)) {
+        return true;
+    }
+
+    // Real member rows have a date in the join column and a club-base value.
+    if (SecurityUtils.validateDate(normalizeBulkDate(joinCell)) || isRecognizedClubBase(clubCell)) {
+        return false;
+    }
+
+    return isBulkHeaderLabel(joinCell);
+}
+
+function normalizeBulkRowWidths(rows) {
+    const maxCols = rows.reduce(
+        (max, row) => Math.max(max, Array.isArray(row) ? row.length : 0),
+        0
+    );
+    return rows.map((row) => {
+        const source = Array.isArray(row) ? row : [];
+        const padded = source.slice();
+        while (padded.length < maxCols) {
+            padded.push('');
+        }
+        return padded;
+    });
+}
+
+function isRecognizedClubBase(value) {
+    const normalized = normalizeClubBase(value);
+    return normalized === 'Community-Based' || normalized === 'University-Based';
+}
+
+function extractBulkRowFields(row, columnIndex) {
+    const safeRow = Array.isArray(row) ? row : [];
+
+    let name = safeRow[columnIndex.name];
+    let joinDate = safeRow[columnIndex.joinDate];
+    let clubBase = safeRow[columnIndex.clubBase];
+    let leaveDate = columnIndex.leaveDate !== undefined ? safeRow[columnIndex.leaveDate] : undefined;
+
+    const leaveIdx = columnIndex.leaveDate;
+    const clubIdx = columnIndex.clubBase;
+
+    // Sparse CSV rows: active members may omit a blank leave-date cell (3 cols vs 4).
+    if (
+        leaveIdx !== undefined &&
+        clubIdx !== undefined &&
+        leaveIdx < clubIdx &&
+        !stripBulkCellText(clubBase) &&
+        stripBulkCellText(leaveDate)
+    ) {
+        const normalizedLeave = normalizeBulkLeaveDate(leaveDate);
+        if (
+            (!normalizedLeave && isRecognizedClubBase(leaveDate)) ||
+            (!SecurityUtils.validateDate(normalizedLeave) && isRecognizedClubBase(leaveDate))
+        ) {
+            clubBase = leaveDate;
+            leaveDate = undefined;
+        }
+    } else if (
+        leaveIdx !== undefined &&
+        clubIdx !== undefined &&
+        clubIdx < leaveIdx &&
+        isRecognizedClubBase(leaveDate) &&
+        stripBulkCellText(clubBase) &&
+        SecurityUtils.validateDate(normalizeBulkDate(clubBase))
+    ) {
+        const actualLeave = clubBase;
+        clubBase = leaveDate;
+        leaveDate = actualLeave;
+    }
+
+    return { name, joinDate, clubBase, leaveDate };
+}
+
+function rowHasBulkData(row) {
+    return row.some((cell) => cell !== null && cell !== undefined && String(cell).trim() !== '');
+}
+
+function prepareBulkDataRows(rows) {
+    if (!rows || rows.length === 0) {
+        return { rows: [], columnIndex: { ...DEFAULT_BULK_COLUMN_INDEX } };
+    }
+
+    const paddedRows = normalizeBulkRowWidths(rows);
+    const columnIndex = buildBulkColumnIndex(paddedRows[0]) || { ...DEFAULT_BULK_COLUMN_INDEX };
+    const dataRows = paddedRows.slice(1).filter(rowHasBulkData);
+    return { rows: dataRows, columnIndex };
+}
+
+function normalizeClubBase(value) {
+    const str = String(value || '').trim();
+    if (!str) return '';
+    if (str === 'Community-Based' || str === 'University-Based') return str;
+
+    const lower = str.toLowerCase().replace(/\s+/g, ' ').replace(/_/g, '-');
+    if (lower.includes('community')) return 'Community-Based';
+    if (lower.includes('university') || lower === 'uni' || lower.includes('uni-')) return 'University-Based';
+    return str;
+}
+
+function normalizeBulkLeaveDate(value) {
+    if (value === null || value === undefined) return '';
+    const str = String(value).trim();
+    if (!str) return '';
+
+    const lower = str.toLowerCase();
+    if (['active', 'n/a', 'na', '-', 'none', 'present', 'current'].includes(lower)) {
+        return '';
+    }
+
+    return normalizeBulkDate(value);
 }
 
 function normalizeBulkDate(value) {
@@ -1369,6 +1625,14 @@ function normalizeBulkDate(value) {
 
     const str = String(value).trim();
     if (!str) return '';
+
+    const numericMatch = str.match(/^(\d+)(?:\.0+)?$/);
+    if (numericMatch) {
+        const serial = Number(numericMatch[1]);
+        if (serial > 20000 && serial < 100000) {
+            return normalizeBulkDate(serial);
+        }
+    }
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
@@ -1424,22 +1688,74 @@ function parseGoogleSheetsUrl(url) {
 
 async function fetchGoogleSheetRows(sheetUrl) {
     const { spreadsheetId, gid } = parseGoogleSheetsUrl(sheetUrl);
+    return fetchGoogleSheetRowsByGid(spreadsheetId, gid);
+}
+
+function isMalformedGoogleSheetCsv(rows) {
+    if (!rows || rows.length < 2) {
+        return false;
+    }
+
+    const columnIndex = buildBulkColumnIndex(rows[0]) || { ...DEFAULT_BULK_COLUMN_INDEX };
+
+    for (let i = 1; i < Math.min(rows.length, 4); i++) {
+        const row = rows[i];
+        if (!row) {
+            continue;
+        }
+
+        const joinCell = String(row[columnIndex.joinDate] ?? '');
+        const joinDates = joinCell.match(/\d{4}-\d{2}-\d{2}/g);
+
+        // gviz CSV without headers=1 collapses many rows into one cell.
+        if (joinDates && joinDates.length > 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+async function fetchGoogleSheetRowsByGid(spreadsheetId, gid) {
     const exportUrls = [
         `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`,
-        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=${gid}`
+        `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&headers=1&gid=${gid}`
     ];
 
     let lastError = null;
     for (const exportUrl of exportUrls) {
         try {
-            const rows = await fetchAndParseGoogleSheetCsv(exportUrl);
-            return rows;
+            return await fetchAndParseGoogleSheetCsv(exportUrl);
         } catch (error) {
             lastError = error;
         }
     }
 
     throw lastError || new Error('Could not load sheet. Download as CSV and upload instead, or check that sharing is set to "Anyone with the link can view".');
+}
+
+async function fetchGoogleSpreadsheetTabs(spreadsheetId) {
+    const response = await fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/htmlview`);
+    if (!response.ok) {
+        throw new Error('Could not access sheet. Set sharing to "Anyone with the link can view".');
+    }
+
+    const html = await response.text();
+    const tabs = [];
+    const regex = /\{name:\s*"((?:\\.|[^"\\])*)"\s*,\s*pageUrl:\s*"[^"]*"\s*,\s*gid:\s*"(\d+)"/g;
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+        tabs.push({
+            name: match[1].replace(/\\"/g, '"'),
+            gid: match[2]
+        });
+    }
+
+    if (tabs.length > 0) {
+        return tabs;
+    }
+
+    return [{ name: 'Sheet1', gid: '0' }];
 }
 
 async function fetchAndParseGoogleSheetCsv(exportUrl) {
@@ -1462,12 +1778,16 @@ async function fetchAndParseGoogleSheetCsv(exportUrl) {
                     reject(new Error('CSV parsing error: ' + results.errors[0].message));
                     return;
                 }
-                const processedData = filterBulkDataRows(results.data);
-                if (processedData.length === 0) {
+                if (isMalformedGoogleSheetCsv(results.data)) {
+                    reject(new Error('Google Sheets returned a malformed export. Retrying…'));
+                    return;
+                }
+                const prepared = prepareBulkDataRows(results.data);
+                if (prepared.rows.length === 0) {
                     reject(new Error('No member rows found.'));
                     return;
                 }
-                resolve(processedData);
+                resolve(prepared);
             },
             error: function(error) {
                 reject(error);
@@ -1476,12 +1796,27 @@ async function fetchAndParseGoogleSheetCsv(exportUrl) {
     });
 }
 
-function processBulkRows(data, options = {}) {
-    const validation = validateMemberData(data);
+function processBulkRows(prepared, options = {}) {
+    const dataRows = Array.isArray(prepared) ? prepared : prepared.rows;
+    const columnIndex = prepared.columnIndex || options.columnIndex || { ...DEFAULT_BULK_COLUMN_INDEX };
+    const validation = validateMemberData(dataRows, columnIndex);
 
     if (validation.errors.length > 0) {
-        const errorMessage = 'Validation errors found:\n\n' + validation.errors.join('\n');
+        window.parsedMembers = [];
+        bulkImportActive = false;
+        const summary = `${validation.errors.length} row(s) failed validation (${validation.validatedMembers.length} of ${dataRows.length} valid).`;
+        const errorMessage = summary + '\n\n' + validation.errors.join('\n');
         showFileUploadError(errorMessage);
+        if (typeof options.onError === 'function') {
+            options.onError();
+        }
+        return false;
+    }
+
+    if (validation.validatedMembers.length === 0) {
+        window.parsedMembers = [];
+        bulkImportActive = false;
+        showFileUploadError('No valid member rows found. Check the file format and try again.');
         if (typeof options.onError === 'function') {
             options.onError();
         }
@@ -1493,12 +1828,180 @@ function processBulkRows(data, options = {}) {
     return true;
 }
 
+function getBulkSheetPickerElements(source) {
+    const isExcel = source === 'excel';
+    return {
+        area: document.getElementById(isExcel ? 'file-sheet-picker-area' : 'sheet-picker-area'),
+        options: document.getElementById(isExcel ? 'file-sheet-picker-options' : 'sheet-picker-options'),
+        radioName: isExcel ? 'file-sheet-picker-choice' : 'sheet-picker-choice'
+    };
+}
+
+function getActiveBulkSheetPicker() {
+    const sheets = getBulkSheetPickerElements('google_sheets');
+    if (sheets.area && !sheets.area.classList.contains('hidden')) {
+        return { ...sheets, source: 'google_sheets' };
+    }
+    const excel = getBulkSheetPickerElements('excel');
+    if (excel.area && !excel.area.classList.contains('hidden')) {
+        return { ...excel, source: 'excel' };
+    }
+    return null;
+}
+
+function getSelectedBulkSheetTab(picker) {
+    if (!picker || !picker.options) return null;
+    const checked = picker.options.querySelector(`input[name="${picker.radioName}"]:checked`);
+    if (!checked) return null;
+    const labelEl = checked.closest('label')?.querySelector('span');
+    return {
+        value: checked.value,
+        label: labelEl ? labelEl.textContent.trim() : checked.value
+    };
+}
+
+function setBulkSheetPickerPrimaryActionVisible(source, visible) {
+    if (source === 'google_sheets') {
+        const importButton = document.getElementById('sheets-import-button');
+        if (importButton) {
+            importButton.classList.toggle('hidden', !visible);
+        }
+    } else if (source === 'excel') {
+        const browseButton = document.getElementById('browse-button');
+        if (browseButton) {
+            browseButton.classList.toggle('hidden', !visible);
+        }
+    }
+}
+
+function hideBulkSheetPickerUI() {
+    ['google_sheets', 'excel'].forEach((source) => {
+        const { area, options } = getBulkSheetPickerElements(source);
+        if (area) area.classList.add('hidden');
+        if (options) options.innerHTML = '';
+        setBulkSheetPickerPrimaryActionVisible(source, true);
+    });
+}
+
+function hideBulkSheetPicker() {
+    hideBulkSheetPickerUI();
+    pendingExcelWorkbook = null;
+    pendingGoogleSpreadsheetId = null;
+    pendingSheetPickerOptions = null;
+}
+
+function showBulkSheetPicker(tabs, options = {}) {
+    const source = options.source === 'excel' ? 'excel' : 'google_sheets';
+    const { area, options: optionsContainer, radioName } = getBulkSheetPickerElements(source);
+    if (!area || !optionsContainer) {
+        return false;
+    }
+
+    hideBulkSheetPickerUI();
+    pendingSheetPickerOptions = options;
+
+    let preferredValue = null;
+    if (options.preferredGid !== undefined && options.preferredGid !== null) {
+        preferredValue = String(options.preferredGid);
+    } else if (options.preferredSheetName) {
+        preferredValue = options.preferredSheetName;
+    }
+
+    optionsContainer.innerHTML = tabs.map((tab, index) => {
+        const value = tab.gid !== undefined && tab.gid !== null ? String(tab.gid) : String(tab.name);
+        const label = SecurityUtils.sanitizeHTML(tab.name);
+        const safeValue = SecurityUtils.sanitizeHTML(value);
+        const checked = preferredValue
+            ? value === preferredValue || tab.name === preferredValue
+            : index === 0;
+        return `
+            <label class="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-green-50/80 has-[:checked]:bg-green-50">
+                <input type="radio" name="${radioName}" value="${safeValue}"
+                    class="h-4 w-4 shrink-0 text-green-600 border-green-300 focus:ring-green-500"
+                    ${checked ? 'checked' : ''}>
+                <span class="text-sm text-gray-800">${label}</span>
+            </label>
+        `;
+    }).join('');
+
+    if (source === 'excel') {
+        optionsContainer.querySelectorAll('label').forEach((labelEl) => {
+            labelEl.classList.remove('hover:bg-green-50/80', 'has-[:checked]:bg-green-50');
+            labelEl.classList.add('hover:bg-gray-50', 'has-[:checked]:bg-gray-50');
+            const input = labelEl.querySelector('input');
+            if (input) {
+                input.classList.remove('text-green-600', 'border-green-300', 'focus:ring-green-500');
+                input.classList.add('text-gray-700', 'border-gray-300', 'focus:ring-gray-500');
+            }
+        });
+    }
+
+    area.classList.remove('hidden');
+    setBulkSheetPickerPrimaryActionVisible(source, false);
+    return true;
+}
+
+async function confirmBulkSheetPicker() {
+    const picker = getActiveBulkSheetPicker();
+    const options = pendingSheetPickerOptions || {};
+    const selected = getSelectedBulkSheetTab(picker);
+    const importGeneration = ++bulkImportGeneration;
+    bulkImportActive = true;
+    const loadingOverlay = document.getElementById('loading-overlay');
+
+    if (!picker || !selected) return;
+
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('active');
+    }
+
+    try {
+        if (options.source === 'excel' && pendingExcelWorkbook) {
+            const prepared = rowsFromExcelWorkbook(pendingExcelWorkbook, selected.label);
+            if (importGeneration !== bulkImportGeneration) return;
+            window.bulkUploadSource = 'file';
+            processBulkRows(prepared, options.callbacks || {});
+        } else if (options.source === 'google_sheets' && pendingGoogleSpreadsheetId) {
+            const prepared = await fetchGoogleSheetRowsByGid(pendingGoogleSpreadsheetId, selected.value);
+            if (importGeneration !== bulkImportGeneration) return;
+            window.bulkUploadSource = 'google_sheets';
+            processBulkRows(prepared, options.callbacks || {});
+        }
+    } catch (error) {
+        if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+            showFileUploadError('Could not load sheet. Download as CSV and upload instead, or check that sharing is set to "Anyone with the link can view".');
+        } else {
+            showFileUploadError(error.message);
+        }
+    } finally {
+        hideBulkSheetPicker();
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+        if (!window.parsedMembers || window.parsedMembers.length === 0) {
+            bulkImportActive = false;
+        }
+    }
+}
+
+function cancelBulkSheetPicker() {
+    hideBulkSheetPicker();
+    bulkImportActive = false;
+    const fileInput = document.getElementById('file-input');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+}
+
 async function handleGoogleSheetsImport(url) {
     const loadingOverlay = document.getElementById('loading-overlay');
     const sheetsUrlInput = document.getElementById('sheets-url-input');
     const trimmedUrl = (url || '').trim();
+    const importGeneration = ++bulkImportGeneration;
+    bulkImportActive = true;
 
     if (!trimmedUrl) {
+        bulkImportActive = false;
         showFileUploadError('Please paste a Google Sheets link.');
         return;
     }
@@ -1508,9 +2011,29 @@ async function handleGoogleSheetsImport(url) {
     }
 
     try {
-        const rows = await fetchGoogleSheetRows(trimmedUrl);
+        const { spreadsheetId, gid } = parseGoogleSheetsUrl(trimmedUrl);
+        const tabs = await fetchGoogleSpreadsheetTabs(spreadsheetId);
+        if (importGeneration !== bulkImportGeneration) return;
+
+        if (tabs.length > 1) {
+            pendingGoogleSpreadsheetId = spreadsheetId;
+            showBulkSheetPicker(tabs, {
+                source: 'google_sheets',
+                preferredGid: gid,
+                callbacks: {
+                    onError: () => {
+                        if (sheetsUrlInput) sheetsUrlInput.value = trimmedUrl;
+                    }
+                }
+            });
+            return;
+        }
+
+        const selectedGid = tabs[0] ? tabs[0].gid : gid;
+        const prepared = await fetchGoogleSheetRowsByGid(spreadsheetId, selectedGid);
+        if (importGeneration !== bulkImportGeneration) return;
         window.bulkUploadSource = 'google_sheets';
-        processBulkRows(rows, {
+        processBulkRows(prepared, {
             onError: () => {
                 if (sheetsUrlInput) sheetsUrlInput.value = trimmedUrl;
             }
@@ -1525,57 +2048,74 @@ async function handleGoogleSheetsImport(url) {
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
         }
+        if (!window.parsedMembers || window.parsedMembers.length === 0) {
+            bulkImportActive = false;
+        }
     }
 }
 
-function validateMemberData(data) {
+function validateMemberData(data, columnIndex = DEFAULT_BULK_COLUMN_INDEX) {
     const validatedMembers = [];
     const errors = [];
+    const maxErrors = 10;
 
     data.forEach((row, index) => {
-        const rawName = row[0];
-        const rawJoinDate = row[1];
-        const rawMemberType = row[2];
-        const rawLeaveDate = row[3];
+        if (shouldSkipBulkRow(row)) {
+            return;
+        }
 
-        const name = rawName !== null && rawName !== undefined ? String(rawName).trim() : '';
+        const { name: rawName, joinDate: rawJoinDate, clubBase: rawMemberType, leaveDate: rawLeaveDate } =
+            extractBulkRowFields(row, columnIndex);
+
+        const name = stripBulkCellText(rawName);
         const joinDate = normalizeBulkDate(rawJoinDate);
-        const memberType = rawMemberType !== null && rawMemberType !== undefined ? String(rawMemberType).trim() : '';
-        const leaveDate = rawLeaveDate !== null && rawLeaveDate !== undefined && String(rawLeaveDate).trim() !== ''
-            ? normalizeBulkDate(rawLeaveDate)
+        const memberType = normalizeClubBase(rawMemberType);
+        const leaveDate = stripBulkCellText(rawLeaveDate)
+            ? normalizeBulkLeaveDate(rawLeaveDate)
             : '';
-        
-        // Validate name using security utility
+
+        if (!name && !joinDate && !memberType && !leaveDate) {
+            return;
+        }
+
+        const rowNum = index + 2;
+
         if (!SecurityUtils.validateMemberName(name)) {
-            errors.push(`Row ${index + 2}: Invalid member name - must be 2-100 characters with only letters, spaces, hyphens, apostrophes, and periods`);
+            if (errors.length < maxErrors) {
+                errors.push(`Row ${rowNum}: Invalid member name - must be 2-100 characters with only letters, spaces, hyphens, apostrophes, and periods`);
+            }
             return;
         }
 
-        // Validate join date using security utility
         if (!SecurityUtils.validateDate(joinDate)) {
-            errors.push(`Row ${index + 2}: Invalid join date format (use YYYY-MM-DD)`);
+            if (errors.length < maxErrors) {
+                errors.push(`Row ${rowNum}: Invalid join date format (use YYYY-MM-DD)`);
+            }
             return;
         }
 
-        // Validate club base with stricter validation
         const validTypes = ['Community-Based', 'University-Based'];
-        if (!memberType || typeof memberType !== 'string' || !validTypes.includes(memberType.trim())) {
-            errors.push(`Row ${index + 2}: Invalid Club Base (use "Community-Based" or "University-Based")`);
+        if (!validTypes.includes(memberType)) {
+            if (errors.length < maxErrors) {
+                errors.push(`Row ${rowNum}: Invalid Club Base (use "Community-Based" or "University-Based")`);
+            }
             return;
         }
 
-        // Validate leave date (optional) using security utility
-        if (leaveDate && leaveDate.trim() !== '' && !SecurityUtils.validateDate(leaveDate)) {
-            errors.push(`Row ${index + 2}: Invalid leave date format (use YYYY-MM-DD or leave blank)`);
+        if (leaveDate && !SecurityUtils.validateDate(leaveDate)) {
+            if (errors.length < maxErrors) {
+                errors.push(`Row ${rowNum}: Invalid leave date format (use YYYY-MM-DD or leave blank)`);
+            }
             return;
         }
 
-        // Additional validation: leave date should be after join date
-        if (leaveDate && leaveDate.trim() !== '') {
-            const joinDateObj = new Date(joinDate);
-            const leaveDateObj = new Date(leaveDate);
+        if (leaveDate) {
+            const joinDateObj = new Date(joinDate + 'T00:00:00');
+            const leaveDateObj = new Date(leaveDate + 'T00:00:00');
             if (leaveDateObj <= joinDateObj) {
-                errors.push(`Row ${index + 2}: Leave date must be after join date`);
+                if (errors.length < maxErrors) {
+                    errors.push(`Row ${rowNum}: Leave date must be after join date`);
+                }
                 return;
             }
         }
@@ -1587,6 +2127,10 @@ function validateMemberData(data) {
             leaveDate: leaveDate || null
         });
     });
+
+    if (errors.length === maxErrors) {
+        errors.push('…additional errors omitted');
+    }
 
     return { validatedMembers, errors };
 }
@@ -1609,7 +2153,9 @@ function showPreview(members) {
     const bulkUploadSources = document.getElementById('bulk-upload-sources');
     const uploadPreview = document.getElementById('upload-preview');
     
-    const previewHTML = members.map((member) => {
+    const previewHTML = `
+        <div class="mb-3 text-sm text-gray-600">${members.length} member(s) ready to import</div>
+        ${members.map((member) => {
         const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
         const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
         const safeName = SecurityUtils.sanitizeHTML(member.name);
@@ -1622,7 +2168,7 @@ function showPreview(members) {
                 </div>
             </div>
         `;
-    }).join('');
+    }).join('')}`;
 
     previewContent.innerHTML = previewHTML;
     
@@ -1645,6 +2191,8 @@ function showPreview(members) {
 }
 
 function handleFileUpload(file) {
+    const importGeneration = ++bulkImportGeneration;
+    bulkImportActive = true;
     // Show loading state
     const loadingOverlay = document.getElementById('loading-overlay');
     if (loadingOverlay) {
@@ -1659,6 +2207,7 @@ function handleFileUpload(file) {
     } catch (error) {
         showFileUploadError(error.message);
         fileInput.value = '';
+        bulkImportActive = false;
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
         }
@@ -1675,15 +2224,34 @@ function handleFileUpload(file) {
     } else {
         showFileUploadError('Unsupported file format. Please upload a CSV or Excel file.');
         fileInput.value = '';
+        bulkImportActive = false;
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
         }
         return;
     }
 
-    parsePromise.then(data => {
+    parsePromise.then(prepared => {
+        if (importGeneration !== bulkImportGeneration) return;
+
+        if (prepared.needsSheetSelection) {
+            pendingExcelWorkbook = prepared.workbook;
+            showBulkSheetPicker(
+                prepared.sheetNames.map((name) => ({ name, gid: name })),
+                {
+                    source: 'excel',
+                    callbacks: {
+                        onError: () => {
+                            fileInput.value = '';
+                        }
+                    }
+                }
+            );
+            return;
+        }
+
         window.bulkUploadSource = 'file';
-        processBulkRows(data, {
+        processBulkRows(prepared, {
             onError: () => {
                 fileInput.value = '';
             }
@@ -1691,35 +2259,48 @@ function handleFileUpload(file) {
     }).catch(error => {
         showFileUploadError('Error parsing file: ' + error.message);
         fileInput.value = '';
+        bulkImportActive = false;
     }).finally(() => {
         // Hide loading state
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
+        }
+        if (!window.parsedMembers || window.parsedMembers.length === 0) {
+            bulkImportActive = false;
         }
     });
 }
 
 function addBulkMembers() {
     PerformanceMonitor.startTimer('addBulkMembers');
-    
+
+    if (bulkAddInProgress) return;
     if (!window.parsedMembers || window.parsedMembers.length === 0) return;
+
+    bulkAddInProgress = true;
+    const confirmUploadBtn = document.getElementById('confirm-upload');
+    if (confirmUploadBtn) confirmUploadBtn.disabled = true;
+
+    try {
+    const membersToAdd = window.parsedMembers.slice();
+    window.parsedMembers = [];
 
     const selectedYear = getSelectedInvoiceYear();
     const memberRosterBody = DOMCache.get('member-roster-body');
-    
-    // Use DocumentFragment for better performance
+
     const fragment = document.createDocumentFragment();
-    
-    window.parsedMembers.forEach(member => {
-        const duesBreakdown = calculateIndividualDue(member.joinDate, member.clubBase, selectedYear, member.leaveDate);
+
+    membersToAdd.forEach(member => {
+        const leaveDateForCalc = member.leaveDate || null;
+        const duesBreakdown = calculateIndividualDue(member.joinDate, member.clubBase, selectedYear, leaveDateForCalc);
         const memberId = `member-${Date.now()}-${Math.random()}`;
-        
+
         const row = document.createElement('tr');
         row.id = memberId;
-        row.dataset.memberId = memberId; // Add this line
+        row.dataset.memberId = memberId;
         row.dataset.due = duesBreakdown.total;
         row.dataset.joinDate = member.joinDate;
-        row.dataset.leaveDate = member.leaveDate;
+        row.dataset.leaveDate = member.leaveDate || '';
         row.dataset.memberType = member.clubBase;
         row.dataset.name = member.name;
         row.classList.add('member-row');
@@ -1758,27 +2339,32 @@ function addBulkMembers() {
     // Append all rows at once using DocumentFragment
     memberRosterBody.appendChild(fragment);
 
+    currentPage = 1;
+
     updateTotal();
     updatePagination();
-    
-    // Log user activity if authenticated
+
     if (window.isAuthenticated && window.currentUser) {
         const activityType = window.bulkUploadSource === 'google_sheets' ? 'bulk_upload_sheets' : 'bulk_upload';
         logUserActivity(window.currentUser.uid, activityType);
     }
-    
-    // End performance monitoring
+
     const duration = PerformanceMonitor.endTimer('addBulkMembers');
     PerformanceMonitor.trackUserInteraction('bulk_upload', duration);
-    
-    
-    // Show success animation and return to upload area
-    showSuccessAnimation();
+
+    showSuccessAnimation(membersToAdd.length);
+    bulkImportActive = false;
+    } finally {
+        bulkAddInProgress = false;
+        if (confirmUploadBtn) confirmUploadBtn.disabled = false;
+    }
 }
 
 function resetBulkUpload() {
     window.parsedMembers = [];
     window.bulkUploadSource = 'file';
+    bulkImportActive = false;
+    hideBulkSheetPicker();
     const uploadPreview = document.getElementById('upload-preview');
     const fileInput = document.getElementById('file-input');
     const fileUploadArea = document.getElementById('file-upload-area');
@@ -1812,9 +2398,12 @@ function resetBulkUpload() {
     }, 300);
 }
 
-function showSuccessAnimation() {
+function showSuccessAnimation(addedCount) {
     const previewContent = document.getElementById('preview-content');
     const uploadPreview = document.getElementById('upload-preview');
+    const memberCount = typeof addedCount === 'number'
+        ? addedCount
+        : (window.parsedMembers ? window.parsedMembers.length : 0);
     
     // Replace preview content with success message
     const successHTML = `
@@ -1825,7 +2414,7 @@ function showSuccessAnimation() {
                 </svg>
             </div>
             <h3 class="text-lg font-bold text-gray-800 mb-2">Successfully Added!</h3>
-            <p class="text-gray-600 mb-4">${window.parsedMembers.length} member(s) have been added to your roster.</p>
+            <p class="text-gray-600 mb-4">${memberCount} member(s) have been added to your roster.</p>
             <div class="flex gap-3 justify-center">
                 <button type="button" id="upload-more-btn" class="btn btn-primary text-sm px-6 py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1858,6 +2447,80 @@ function showSuccessAnimation() {
 }
 
 // Pagination Functions
+function normalizeRosterSearchQuery(query) {
+    return String(query ?? '').trim().toLowerCase();
+}
+
+function memberRowMatchesSearch(row, query) {
+    if (!query) {
+        return true;
+    }
+
+    const haystack = [
+        row.dataset.name,
+        row.dataset.joinDate,
+        row.dataset.leaveDate,
+        row.dataset.memberType
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    return haystack.includes(query);
+}
+
+function getFilteredMemberRows() {
+    const query = normalizeRosterSearchQuery(rosterSearchQuery);
+    if (!query) {
+        return allMemberRows;
+    }
+    return allMemberRows.filter((row) => memberRowMatchesSearch(row, query));
+}
+
+function updateRosterSearchStatus() {
+    const statusEl = document.getElementById('roster-search-status');
+    const clearBtn = document.getElementById('roster-search-clear');
+    const query = normalizeRosterSearchQuery(rosterSearchQuery);
+    const filteredCount = getFilteredMemberRows().length;
+    const totalCount = allMemberRows.length;
+
+    if (clearBtn) {
+        clearBtn.classList.toggle('hidden', !query);
+    }
+
+    if (!statusEl) {
+        return;
+    }
+
+    if (!query) {
+        statusEl.classList.add('hidden');
+        statusEl.textContent = '';
+        return;
+    }
+
+    statusEl.classList.remove('hidden');
+    if (filteredCount === 0) {
+        statusEl.textContent = `No members match "${rosterSearchQuery.trim()}"`;
+    } else if (filteredCount < totalCount) {
+        statusEl.textContent = `Showing ${filteredCount} of ${totalCount} members`;
+    } else {
+        statusEl.textContent = `Showing ${filteredCount} members`;
+    }
+}
+
+function setRosterSearch(query) {
+    rosterSearchQuery = query;
+    currentPage = 1;
+    updateRosterSearchStatus();
+    updatePagination();
+}
+
+function clearRosterSearch() {
+    rosterSearchQuery = '';
+    const input = document.getElementById('roster-search-input');
+    if (input) {
+        input.value = '';
+    }
+    updateRosterSearchStatus();
+}
+
 function updatePagination() {
     const paginationControls = document.getElementById('pagination-controls');
     const pageSizeSelect = document.getElementById('page-size-select');
@@ -1882,16 +2545,26 @@ function updatePagination() {
     } else {
         allMemberRows = Array.from(memberRosterBody.querySelectorAll('tr.member-row'));
     }
-    
-    const totalMembers = allMemberRows.length;
-    const totalPages = Math.ceil(totalMembers / pageSize);
+
+    const filteredRows = getFilteredMemberRows();
+    const totalMembers = filteredRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalMembers / pageSize) || 1);
+
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+        currentPage = 1;
+    }
     
     // Show/hide pagination controls
     if (totalMembers > pageSize) {
         paginationControls.classList.remove('hidden');
-    } else {
+    } else if (paginationControls) {
         paginationControls.classList.add('hidden');
     }
+
+    updateRosterSearchStatus();
     
     // Update pagination info
     const start = (currentPage - 1) * pageSize + 1;
@@ -1971,16 +2644,15 @@ function updatePagination() {
 }
 
 function displayCurrentPage() {
+    const filteredRows = getFilteredMemberRows();
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    
-    // Hide all rows
-    allMemberRows.forEach(row => {
+
+    allMemberRows.forEach((row) => {
         row.style.display = 'none';
     });
-    
-    // Show only current page rows
-    allMemberRows.slice(start, end).forEach(row => {
+
+    filteredRows.slice(start, end).forEach((row) => {
         row.style.display = '';
     });
 }
@@ -1998,7 +2670,7 @@ function goToPreviousPage() {
 }
 
 function goToNextPage() {
-    const totalPages = Math.ceil(allMemberRows.length / pageSize);
+    const totalPages = Math.ceil(getFilteredMemberRows().length / pageSize);
     if (currentPage < totalPages) {
         goToPage(currentPage + 1);
     }
@@ -2192,7 +2864,7 @@ function editMember(memberId) {
     // Enhanced input fields with better styling and visibility - sanitized to prevent XSS
     const sanitizedName = SecurityUtils.sanitizeText(name);
     const sanitizedJoinDate = SecurityUtils.sanitizeText(joinDate);
-    const sanitizedLeaveDate = leaveDate ? SecurityUtils.sanitizeText(leaveDate) : '';
+    const sanitizedLeaveDate = leaveDate && leaveDate !== 'null' ? SecurityUtils.sanitizeText(leaveDate) : '';
     
     row.cells[0].innerHTML = `<input type="text" value="${sanitizedName}" class="edit-mode-input" placeholder="Enter member name">`;
     row.cells[1].innerHTML = `<input type="date" value="${sanitizedJoinDate}" class="edit-mode-input">`;
@@ -2285,9 +2957,31 @@ function saveMember(memberId) {
         return;
     }
 
+    if (!SecurityUtils.validateDate(newJoinDate)) {
+        showErrorMessage('Please enter a valid join date (YYYY-MM-DD)');
+        row.cells[1].querySelector('input').focus();
+        return;
+    }
+
+    if (newLeaveDate && !SecurityUtils.validateDate(newLeaveDate)) {
+        showErrorMessage('Please enter a valid leave date (YYYY-MM-DD) or leave blank');
+        row.cells[2].querySelector('input').focus();
+        return;
+    }
+
+    if (newLeaveDate) {
+        const joinDateObj = new Date(newJoinDate + 'T00:00:00');
+        const leaveDateObj = new Date(newLeaveDate + 'T00:00:00');
+        if (leaveDateObj <= joinDateObj) {
+            showErrorMessage('Leave date must be after join date');
+            row.cells[2].querySelector('input').focus();
+            return;
+        }
+    }
+
     row.dataset.name = newName;
     row.dataset.joinDate = newJoinDate;
-    row.dataset.leaveDate = newLeaveDate;
+    row.dataset.leaveDate = newLeaveDate || '';
     row.dataset.memberType = newMemberType;
 
     const selectedYear = getSelectedInvoiceYear();
@@ -2366,38 +3060,7 @@ function finishEditing(row, memberId) {
              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
         </button>
     `;
-    
-    // Add event listeners after the HTML is set
-    setTimeout(() => {
-        const editBtn = row.querySelector('.edit-member-btn');
-        const removeBtn = row.querySelector('.remove-member-btn');
-        
-        if (editBtn) {
-            editBtn.addEventListener('click', () => editMember(memberId));
-        }
-        
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                // Log member delete activity if authenticated
-                if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
-                    window.appFunctions.logUserActivity(window.currentUser.uid, 'delete_member');
-                }
-                
-                // Remove from DOM
-                row.remove();
-                // Remove from allMemberRows array
-                const index = window.allMemberRows.indexOf(row);
-                if (index > -1) {
-                    window.allMemberRows.splice(index, 1);
-                    allMemberRows = window.allMemberRows;
-                }
-                updateTotal();
-                updatePagination();
-                
-            });
-        }
-    }, 0);
-    
+
     document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = false);
 }
 
@@ -2407,6 +3070,7 @@ function resetCalculator() {
     window.allMemberRows = [];
     allMemberRows = window.allMemberRows;
     currentPage = 1;
+    clearRosterSearch();
     updateTotal();
     updatePagination();
     
@@ -2965,6 +3629,14 @@ async function loadUserData(userUid) {
 }
 
 function showDataChoiceDialog(cloudData) {
+    if (document.getElementById('data-choice-dialog')) {
+        return;
+    }
+
+    if (bulkImportActive || bulkAddInProgress) {
+        return;
+    }
+
     // Ensure allMemberRows is initialized
     window.allMemberRows = window.allMemberRows || [];
     
@@ -2973,6 +3645,7 @@ function showDataChoiceDialog(cloudData) {
     const cloudMemberCount = cloudData && cloudData.memberRoster ? cloudData.memberRoster.length : 0;
     
     const dialog = document.createElement('div');
+    dialog.id = 'data-choice-dialog';
     dialog.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
     dialog.innerHTML = `
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all duration-300 scale-95 opacity-0" id="dialog-content">
@@ -3213,6 +3886,10 @@ function animateOutAndRemove(dialog, callback = null) {
 }
 
 function loadCloudData(data) {
+    if (bulkImportActive || bulkAddInProgress) {
+        return;
+    }
+
     // Load member roster
     if (data.memberRoster && data.memberRoster.length > 0) {
         loadMemberRoster(data.memberRoster);
@@ -3283,86 +3960,7 @@ function loadMemberRoster(memberRoster) {
         memberRosterBody.appendChild(row);
 
     });
-    
 
-
-    // Add event listeners to all loaded rows
-    setTimeout(() => {
-        window.allMemberRows.forEach((row, index) => {
-            const editBtn = row.querySelector('.edit-member-btn');
-            const removeBtn = row.querySelector('.remove-member-btn');
-            
-
-            
-            if (editBtn) {
-                editBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    editMember(row.id);
-                });
-            }
-            
-            if (removeBtn) {
-                removeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Remove from DOM
-                    row.remove();
-                    // Remove from allMemberRows array
-                    const index = window.allMemberRows.indexOf(row);
-                    if (index > -1) {
-                        window.allMemberRows.splice(index, 1);
-                        allMemberRows = window.allMemberRows;
-                    }
-                    updateTotal();
-                    updatePagination();
-                    
-                });
-            }
-        });
-
-        
-        // Fallback: Add event listeners using event delegation
-        const memberRosterBody = document.getElementById('member-roster-body');
-        if (memberRosterBody) {
-            memberRosterBody.addEventListener('click', (e) => {
-                const target = e.target.closest('button');
-                if (!target) return;
-                
-                const row = target.closest('tr');
-                if (!row) return;
-                
-                if (target.classList.contains('edit-member-btn')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    editMember(row.id);
-                } else if (target.classList.contains('remove-member-btn')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Log member delete activity if authenticated
-                    if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
-                        window.appFunctions.logUserActivity(window.currentUser.uid, 'delete_member');
-                    }
-                    
-                    // Remove from DOM
-                    row.remove();
-                    // Remove from allMemberRows array
-                    const index = window.allMemberRows.indexOf(row);
-                    if (index > -1) {
-                        window.allMemberRows.splice(index, 1);
-                        allMemberRows = window.allMemberRows;
-                    }
-                    updateTotal();
-                    updatePagination();
-                    
-                }
-            });
-        }
-    }, 100); // Increased delay to ensure DOM is ready
-
-    // Update totals and pagination after a short delay to ensure DOM is fully updated
     setTimeout(() => {
         updateTotal();
         updatePagination();
@@ -3405,7 +4003,7 @@ function getCurrentData() {
             id: memberId,
             name: name,
             joinDate: joinDate,
-            leaveDate: leaveDate || '',
+            leaveDate: (leaveDate && leaveDate !== 'null' && leaveDate !== 'undefined') ? leaveDate : '',
             memberType: memberType
         });
     });
@@ -3468,8 +4066,7 @@ function handleManualSave() {
     }
     
     try {
-        const data = getCurrentData();
-        debouncedSaveUserData(window.currentUser.uid, data);
+        debouncedSaveUserData(window.currentUser.uid);
         
         // Show immediate feedback
         const saveButton = document.getElementById('save-button');
@@ -3554,7 +4151,7 @@ function cleanup() {
     // Clear global arrays
     window.allMemberRows = [];
     allMemberRows = [];
-    parsedMembers = [];
+    window.parsedMembers = [];
     
     // Clear timeouts
     if (currentErrorTimeout) {
@@ -3639,6 +4236,8 @@ window.appFunctions = {
     showPreview,
     handleFileUpload,
     handleGoogleSheetsImport,
+    confirmBulkSheetPicker,
+    cancelBulkSheetPicker,
     addBulkMembers,
     resetBulkUpload,
     showSuccessAnimation,
@@ -3655,6 +4254,7 @@ window.appFunctions = {
     cancelEdit,
     finishEditing,
     resetCalculator,
+    clearSessionRoster,
     initializeFirebaseAuth,
     handleLogin,
     handleLogout,

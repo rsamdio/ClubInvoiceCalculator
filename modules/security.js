@@ -36,12 +36,19 @@
 				if (!dateString || typeof dateString !== 'string') return false;
 				const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 				if (!dateRegex.test(dateString)) return false;
-				const date = new Date(dateString);
-				return date instanceof Date && !isNaN(date) && date.getFullYear() >= 1900 && date.getFullYear() <= 2100;
+				const parts = dateString.split('-').map(Number);
+				const date = new Date(parts[0], parts[1] - 1, parts[2]);
+				return (
+					date.getFullYear() === parts[0] &&
+					date.getMonth() === parts[1] - 1 &&
+					date.getDate() === parts[2] &&
+					parts[0] >= 1900 &&
+					parts[0] <= 2100
+				);
 			},
 			validateMemberName: function(name) {
 				if (!name || typeof name !== 'string') return false;
-				const sanitizedName = this.sanitizeText(name).trim();
+				const sanitizedName = this.sanitizeText(name).replace(/^\uFEFF/, '').trim();
 				return sanitizedName.length >= 2 && sanitizedName.length <= 100 && /^[a-zA-Z\s\-'\.]+$/.test(sanitizedName);
 			}
 		};

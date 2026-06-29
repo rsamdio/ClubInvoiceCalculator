@@ -26,6 +26,16 @@
 	if (!window.DuesCalculator) {
 		window.DuesCalculator = {
 			calculateIndividualDue: function(joinDateStr, clubBase, invoiceYear, leaveDateStr) {
+				if (leaveDateStr === null || leaveDateStr === undefined) {
+					leaveDateStr = null;
+				} else {
+					const trimmedLeave = String(leaveDateStr).trim();
+					if (!trimmedLeave || trimmedLeave === 'null' || trimmedLeave === 'undefined') {
+						leaveDateStr = null;
+					} else {
+						leaveDateStr = trimmedLeave;
+					}
+				}
 				const joinDate = new Date(joinDateStr + 'T00:00:00');
 				const invoiceDate = new Date(invoiceYear, 0, 1);
 				const baseDues = clubBase === 'Community-Based' ? 8 : 5;
@@ -41,11 +51,10 @@
 					const monthsInJoinYear = Math.max(0, 12 - effectiveJoinMonth);
 					let proratedDues = Math.round(proratedDuePerMonth * monthsInJoinYear * 100) / 100;
 
-					if (leaveDateStr && leaveDateStr.trim() !== '') {
+					if (leaveDateStr) {
 						const leaveDate = new Date(leaveDateStr + 'T00:00:00');
 						if (leaveDate < invoiceDate) {
-							const leaveMonth = leaveDate.getMonth();
-							let effectiveLeaveMonth = leaveMonth;
+							let effectiveLeaveMonth = leaveDate.getMonth();
 							effectiveLeaveMonth = Math.max(effectiveLeaveMonth, effectiveJoinMonth);
 							if (effectiveLeaveMonth < effectiveJoinMonth) {
 								return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };

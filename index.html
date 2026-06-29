@@ -630,6 +630,14 @@
                             Browse Files
                         </button>
                         <p class="text-xs text-gray-500 mt-3">Supports Excel (.xlsx, .xls) and <br><b>CSV (Recommended)</b> files </p>
+                        <div id="file-sheet-picker-area" class="hidden mt-4 text-left">
+                            <p class="text-xs font-medium text-gray-700 mb-2">Choose worksheet</p>
+                            <div id="file-sheet-picker-options" role="radiogroup" aria-label="Choose worksheet" class="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden"></div>
+                            <div class="flex gap-2 mt-2">
+                                <button type="button" id="file-sheet-picker-confirm" class="btn btn-primary text-sm flex-1 py-2">Import selected sheet</button>
+                                <button type="button" id="file-sheet-picker-cancel" class="btn btn-secondary text-sm py-2 px-3">Cancel</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex items-center gap-3 mb-4">
@@ -644,8 +652,16 @@
                         <p class="text-xs text-green-700 text-center mb-3">Paste a public sheet link (Viewer access required)</p>
                         <input type="url" id="sheets-url-input" inputmode="url" autocomplete="off"
                                placeholder="https://docs.google.com/spreadsheets/d/..."
-                               class="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-sm bg-white shadow-sm mb-3">
-                        <button type="button" id="sheets-import-button" class="btn btn-secondary text-sm w-full py-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
+                               class="w-full px-4 py-3 border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 text-sm bg-white shadow-sm">
+                        <div id="sheet-picker-area" class="hidden mt-3">
+                            <p class="text-xs font-medium text-green-800 mb-2">Choose worksheet</p>
+                            <div id="sheet-picker-options" role="radiogroup" aria-label="Choose worksheet" class="rounded-lg border border-green-200 bg-white divide-y divide-green-100 overflow-hidden"></div>
+                            <div class="flex gap-2 mt-2">
+                                <button type="button" id="sheet-picker-confirm" class="btn btn-primary text-sm flex-1 py-2">Import selected sheet</button>
+                                <button type="button" id="sheet-picker-cancel" class="btn btn-secondary text-sm py-2 px-3">Cancel</button>
+                            </div>
+                        </div>
+                        <button type="button" id="sheets-import-button" class="btn btn-secondary text-sm w-full py-3 mt-3 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
@@ -664,7 +680,7 @@
                     
                     <!-- File Upload Error Display -->
                     <div id="file-upload-error" class="hidden mb-4"></div>
-                    
+
                     <!-- Upload Preview -->
                     <div id="upload-preview" class="hidden mb-6">
                         <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center">
@@ -915,6 +931,35 @@
                                 <span class="sm:hidden">Reset</span>
                             </button>
                         </div>
+                    </div>
+
+                    <div class="mb-4 w-full">
+                        <div class="relative w-full">
+                            <label for="roster-search-input" class="sr-only">Search members</label>
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="search"
+                                id="roster-search-input"
+                                placeholder="Search by name, date, or club base…"
+                                autocomplete="off"
+                                class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                            />
+                            <button
+                                type="button"
+                                id="roster-search-clear"
+                                class="hidden absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                aria-label="Clear search"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="roster-search-status" class="mt-2 text-sm text-gray-500 hidden"></p>
                     </div>
                     
                     <div class="overflow-x-auto -mx-8 table-responsive">
@@ -1778,6 +1823,29 @@
                 });
             }
 
+            ['sheet-picker-confirm', 'file-sheet-picker-confirm'].forEach((id) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', async () => {
+                        const appFunctions = await waitForAppFunctions();
+                        if (appFunctions && appFunctions.confirmBulkSheetPicker) {
+                            appFunctions.confirmBulkSheetPicker();
+                        }
+                    });
+                }
+            });
+            ['sheet-picker-cancel', 'file-sheet-picker-cancel'].forEach((id) => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', async () => {
+                        const appFunctions = await waitForAppFunctions();
+                        if (appFunctions && appFunctions.cancelBulkSheetPicker) {
+                            appFunctions.cancelBulkSheetPicker();
+                        }
+                    });
+                }
+            });
+
             // Pagination event listeners
             const pageSizeSelect = document.getElementById('page-size-select');
             const prevPageBtn = document.getElementById('prev-page');
@@ -2439,10 +2507,13 @@
                                 }
                             } else {
                                 // User is signed out
-                                // Set global variables for app.js
                                 window.currentUser = null;
                                 window.isAuthenticated = false;
                                 updateLoginUI(null);
+
+                                if (window.appFunctions && window.appFunctions.clearSessionRoster) {
+                                    window.appFunctions.clearSessionRoster();
+                                }
                                 
                                 // Show instructions modal for non-authenticated users
                                 // Only show if no other modal is currently active
@@ -2660,27 +2731,34 @@
                     }
                 });
                 
-                // Close dropdown when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!newProfileTrigger.contains(e.target) && !newProfileDropdown.contains(e.target)) {
-                        newProfileDropdown.classList.add('opacity-0', 'scale-95');
-                        newProfileDropdown.classList.remove('opacity-100', 'scale-100');
+                // Close dropdown when clicking outside (register once)
+                if (!window.__profileDropdownDocumentBound) {
+                    window.__profileDropdownDocumentBound = true;
+
+                    document.addEventListener('click', (e) => {
+                        const trigger = document.getElementById('profile-trigger');
+                        const dropdown = document.getElementById('profile-dropdown');
+                        if (!trigger || !dropdown || dropdown.classList.contains('hidden')) return;
+                        if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                            dropdown.classList.add('opacity-0', 'scale-95');
+                            dropdown.classList.remove('opacity-100', 'scale-100');
+                            setTimeout(() => {
+                                dropdown.classList.add('hidden');
+                            }, 150);
+                        }
+                    });
+
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key !== 'Escape') return;
+                        const dropdown = document.getElementById('profile-dropdown');
+                        if (!dropdown || dropdown.classList.contains('hidden')) return;
+                        dropdown.classList.add('opacity-0', 'scale-95');
+                        dropdown.classList.remove('opacity-100', 'scale-100');
                         setTimeout(() => {
-                            newProfileDropdown.classList.add('hidden');
+                            dropdown.classList.add('hidden');
                         }, 150);
-                    }
-                });
-                
-                // Close dropdown on escape key
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        newProfileDropdown.classList.add('opacity-0', 'scale-95');
-                        newProfileDropdown.classList.remove('opacity-100', 'scale-100');
-                        setTimeout(() => {
-                            newProfileDropdown.classList.add('hidden');
-                        }, 150);
-                    }
-                });
+                    });
+                }
                 
                 // Logout button functionality
                 if (newLogoutButton) {
