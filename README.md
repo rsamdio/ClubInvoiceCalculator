@@ -174,9 +174,9 @@ Implemented in both `modules/calculations.js` and `app.js`. Keep them in sync wh
 
 High-level behavior:
 - Invoice year = January 1 of the selected year
-- Join in the invoice year → $0 for that invoice (dues start on the following year's invoice)
-- Prior-year joins may include full-year dues plus prorated catch-up
-- Leave before the invoice date can zero out or limit dues depending on join year
+- Join on 1 January of the invoice year → full-year dues on that invoice
+- Join after 1 January of the invoice year → $0 on that invoice (catch-up starts the following year)
+- Join on 1 January of the prior year → full-year dues only on the next invoice (no 12-month catch-up)
 - Mid-year leave after January 1 does not reduce the January 1 snapshot invoice
 
 ## Troubleshooting

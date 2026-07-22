@@ -103,8 +103,10 @@ Invoice year = January 1 of the selected year.
 
 | Join timing | Result |
 |-------------|--------|
-| Previous year (`joinYear === invoiceYear - 1`) | Full year (invoice year) + prorated catch-up for prior-year months (Jan 1 join = 12 months proration + full year) |
-| Current invoice year | $0 (dues start next year) |
+| Previous year (`joinYear === invoiceYear - 1`), joined **after** Jan 1 | Full year (invoice year) + prorated catch-up for prior-year months |
+| Previous year, joined **Jan 1** | Full year only (no catch-up; prior year was already billed in full on that invoice) |
+| Current invoice year, joined **Jan 1** | Full year dues (active on the invoice date) |
+| Current invoice year, joined **after** Jan 1 | $0 (catch-up starts on the next year's invoice) |
 | Before previous year | Full year dues (unless left before invoice date → $0) |
 | Leave date before invoice date | $0 or prorated-only depending on join year |
 | Leave on Jan 1 of invoice year | Still active (invoice generated on Jan 1) |

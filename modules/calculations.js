@@ -40,10 +40,23 @@
 				const invoiceDate = new Date(invoiceYear, 0, 1);
 				const baseDues = clubBase === 'Community-Based' ? 8 : 5;
 				const joinYear = joinDate.getFullYear();
+				const joinedOnJanuaryFirst = joinDate.getMonth() === 0 && joinDate.getDate() === 1;
 
 				const proratedDuePerMonth = Math.round((baseDues / 12) * 100) / 100;
 
 				if (joinYear === invoiceYear - 1) {
+					// Jan 1 joiners were already billed the full prior year on that year's invoice.
+					// Next invoice is full-year only (no 12-month catch-up proration).
+					if (joinedOnJanuaryFirst) {
+						if (leaveDateStr) {
+							const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+							if (leaveDate < invoiceDate) {
+								return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+							}
+						}
+						return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+					}
+
 					const joinMonth = joinDate.getMonth();
 					const joinDay = joinDate.getDate();
 					let effectiveJoinMonth = joinMonth;
@@ -70,6 +83,17 @@
 				}
 
 				if (joinYear === invoiceYear) {
+					// Joined on the invoice date (1 January) → full member for this invoice year
+					if (joinedOnJanuaryFirst) {
+						if (leaveDateStr) {
+							const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+							if (leaveDate < invoiceDate) {
+								return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+							}
+						}
+						return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+					}
+					// Joined after 1 January → no dues on this invoice; catch-up starts next year
 					return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
 				}
 

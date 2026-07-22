@@ -738,14 +738,25 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
     const invoiceDate = new Date(invoiceYear, 0, 1);
     const baseDues = clubBase === 'Community-Based' ? 8 : 5;
     const joinYear = joinDate.getFullYear();
-    
-    // Calculate dues for member
+    const joinedOnJanuaryFirst = joinDate.getMonth() === 0 && joinDate.getDate() === 1;
 
     // Calculate prorated due per month (rounded to 2 decimals)
     const proratedDuePerMonth = Math.round((baseDues / 12) * 100) / 100;
 
     // Handle members who joined in the previous year (invoiceYear - 1)
     if (joinYear === invoiceYear - 1) {
+        // Jan 1 joiners were already billed the full prior year on that year's invoice.
+        // Next invoice is full-year only (no 12-month catch-up proration).
+        if (joinedOnJanuaryFirst) {
+            if (leaveDateStr) {
+                const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+                if (leaveDate < invoiceDate) {
+                    return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+                }
+            }
+            return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+        }
+
         const joinMonth = joinDate.getMonth();
         const joinDay = joinDate.getDate();
         
@@ -784,8 +795,17 @@ function calculateIndividualDue(joinDateStr, clubBase, invoiceYear, leaveDateStr
 
     // Handle members who joined in the current invoice year
     if (joinYear === invoiceYear) {
-        // Members who join in the current invoice year should not owe any dues for that year
-        // They will start owing dues from the next year onwards
+        // Joined on the invoice date (1 January) → full member for this invoice year
+        if (joinedOnJanuaryFirst) {
+            if (leaveDateStr) {
+                const leaveDate = new Date(leaveDateStr + 'T00:00:00');
+                if (leaveDate < invoiceDate) {
+                    return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
+                }
+            }
+            return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
+        }
+        // Joined after 1 January → no dues on this invoice; catch-up starts next year
         return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
     }
 
