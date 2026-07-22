@@ -115,9 +115,9 @@ Tax and local currency are applied in `updateTotal()` using `taxPercentage` and 
 ## Key flows
 
 1. **Bootstrap:** Load scripts (defer) → Firebase ESM sets `window.firebase*` → `initializeApp()` → auth via `initializeFirebaseAuthDirectly()` in `index.html`.
-2. **Add member:** `addMember()` → DOM row + `allMemberRows` → `updateTotal()` → optional debounced cloud save.
+2. **Add member:** `addMember()` → DOM row + `allMemberRows` → `updateTotal()` → marks cloud save dirty when signed in (manual Save to Cloud; no autosave).
 3. **Bulk import:** CSV/XLSX → lazy-load PapaParse/XLSX → `validateMemberData()` → preview → `addBulkMembers()`.
-4. **Cloud sync:** `getCurrentData()` → `saveUserData()` (2s debounce) / `loadUserData()` with local-vs-cloud conflict dialog.
+4. **Cloud sync:** Manual Save → `getCurrentData()` → `saveUserData()` / `loadUserData()` with local-vs-cloud conflict dialog.
 5. **PDF:** Inline in `index.html` → worker message → `logInvoiceSummary()` on success.
 6. **Admin:** Sign in → check `admins/{uid}` → search users by email, view roster/invoices, promote admins.
 

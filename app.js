@@ -436,6 +436,14 @@ class FormValidator {
             errorElement.style.display = 'block';
             this.errors.set(fieldId, message);
         }
+
+        if (fieldId === 'member-type') {
+            const options = document.querySelector('.club-base-options');
+            if (options) {
+                options.classList.remove('input-success');
+                options.classList.add('input-error');
+            }
+        }
     }
 
     setFieldSuccess(fieldId) {
@@ -449,6 +457,14 @@ class FormValidator {
             errorElement.textContent = '';
             this.errors.delete(fieldId);
         }
+
+        if (fieldId === 'member-type') {
+            const options = document.querySelector('.club-base-options');
+            if (options) {
+                options.classList.remove('input-error');
+                options.classList.add('input-success');
+            }
+        }
     }
 
     clearFieldError(fieldId) {
@@ -460,6 +476,13 @@ class FormValidator {
             errorElement.style.display = 'none';
             errorElement.textContent = '';
             this.errors.delete(fieldId);
+        }
+
+        if (fieldId === 'member-type') {
+            const options = document.querySelector('.club-base-options');
+            if (options) {
+                options.classList.remove('input-error', 'input-success');
+            }
         }
     }
 
@@ -485,6 +508,32 @@ class FormValidator {
 
 const formValidator = new FormValidator();
 
+function syncClubBaseSelection(value) {
+    const hidden = document.getElementById('member-type');
+    const nextValue = value || '';
+    if (hidden) {
+        hidden.value = nextValue;
+    }
+    document.querySelectorAll('input[name="club-base-choice"]').forEach((radio) => {
+        radio.checked = Boolean(nextValue) && radio.value === nextValue;
+        const option = radio.closest('.club-base-option');
+        if (option) {
+            option.classList.toggle('is-selected', radio.checked);
+        }
+    });
+}
+
+function setupClubBaseOptions() {
+    document.querySelectorAll('input[name="club-base-choice"]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            if (!radio.checked) return;
+            syncClubBaseSelection(radio.value);
+            if (formValidator.errors.has('member-type')) {
+                formValidator.clearFieldError('member-type');
+            }
+        });
+    });
+}
 // Utility functions
 function debounce(func, wait) {
     let timeout;
@@ -506,6 +555,59 @@ function preciseDecimal(value, decimals = 2) {
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_DELAY = 2000; // 2 seconds
 
+// Cloud save UI state: clean | dirty | saving | saved
+let cloudSaveStatus = 'clean';
+let cloudDirtyPending = false;
+let suppressCloudDirty = false;
+let savedStateTimeout = null;
+const CLOUD_WELCOME_MESSAGE = "You're signed in. Add members and adjust your settings, then click Save to Cloud to back up your roster. Nothing is saved until you do.";
+
+function markCloudDataDirty() {
+    if (suppressCloudDirty || !window.isAuthenticated || !window.currentUser) {
+        return;
+    }
+    if (cloudSaveStatus === 'saving') {
+        cloudDirtyPending = true;
+        return;
+    }
+    if (cloudSaveStatus === 'dirty') {
+        return;
+    }
+    if (savedStateTimeout) {
+        clearTimeout(savedStateTimeout);
+        savedStateTimeout = null;
+    }
+    cloudSaveStatus = 'dirty';
+    updateSaveButtonState();
+}
+
+function markCloudDataClean(showSavedLabel = false) {
+    cloudDirtyPending = false;
+    if (savedStateTimeout) {
+        clearTimeout(savedStateTimeout);
+        savedStateTimeout = null;
+    }
+    cloudSaveStatus = showSavedLabel ? 'saved' : 'clean';
+    updateSaveButtonState();
+    if (showSavedLabel) {
+        savedStateTimeout = setTimeout(() => {
+            if (cloudSaveStatus === 'saved') {
+                cloudSaveStatus = 'clean';
+                updateSaveButtonState();
+            }
+        }, 3000);
+    }
+}
+
+function resetCloudSaveState() {
+    cloudDirtyPending = false;
+    if (savedStateTimeout) {
+        clearTimeout(savedStateTimeout);
+        savedStateTimeout = null;
+    }
+    cloudSaveStatus = 'clean';
+}
+
 function debouncedSaveUserData(userUid) {
     if (saveDebounceTimer) {
         clearTimeout(saveDebounceTimer);
@@ -516,8 +618,22 @@ function debouncedSaveUserData(userUid) {
             saveDebounceTimer = null;
             return;
         }
+        cloudSaveStatus = 'saving';
+        updateSaveButtonState();
         const data = getCurrentData();
-        await saveUserData(userUid, data);
+        const ok = await saveUserData(userUid, data);
+        if (ok) {
+            if (cloudDirtyPending) {
+                cloudDirtyPending = false;
+                cloudSaveStatus = 'dirty';
+                updateSaveButtonState();
+            } else {
+                markCloudDataClean(true);
+            }
+        } else {
+            cloudSaveStatus = 'dirty';
+            updateSaveButtonState();
+        }
         saveDebounceTimer = null;
     }, SAVE_DEBOUNCE_DELAY);
 }
@@ -1023,7 +1139,7 @@ function addMember(e) {
     const addMemberForm = document.getElementById('add-member-form');
     addMemberForm.reset();
     joinDateInput.value = lastSelectedJoinDate;
-    memberTypeInput.value = lastSelectedClubBase;
+    syncClubBaseSelection(lastSelectedClubBase);
     
     showSuccessMessage('Member added successfully!');
     row.classList.add('slide-up');
@@ -1032,6 +1148,7 @@ function addMember(e) {
     if (window.isAuthenticated && window.currentUser) {
         logUserActivity(window.currentUser.uid, 'add_member');
     }
+    markCloudDataDirty();
     
     // End performance monitoring
     const duration = PerformanceMonitor.endTimer('addMember');
@@ -1075,10 +1192,10 @@ function showWelcomeMessage(message) {
     const welcomeArea = document.getElementById('welcome-message-area');
     if (!welcomeArea) return;
     
-    // Update the welcome message content
+    // Always use accurate cloud-save copy for the welcome banner
     const messageElement = welcomeArea.querySelector('p');
     if (messageElement) {
-        messageElement.textContent = SecurityUtils.sanitizeText(message);
+        messageElement.textContent = SecurityUtils.sanitizeText(CLOUD_WELCOME_MESSAGE);
     }
     
     // Show the welcome area
@@ -1181,7 +1298,7 @@ function initializeApp() {
     const joinDateInput2 = DOMCache.get('join-date') || document.getElementById('join-date');
     const leaveDateInput = DOMCache.get('leave-date') || document.getElementById('leave-date');
     
-    [memberNameInput, memberTypeInput, joinDateInput2, leaveDateInput].forEach(input => {
+    [memberNameInput, joinDateInput2, leaveDateInput].forEach(input => {
         if (input) {
             input.addEventListener('blur', () => {
                 formValidator.validateField(input.id);
@@ -1194,7 +1311,9 @@ function initializeApp() {
             });
         }
     });
-    
+
+    setupClubBaseOptions();
+    syncClubBaseSelection(memberTypeInput ? memberTypeInput.value : '');
     // Initialize year selector
     populateYearSelector();
     updatePagination();
@@ -1224,13 +1343,25 @@ function initializeApp() {
     const currencyRateInput = DOMCache.get('currency-rate');
     
     if (taxPercentageInput) {
-        taxPercentageInput.addEventListener('input', debouncedUpdateTotal);
-        taxPercentageInput.addEventListener('change', updateTotal);
+        taxPercentageInput.addEventListener('input', () => {
+            debouncedUpdateTotal();
+            markCloudDataDirty();
+        });
+        taxPercentageInput.addEventListener('change', () => {
+            updateTotal();
+            markCloudDataDirty();
+        });
     }
     
     if (currencyRateInput) {
-        currencyRateInput.addEventListener('input', debouncedUpdateTotal);
-        currencyRateInput.addEventListener('change', updateTotal);
+        currencyRateInput.addEventListener('input', () => {
+            debouncedUpdateTotal();
+            markCloudDataDirty();
+        });
+        currencyRateInput.addEventListener('change', () => {
+            updateTotal();
+            markCloudDataDirty();
+        });
     }
     
     // Create debounced version of recalculateAllDues for better performance
@@ -1272,7 +1403,7 @@ function initializeApp() {
                 }
                 updateTotal();
                 updatePagination();
-                
+                markCloudDataDirty();
             }
         });
     }
@@ -2348,6 +2479,7 @@ function addBulkMembers() {
         const activityType = window.bulkUploadSource === 'google_sheets' ? 'bulk_upload_sheets' : 'bulk_upload';
         logUserActivity(window.currentUser.uid, activityType);
     }
+    markCloudDataDirty();
 
     const duration = PerformanceMonitor.endTimer('addBulkMembers');
     PerformanceMonitor.trackUserInteraction('bulk_upload', duration);
@@ -2802,6 +2934,7 @@ function setupCustomDropdown(trigger, menu) {
         // Trigger change event
         updateInvoiceDateDisplay();
         recalculateAllDues();
+        markCloudDataDirty();
     }
 }
 
@@ -3006,6 +3139,7 @@ function saveMember(memberId) {
     finishEditing(row, memberId);
     recalculateAllDues();
     updatePagination();
+    markCloudDataDirty();
     
     // Log member edit activity if authenticated
     if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
@@ -3064,21 +3198,153 @@ function finishEditing(row, memberId) {
     document.querySelectorAll('.edit-member-btn').forEach(btn => btn.disabled = false);
 }
 
+function lockBodyScroll() {
+    if (document.body.classList.contains('modal-open')) {
+        return;
+    }
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.dataset.scrollLockY = String(scrollY);
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    document.body.classList.add('modal-open');
+}
+
+function unlockBodyScroll() {
+    if (!document.body.classList.contains('modal-open')) {
+        return;
+    }
+    const scrollY = parseInt(document.body.dataset.scrollLockY || '0', 10);
+    document.body.classList.remove('modal-open');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    delete document.body.dataset.scrollLockY;
+    window.scrollTo(0, scrollY);
+}
+
 function resetCalculator() {
+    const memberCount = Array.isArray(window.allMemberRows) ? window.allMemberRows.length : 0;
+    if (memberCount === 0) {
+        showSuccessMessage('Roster is already empty.');
+        return;
+    }
+    showResetRosterConfirmation(memberCount);
+}
+
+function showResetRosterConfirmation(memberCount) {
+    if (document.getElementById('reset-roster-dialog')) {
+        return;
+    }
+
+    const dialog = document.createElement('div');
+    dialog.id = 'reset-roster-dialog';
+    dialog.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'reset-roster-title');
+
+    const safeCount = Number(memberCount) || 0;
+    dialog.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0" id="reset-roster-dialog-content">
+            <div class="px-6 pt-6 pb-4 sm:px-8 sm:pt-8">
+                <div class="flex items-start gap-4">
+                    <div class="w-11 h-11 rounded-full bg-red-50 border border-red-100 flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 id="reset-roster-title" class="text-lg font-bold text-gray-900">Reset roster?</h3>
+                        <p class="mt-2 text-sm text-gray-600 leading-relaxed">
+                            This will permanently remove <span class="font-semibold text-gray-800">${safeCount} member${safeCount === 1 ? '' : 's'}</span> from the current roster and clear the invoice totals on this page.
+                        </p>
+                        <p class="mt-2 text-sm text-gray-500 leading-relaxed">
+                            This cannot be undone unless you have a cloud backup or can reload saved data.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pb-6 sm:px-8 sm:pb-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+                <button type="button" id="reset-roster-cancel" class="btn btn-secondary w-full sm:w-auto px-4 py-2.5 text-sm">
+                    Cancel
+                </button>
+                <button type="button" id="reset-roster-confirm" class="btn btn-danger w-full sm:w-auto px-4 py-2.5 text-sm">
+                    Yes, reset roster
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+    lockBodyScroll();
+
+    requestAnimationFrame(() => {
+        const content = document.getElementById('reset-roster-dialog-content');
+        if (content) {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }
+    });
+
+    const closeDialog = () => {
+        document.removeEventListener('keydown', onKeyDown);
+        animateOutAndRemove(dialog);
+    };
+
+    const confirmBtn = document.getElementById('reset-roster-confirm');
+    const cancelBtn = document.getElementById('reset-roster-cancel');
+
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+            performResetRoster();
+            closeDialog();
+        });
+    }
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeDialog);
+    }
+
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            closeDialog();
+        }
+    });
+
+    const onKeyDown = (e) => {
+        if (e.key === 'Escape' && document.getElementById('reset-roster-dialog')) {
+            e.preventDefault();
+            closeDialog();
+        }
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    if (confirmBtn) {
+        confirmBtn.focus({ preventScroll: true });
+    }
+}
+
+function performResetRoster() {
     const memberRosterBody = document.getElementById('member-roster-body');
-    memberRosterBody.innerHTML = '';
+    if (memberRosterBody) {
+        memberRosterBody.innerHTML = '';
+    }
     window.allMemberRows = [];
     allMemberRows = window.allMemberRows;
     currentPage = 1;
     clearRosterSearch();
     updateTotal();
     updatePagination();
-    
-    // Log reset roster activity if authenticated
+    showSuccessMessage('Roster has been reset.');
+    markCloudDataDirty();
+
     if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
         window.appFunctions.logUserActivity(window.currentUser.uid, 'reset_roster');
     }
-    
 }
 
 // Firebase Authentication and Data Storage Functions
@@ -3135,6 +3401,7 @@ function initializeFirebaseAuth() {
             
             // Clear any existing data
             window.allMemberRows = [];
+            resetCloudSaveState();
             
             // Clear cache on sign out
             DataCache.clear();
@@ -3142,6 +3409,7 @@ function initializeFirebaseAuth() {
             
             // Update UI
             updateLoginUI(null);
+            updateSaveButtonState();
         }
     });
 }
@@ -3465,11 +3733,11 @@ async function saveUserBasicInfo(user) {
 
 async function saveUserData(userUid, data) {
     if (!window.isAuthenticated || !userUid) {
-        return;
+        return false;
     }
 
     if (!data || typeof data !== 'object') {
-        return;
+        return false;
     }
 
     const cleanMemberRoster = [];
@@ -3558,8 +3826,15 @@ async function saveUserData(userUid, data) {
             }
         }
 
+        // Keep client cache in sync with what we just wrote
+        DataCache.set(`user_${userUid}`, {
+            memberRoster: cleanMemberRoster,
+            settings: cleanSettings
+        });
+        return true;
     } catch (error) {
         showErrorMessage('Failed to save data. Please try again.');
+        return false;
     }
 }
 
@@ -3579,7 +3854,8 @@ async function loadUserData(userUid) {
             await new Promise(resolve => setTimeout(resolve, 100));
             showDataChoiceDialog(cachedData);
         } else {
-            showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
+            showSuccessMessage(CLOUD_WELCOME_MESSAGE, null, true);
+            markCloudDataClean(false);
         }
         return;
     }
@@ -3611,11 +3887,13 @@ async function loadUserData(userUid) {
                 // Show choice dialog
                 showDataChoiceDialog(data);
             } else {
-                showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
+                showSuccessMessage(CLOUD_WELCOME_MESSAGE, null, true);
+                markCloudDataClean(false);
             }
         } else {
             // Document doesn't exist - this is normal for new users
-            showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
+            showSuccessMessage(CLOUD_WELCOME_MESSAGE, null, true);
+            markCloudDataClean(false);
         }
     } catch (error) {
         ErrorHandler.handleError(error, 'firebase');
@@ -3623,7 +3901,8 @@ async function loadUserData(userUid) {
         if (error.code === 'permission-denied' || error.code === 'unavailable' || error.message.includes('network')) {
             showErrorMessage('Failed to load your data. Please try again.');
         } else {
-            showSuccessMessage('Welcome! You can start adding members and save them to the cloud.', null, true);
+            showSuccessMessage(CLOUD_WELCOME_MESSAGE, null, true);
+            markCloudDataClean(false);
         }
     }
 }
@@ -3646,125 +3925,94 @@ function showDataChoiceDialog(cloudData) {
     
     const dialog = document.createElement('div');
     dialog.id = 'data-choice-dialog';
-    dialog.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+    dialog.className = 'data-choice-overlay';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'data-choice-title');
     dialog.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform transition-all duration-300 scale-95 opacity-0" id="dialog-content">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-8 py-6 rounded-t-2xl border-b border-blue-100">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                            </svg>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-900">Choose Your Data</h3>
-                            <p class="text-sm text-gray-600">You have data in multiple locations</p>
-                        </div>
-                    </div>
-                    <button id="close-dialog" class="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-full hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <div class="data-choice-panel transform transition-all duration-300 scale-95 opacity-0" id="dialog-content">
+            <div class="data-choice-header">
+                <div class="data-choice-header-main">
+                    <div class="data-choice-header-icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                         </svg>
-                    </button>
+                    </div>
+                    <div class="data-choice-header-copy min-w-0">
+                        <h3 id="data-choice-title" class="data-choice-title">Choose Your Data</h3>
+                        <p class="data-choice-subtitle">You have data in multiple locations</p>
+                    </div>
                 </div>
+                <button type="button" id="close-dialog" class="data-choice-close" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-            
-            <!-- Content -->
-            <div class="px-8 py-6">
-                <p class="text-gray-700 mb-6 leading-relaxed">
+
+            <div class="data-choice-body">
+                <p class="data-choice-lead">
                     We found data in your cloud storage and current session. Which would you like to use?
                 </p>
-                
-                <div class="space-y-4">
-                    <!-- Current Session Option -->
-                    <div id="use-current-data" class="group cursor-pointer border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
-                        <div class="flex items-start space-x-4">
-                            <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+
+                <div class="data-choice-options">
+                    <button type="button" id="use-current-data" class="data-choice-card">
+                        <div class="data-choice-card-icon data-choice-card-icon-green" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="data-choice-card-copy">
+                            <div class="data-choice-card-title-row">
+                                <h4 class="data-choice-card-title">Continue with Current Session</h4>
+                                <span class="data-choice-badge data-choice-badge-green">Current</span>
                             </div>
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-2 mb-1">
-                                    <h4 class="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">Continue with Current Session</h4>
-                                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Current</span>
-                                </div>
-                                <p class="text-sm text-gray-600 mb-2">Keep your current work and continue where you left off</p>
-                                <div class="flex items-center space-x-4 text-xs text-gray-500">
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                        ${currentMemberCount} member(s)
-                                    </span>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Just now
-                                    </span>
-                                </div>
+                            <p class="data-choice-card-desc">Keep your current work and continue where you left off</p>
+                            <div class="data-choice-card-meta">
+                                <span>${currentMemberCount} member(s)</span>
+                                <span>Just now</span>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Cloud Data Option -->
-                    <div id="use-cloud-data" class="group cursor-pointer border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
-                        <div class="flex items-start space-x-4">
-                            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                                </svg>
+                    </button>
+
+                    <button type="button" id="use-cloud-data" class="data-choice-card">
+                        <div class="data-choice-card-icon data-choice-card-icon-blue" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                            </svg>
+                        </div>
+                        <div class="data-choice-card-copy">
+                            <div class="data-choice-card-title-row">
+                                <h4 class="data-choice-card-title">Load from Cloud</h4>
+                                <span class="data-choice-badge data-choice-badge-blue">Cloud</span>
                             </div>
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-2 mb-1">
-                                    <h4 class="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">Load from Cloud</h4>
-                                    <span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Cloud</span>
-                                </div>
-                                <p class="text-sm text-gray-600 mb-2">Restore your previously saved data from the cloud</p>
-                                <div class="flex items-center space-x-4 text-xs text-gray-500">
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                        </svg>
-                                        ${cloudMemberCount} member(s)
-                                    </span>
-                                    <span class="flex items-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                                        </svg>
-                                        Saved
-                                    </span>
-                                </div>
+                            <p class="data-choice-card-desc">Restore your previously saved data from the cloud</p>
+                            <div class="data-choice-card-meta">
+                                <span>${cloudMemberCount} member(s)</span>
+                                <span>Saved</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Footer -->
-            <div class="px-8 py-4 bg-gray-50 rounded-b-2xl border-t border-gray-100">
-                <div class="flex items-center justify-between">
-                    <p class="text-xs text-gray-500">
-                        💡 <strong>Tip:</strong> You can always save your current work to the cloud later
-                    </p>
-                    <button id="cancel-dialog" class="text-gray-500 hover:text-gray-700 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors duration-200">
-                        Cancel
                     </button>
                 </div>
+            </div>
+
+            <div class="data-choice-footer">
+                <p class="data-choice-tip"><strong>Tip:</strong> You can always save your current work to the cloud later</p>
+                <button type="button" id="cancel-dialog" class="data-choice-cancel">Cancel</button>
             </div>
         </div>
     `;
     
     document.body.appendChild(dialog);
+    lockBodyScroll();
     
     // Animate in
     setTimeout(() => {
         const content = document.getElementById('dialog-content');
-        content.classList.remove('scale-95', 'opacity-0');
-        content.classList.add('scale-100', 'opacity-100');
+        if (content) {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }
     }, 10);
     
     // Add event listeners
@@ -3774,7 +4022,12 @@ function showDataChoiceDialog(cloudData) {
             window.appFunctions.logUserActivity(window.currentUser.uid, 'continue_current_data');
         }
         
-        showPopupFeedback(dialog, 'success', 'Continuing with current session data. Use "Save to Cloud" to backup your changes.');
+        if ((window.allMemberRows && window.allMemberRows.length > 0)) {
+            markCloudDataDirty();
+        } else {
+            markCloudDataClean(false);
+        }
+        showPopupFeedback(dialog, 'success', 'Continuing with your current session. Click Save to Cloud when you want to back up.');
     });
     
     document.getElementById('use-cloud-data').addEventListener('click', () => {
@@ -3875,12 +4128,23 @@ function showPopupFeedback(dialog, type, message) {
 
 
 function animateOutAndRemove(dialog, callback = null) {
-    const content = dialog.querySelector('#dialog-content');
-    content.classList.add('scale-95', 'opacity-0');
-    content.classList.remove('scale-100', 'opacity-100');
-    
+    const content = dialog.querySelector('#dialog-content, #reset-roster-dialog-content') || dialog.firstElementChild;
+    if (content) {
+        content.classList.add('scale-95', 'opacity-0');
+        content.classList.remove('scale-100', 'opacity-100');
+    }
+
     setTimeout(() => {
-        dialog.remove();
+        if (dialog.parentNode) {
+            dialog.remove();
+        }
+        // Only unlock if no other modal overlays remain
+        const stillOpen = document.getElementById('data-choice-dialog')
+            || document.getElementById('reset-roster-dialog')
+            || document.querySelector('.modal-overlay.active');
+        if (!stillOpen) {
+            unlockBodyScroll();
+        }
         if (callback) callback();
     }, 200);
 }
@@ -3890,22 +4154,28 @@ function loadCloudData(data) {
         return;
     }
 
-    // Load member roster
-    if (data.memberRoster && data.memberRoster.length > 0) {
-        loadMemberRoster(data.memberRoster);
+    suppressCloudDirty = true;
+    try {
+        // Load member roster
+        if (data.memberRoster && data.memberRoster.length > 0) {
+            loadMemberRoster(data.memberRoster);
+        }
+        
+        // Load settings
+        if (data.settings) {
+            loadSettings(data.settings);
+        }
+        
+        // Recalculate all dues to ensure PDF generation works correctly
+        setTimeout(() => {
+            recalculateAllDues();
+            suppressCloudDirty = false;
+            markCloudDataClean(false);
+        }, 200);
+    } catch (error) {
+        suppressCloudDirty = false;
+        throw error;
     }
-    
-    // Load settings
-    if (data.settings) {
-        loadSettings(data.settings);
-    }
-    
-    // Recalculate all dues to ensure PDF generation works correctly
-    setTimeout(() => {
-        recalculateAllDues();
-    }, 200);
-    
-    // Success message is now handled by the popup feedback
 }
 
 function loadMemberRoster(memberRoster) {
@@ -4039,18 +4309,10 @@ function setupManualSave() {
         saveButton.style.borderRadius = '0.375rem';
         saveButton.style.fontWeight = '500';
         saveButton.style.cursor = 'pointer';
+        saveButton.style.display = 'inline-flex';
         
-        // Add hover effects
-        saveButton.addEventListener('mouseenter', () => {
-            saveButton.style.backgroundColor = '#059669'; // Darker green on hover
-        });
-        saveButton.addEventListener('mouseleave', () => {
-            saveButton.style.backgroundColor = '#10b981'; // Original green
-        });
-        // Set initial content and click handler
+        // Set initial content and click handler (hover colors come from updateSaveButtonState)
         updateSaveButtonState(saveButton);
-        
-        saveButton.style.display = 'inline-flex'; // Always visible now
         
         // Insert into the button container (next to reset button)
         resetButton.parentNode.appendChild(saveButton);
@@ -4059,20 +4321,42 @@ function setupManualSave() {
     }
 }
 
-function handleManualSave() {
+async function handleManualSave() {
     if (!window.isAuthenticated || !window.currentUser) {
         showErrorMessage('Please sign in to save your data to the cloud.');
         return;
     }
+
+    if (cloudSaveStatus === 'saving') {
+        return;
+    }
     
     try {
-        debouncedSaveUserData(window.currentUser.uid);
-        
-        // Show immediate feedback
-        const saveButton = document.getElementById('save-button');
-        showSuccessMessage('Saving to cloud...', saveButton);
+        if (saveDebounceTimer) {
+            clearTimeout(saveDebounceTimer);
+            saveDebounceTimer = null;
+        }
+
+        cloudSaveStatus = 'saving';
+        updateSaveButtonState();
+
+        const data = getCurrentData();
+        const ok = await saveUserData(window.currentUser.uid, data);
+        if (ok) {
+            if (cloudDirtyPending) {
+                cloudDirtyPending = false;
+                cloudSaveStatus = 'dirty';
+                updateSaveButtonState();
+            } else {
+                markCloudDataClean(true);
+            }
+        } else {
+            cloudSaveStatus = 'dirty';
+            updateSaveButtonState();
+        }
     } catch (error) {
-        // Error saving data
+        cloudSaveStatus = 'dirty';
+        updateSaveButtonState();
         showErrorMessage('Failed to save data to cloud. Please try again.');
     }
 }
@@ -4080,9 +4364,69 @@ function handleManualSave() {
 function updateSaveButtonState(saveButton = null) {
     const button = saveButton || document.getElementById('save-button');
     if (!button) return;
+
+    button.disabled = false;
+    button.style.opacity = '1';
+    button.style.cursor = 'pointer';
     
     if (window.isAuthenticated && window.currentUser) {
-        // User is logged in - show "Save to Cloud"
+        if (cloudSaveStatus === 'saving') {
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span class="hidden sm:inline">Saving…</span>
+                <span class="sm:hidden">Saving…</span>
+            `;
+            button.style.backgroundColor = '#059669';
+            button.disabled = true;
+            button.style.opacity = '0.85';
+            button.style.cursor = 'wait';
+            button.onclick = null;
+            button.onmouseenter = null;
+            button.onmouseleave = null;
+            return;
+        }
+
+        if (cloudSaveStatus === 'dirty') {
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <span class="hidden sm:inline">Unsaved · Save</span>
+                <span class="sm:hidden">Unsaved</span>
+            `;
+            button.style.backgroundColor = '#d97706';
+            button.onclick = handleManualSave;
+            button.onmouseenter = () => {
+                button.style.backgroundColor = '#b45309';
+            };
+            button.onmouseleave = () => {
+                button.style.backgroundColor = '#d97706';
+            };
+            return;
+        }
+
+        if (cloudSaveStatus === 'saved') {
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="hidden sm:inline">Saved</span>
+                <span class="sm:hidden">Saved</span>
+            `;
+            button.style.backgroundColor = '#10b981';
+            button.onclick = handleManualSave;
+            button.onmouseenter = () => {
+                button.style.backgroundColor = '#059669';
+            };
+            button.onmouseleave = () => {
+                button.style.backgroundColor = '#10b981';
+            };
+            return;
+        }
+
+        // clean — ready to save (or re-save)
         button.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -4090,18 +4434,16 @@ function updateSaveButtonState(saveButton = null) {
             <span class="hidden sm:inline">Save to Cloud</span>
             <span class="sm:hidden">Save</span>
         `;
-        button.style.backgroundColor = '#10b981'; // Green
+        button.style.backgroundColor = '#10b981';
         button.onclick = handleManualSave;
-        
-        // Update hover effects for save functionality
         button.onmouseenter = () => {
-            button.style.backgroundColor = '#059669'; // Darker green
+            button.style.backgroundColor = '#059669';
         };
         button.onmouseleave = () => {
-            button.style.backgroundColor = '#10b981'; // Original green
+            button.style.backgroundColor = '#10b981';
         };
     } else {
-        // User is not logged in - show "Login to Save"
+        resetCloudSaveState();
         button.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -4109,15 +4451,13 @@ function updateSaveButtonState(saveButton = null) {
             <span class="hidden sm:inline">Sign in to Save</span>
             <span class="sm:hidden">Sign in</span>
         `;
-        button.style.backgroundColor = '#3b82f6'; // Blue
+        button.style.backgroundColor = '#3b82f6';
         button.onclick = handleLoginToSave;
-        
-        // Update hover effects for login functionality
         button.onmouseenter = () => {
-            button.style.backgroundColor = '#2563eb'; // Darker blue
+            button.style.backgroundColor = '#2563eb';
         };
         button.onmouseleave = () => {
-            button.style.backgroundColor = '#3b82f6'; // Original blue
+            button.style.backgroundColor = '#3b82f6';
         };
     }
 }
@@ -4267,6 +4607,8 @@ window.appFunctions = {
     setupManualSave,
     handleManualSave,
     updateSaveButtonState,
+    markCloudDataDirty,
+    markCloudDataClean,
     handleLoginToSave,
     cleanup,
     PerformanceMonitor,
