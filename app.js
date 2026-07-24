@@ -24,10 +24,13 @@ const SecurityUtils = {
             'text/csv', // .csv
             'application/csv' // .csv alternative
         ];
-        
+        const allowedExtensions = ['.csv', '.xls', '.xlsx'];
         const maxSize = 5 * 1024 * 1024; // 5MB limit
+        const fileName = (file && file.name ? String(file.name) : '').toLowerCase();
+        const hasAllowedExtension = allowedExtensions.some((ext) => fileName.endsWith(ext));
+        const hasAllowedMime = allowedTypes.includes(file.type);
         
-        if (!allowedTypes.includes(file.type)) {
+        if (!hasAllowedMime && !hasAllowedExtension) {
             throw new Error('Invalid file type. Please upload Excel (.xlsx, .xls) or CSV files only.');
         }
         
@@ -1123,10 +1126,10 @@ function addMember(e) {
     row.classList.add('member-row');
     
     row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${name}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${joinDate}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${leaveDate || '-'}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${clubBase}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${SecurityUtils.sanitizeHTML(name)}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${SecurityUtils.sanitizeHTML(joinDate)}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${SecurityUtils.sanitizeHTML(leaveDate || '-')}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${SecurityUtils.sanitizeHTML(clubBase)}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-cell">${formatLocalDuesBreakdown(duesBreakdown)}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-medium local-due-with-tax-cell">${formatLocalDuesWithTaxBreakdown(duesBreakdown)}</td>
@@ -2457,10 +2460,10 @@ function addBulkMembers() {
         row.classList.add('member-row');
         
         // Sanitize member data to prevent XSS
-        const sanitizedName = SecurityUtils.sanitizeText(member.name);
-        const sanitizedJoinDate = SecurityUtils.sanitizeText(member.joinDate);
-        const sanitizedLeaveDate = member.leaveDate ? SecurityUtils.sanitizeText(member.leaveDate) : '-';
-        const sanitizedClubBase = SecurityUtils.sanitizeText(member.clubBase);
+        const sanitizedName = SecurityUtils.sanitizeHTML(member.name);
+        const sanitizedJoinDate = SecurityUtils.sanitizeHTML(member.joinDate);
+        const sanitizedLeaveDate = member.leaveDate ? SecurityUtils.sanitizeHTML(member.leaveDate) : '-';
+        const sanitizedClubBase = SecurityUtils.sanitizeHTML(member.clubBase);
         
                 row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">${sanitizedName}</td>
@@ -3015,9 +3018,9 @@ function editMember(memberId) {
     const memberType = row.dataset.memberType;
 
     // Enhanced input fields with better styling and visibility - sanitized to prevent XSS
-    const sanitizedName = SecurityUtils.sanitizeText(name);
-    const sanitizedJoinDate = SecurityUtils.sanitizeText(joinDate);
-    const sanitizedLeaveDate = leaveDate && leaveDate !== 'null' ? SecurityUtils.sanitizeText(leaveDate) : '';
+    const sanitizedName = SecurityUtils.sanitizeHTML(name);
+    const sanitizedJoinDate = SecurityUtils.sanitizeHTML(joinDate);
+    const sanitizedLeaveDate = leaveDate && leaveDate !== 'null' ? SecurityUtils.sanitizeHTML(leaveDate) : '';
     
     row.cells[0].innerHTML = `<input type="text" value="${sanitizedName}" class="edit-mode-input" placeholder="Enter member name">`;
     row.cells[1].innerHTML = `<input type="date" value="${sanitizedJoinDate}" class="edit-mode-input">`;

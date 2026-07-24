@@ -23,8 +23,12 @@
 					'text/csv',
 					'application/csv'
 				];
+				const allowedExtensions = ['.csv', '.xls', '.xlsx'];
 				const maxSize = 5 * 1024 * 1024;
-				if (!allowedTypes.includes(file.type)) {
+				const fileName = (file && file.name ? String(file.name) : '').toLowerCase();
+				const hasAllowedExtension = allowedExtensions.some((ext) => fileName.endsWith(ext));
+				const hasAllowedMime = allowedTypes.includes(file.type);
+				if (!hasAllowedMime && !hasAllowedExtension) {
 					throw new Error('Invalid file type. Please upload Excel (.xlsx, .xls) or CSV files only.');
 				}
 				if (file.size > maxSize) {

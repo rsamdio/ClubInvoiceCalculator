@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'">
+    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), interest-cohort=()">
-    <!-- Basic CSP for static hosting. Prefer setting headers server-side for stronger protection. -->
-    
+    <title>Admin Dashboard | Rotaract Club Invoice Calculator</title>
+
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="converted-images/favicon.webp">
     <link rel="icon" type="image/x-icon" href="converted-images/favicon.ico">
     <link rel="shortcut icon" href="converted-images/favicon.ico">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'">
-    <title>Admin Dashboard | Rotaract Club Invoice Calculator</title>
     
     <!-- Optimized Resource Loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
@@ -1647,17 +1647,17 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                        <p class="text-lg text-gray-900">${userData.displayName || 'Not set'}</p>
+                        <p class="text-lg text-gray-900">${escapeHTML(userData.displayName || 'Not set')}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <p class="text-lg text-gray-900">${userData.email || 'Not set'}</p>
+                        <p class="text-lg text-gray-900">${escapeHTML(userData.email || 'Not set')}</p>
                     </div>
                 </div>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-                        <p class="text-sm text-gray-600 font-mono">${userData.id}</p>
+                        <p class="text-sm text-gray-600 font-mono">${escapeHTML(userData.id)}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -1667,11 +1667,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Last Login</label>
-                        <p class="text-sm text-gray-600">${formatDate(userData.lastLogin)}</p>
+                        <p class="text-sm text-gray-600">${escapeHTML(formatDate(userData.lastLogin))}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Created</label>
-                        <p class="text-sm text-gray-600">${formatDate(userData.createdAt)}</p>
+                        <p class="text-sm text-gray-600">${escapeHTML(formatDate(userData.createdAt))}</p>
                     </div>
                 </div>
             `;
@@ -1685,19 +1685,19 @@
                 settingsContent.innerHTML = `
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tax Percentage</label>
-                        <p class="text-lg text-gray-900">${userData.settings.taxPercentage || 'Not set'}%</p>
+                        <p class="text-lg text-gray-900">${escapeHTML(userData.settings.taxPercentage || 'Not set')}%</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Currency Rate</label>
-                        <p class="text-lg text-gray-900">${userData.settings.currencyRate || 'Not set'}</p>
+                        <p class="text-lg text-gray-900">${escapeHTML(userData.settings.currencyRate || 'Not set')}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Year</label>
-                        <p class="text-lg text-gray-900">${userData.settings.invoiceYear || 'Not set'}</p>
+                        <p class="text-lg text-gray-900">${escapeHTML(userData.settings.invoiceYear || 'Not set')}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
-                        <p class="text-sm text-gray-600">${formatDate(userData.lastUpdated)}</p>
+                        <p class="text-sm text-gray-600">${escapeHTML(formatDate(userData.lastUpdated))}</p>
                     </div>
                 `;
             } else {
@@ -1749,10 +1749,10 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 ${currentPageMembers.map(member => `
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${member.name}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.joinDate}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.leaveDate || 'Active'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${member.memberType}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(member.name)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(member.joinDate)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(member.leaveDate || 'Active')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(member.memberType)}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -1896,20 +1896,20 @@
                                     const currencyRate = summary.currencyRate || summary.settings?.currencyRate;
                                     return `
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.invoiceYear || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalMembers || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.taxPercentage || summary.settings?.taxPercentage || 'N/A'}%</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${currencyRate || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${summary.totalProratedMonths || summary.proratedMonths || summary.settings?.totalProratedMonths || summary.settings?.proratedMonths || 'N/A'}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${formatNumber(summary.totals?.baseAmount || 0)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${formatNumber(summary.totals?.taxAmount || 0)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${formatNumber(summary.totals?.totalWithTax || 0)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalAmount(summary.totals?.baseLocalAmount || 0, currencyRate)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalAmount(summary.totals?.taxLocalAmount || 0, currencyRate)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatLocalAmount(summary.totals?.totalLocalAmount || 0, currencyRate)}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(summary.timestamp)}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(summary.invoiceYear || 'N/A')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(summary.totalMembers || 'N/A')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(summary.taxPercentage || summary.settings?.taxPercentage || 'N/A')}%</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(currencyRate || 'N/A')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(summary.totalProratedMonths || summary.proratedMonths || summary.settings?.totalProratedMonths || summary.settings?.proratedMonths || 'N/A')}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${escapeHTML(formatNumber(summary.totals?.baseAmount || 0))}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${escapeHTML(formatNumber(summary.totals?.taxAmount || 0))}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${escapeHTML(formatNumber(summary.totals?.totalWithTax || 0))}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(formatLocalAmount(summary.totals?.baseLocalAmount || 0, currencyRate))}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(formatLocalAmount(summary.totals?.taxLocalAmount || 0, currencyRate))}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(formatLocalAmount(summary.totals?.totalLocalAmount || 0, currencyRate))}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(formatDate(summary.timestamp))}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <button data-invoice-id="${summary.id}" class="delete-invoice-btn inline-flex items-center px-2 py-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                                            <button data-invoice-id="${escapeAttribute(summary.id)}" class="delete-invoice-btn inline-flex items-center px-2 py-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
@@ -2214,7 +2214,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(admin.updatedBy || 'Unknown')}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(admin.updatedAt)}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="demoteAdmin('${admin.id}', this)" class="inline-flex items-center px-3 py-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                                        <button onclick="demoteAdmin(${JSON.stringify(String(admin.id || ''))}, this)" class="inline-flex items-center px-3 py-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                                             </svg>
@@ -2573,7 +2573,7 @@
                         '<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>'}
                     </div>
                     <div class="ml-3">
-                        <p class="text-sm font-medium">${message}</p>
+                        <p class="text-sm font-medium">${escapeHTML(message)}</p>
                     </div>
                     <div class="ml-auto pl-3">
                         <button onclick="this.parentElement.parentElement.parentElement.remove()" class="inline-flex text-white hover:text-gray-200 focus:outline-none focus:text-gray-200 transition ease-in-out duration-150">
