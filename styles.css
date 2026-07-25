@@ -1987,6 +1987,33 @@ body.modal-open {
     }
 }
 
+.tools-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+.tools-grid .tool-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+    .tools-grid .tool-card {
+        width: calc((100% - 1.25rem) / 2);
+        max-width: calc((100% - 1.25rem) / 2);
+    }
+}
+
+@media (min-width: 1024px) {
+    .tools-grid .tool-card {
+        width: calc((100% - 2.5rem) / 3);
+        max-width: calc((100% - 2.5rem) / 3);
+    }
+}
+
 .tool-card {
     display: block;
     border-radius: 0.75rem;
@@ -2012,6 +2039,7 @@ body.modal-open {
 .tool-card-orange { background: #fff7ed; border-color: #fed7aa; }
 .tool-card-yellow { background: #fefce8; border-color: #fde68a; }
 .tool-card-teal { background: #f0fdfa; border-color: #99f6e4; }
+.tool-card-rose { background: #fff1f2; border-color: #fecdd3; }
 
 .site-footer {
     margin-top: 2rem;
