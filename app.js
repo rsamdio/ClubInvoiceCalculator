@@ -3304,6 +3304,118 @@ function unlockBodyScroll() {
     window.scrollTo(0, scrollY);
 }
 
+/**
+ * Styled modal alert (replaces native window.alert).
+ * @param {string|{title?:string,message:string,confirmLabel?:string,variant?:'info'|'warning'|'error'}} options
+ */
+function showAppAlert(options = {}) {
+    const opts = typeof options === 'string' ? { message: options } : (options || {});
+    const title = opts.title || 'Notice';
+    const message = opts.message || '';
+    const confirmLabel = opts.confirmLabel || 'OK';
+    const variant = opts.variant || 'info';
+    const dialogId = 'app-alert-dialog';
+
+    const existing = document.getElementById(dialogId);
+    if (existing) {
+        existing.remove();
+    }
+
+    const variantStyles = {
+        info: {
+            iconWrap: 'bg-blue-50 border-blue-100',
+            iconClass: 'text-blue-600',
+            iconPath: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+        },
+        warning: {
+            iconWrap: 'bg-amber-50 border-amber-100',
+            iconClass: 'text-amber-600',
+            iconPath: 'M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z'
+        },
+        error: {
+            iconWrap: 'bg-red-50 border-red-100',
+            iconClass: 'text-red-600',
+            iconPath: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+        }
+    };
+    const style = variantStyles[variant] || variantStyles.info;
+    const safeTitle = SecurityUtils.sanitizeText(String(title));
+    const safeMessage = SecurityUtils.sanitizeText(String(message));
+    const safeConfirm = SecurityUtils.sanitizeText(String(confirmLabel));
+
+    const dialog = document.createElement('div');
+    dialog.id = dialogId;
+    dialog.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4';
+    dialog.setAttribute('role', 'alertdialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'app-alert-title');
+    dialog.setAttribute('aria-describedby', 'app-alert-message');
+
+    dialog.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all duration-300 scale-95 opacity-0" id="app-alert-dialog-content">
+            <div class="px-6 pt-6 pb-4 sm:px-8 sm:pt-8">
+                <div class="flex items-start gap-4">
+                    <div class="w-11 h-11 rounded-full ${style.iconWrap} border flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ${style.iconClass}" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${style.iconPath}" />
+                        </svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 id="app-alert-title" class="text-lg font-bold text-gray-900">${safeTitle}</h3>
+                        <p id="app-alert-message" class="mt-2 text-sm text-gray-600 leading-relaxed">${safeMessage}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 pb-6 sm:px-8 sm:pb-8 flex justify-end">
+                <button type="button" id="app-alert-confirm" class="btn btn-primary w-full sm:w-auto px-5 py-2.5 text-sm">
+                    ${safeConfirm}
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+    lockBodyScroll();
+
+    requestAnimationFrame(() => {
+        const content = document.getElementById('app-alert-dialog-content');
+        if (content) {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }
+    });
+
+    const closeDialog = () => {
+        document.removeEventListener('keydown', onKeyDown);
+        animateOutAndRemove(dialog);
+    };
+
+    const confirmBtn = document.getElementById('app-alert-confirm');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', closeDialog);
+        try {
+            confirmBtn.focus({ preventScroll: true });
+        } catch (_) {
+            confirmBtn.focus();
+        }
+    }
+
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            closeDialog();
+        }
+    });
+
+    const onKeyDown = (e) => {
+        if (!document.getElementById(dialogId)) return;
+        if (e.key === 'Escape' || e.key === 'Enter') {
+            e.preventDefault();
+            closeDialog();
+        }
+    };
+    document.addEventListener('keydown', onKeyDown);
+}
+
 function getRosterFeedbackHost() {
     return document.getElementById('roster-feedback');
 }
@@ -4264,7 +4376,7 @@ function showPopupFeedback(dialog, type, message) {
 
 
 function animateOutAndRemove(dialog, callback = null) {
-    const content = dialog.querySelector('#dialog-content, #reset-roster-dialog-content') || dialog.firstElementChild;
+    const content = dialog.querySelector('#dialog-content, #reset-roster-dialog-content, #app-alert-dialog-content') || dialog.firstElementChild;
     if (content) {
         content.classList.add('scale-95', 'opacity-0');
         content.classList.remove('scale-100', 'opacity-100');
@@ -4277,6 +4389,7 @@ function animateOutAndRemove(dialog, callback = null) {
         // Only unlock if no other modal overlays remain
         const stillOpen = document.getElementById('data-choice-dialog')
             || document.getElementById('reset-roster-dialog')
+            || document.getElementById('app-alert-dialog')
             || document.querySelector('.modal-overlay.active');
         if (!stillOpen) {
             unlockBodyScroll();
@@ -4609,8 +4722,11 @@ function handleLoginToSave() {
     if (loginState) {
         loginState.click();
     } else {
-        // Login state not found
-        alert('Please use the sign in button in the top right to sign in.');
+        showAppAlert({
+            title: 'Sign in required',
+            message: 'Please use the Sign In button in the top right to sign in.',
+            variant: 'info'
+        });
     }
 }
 
@@ -4706,6 +4822,7 @@ window.appFunctions = {
     recalculateAllDues,
     showSuccessMessage,
     showErrorMessage,
+    showAppAlert,
     showFileUploadError,
     debouncedUpdateTotal,
     formValidator,

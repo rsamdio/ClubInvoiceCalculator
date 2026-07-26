@@ -1870,7 +1870,14 @@
 
                 const memberCount = document.getElementById('member-roster-body').querySelectorAll('tr').length;
                 if (memberCount === 0) {
-                    alert('Add at least one member before downloading a planning estimate PDF.');
+                    if (window.appFunctions && typeof window.appFunctions.showAppAlert === 'function') {
+                        window.appFunctions.showAppAlert({
+                            title: 'Roster is empty',
+                            message: 'Add at least one member before downloading a planning estimate PDF.',
+                            variant: 'info',
+                            confirmLabel: 'Got it'
+                        });
+                    }
                     return;
                 }
 
@@ -2211,8 +2218,13 @@
                                         loadingOverlay.classList.remove('active');
                                     }
                                     
-                                    // Show error message
-                                    alert('Error generating Detailed Report. Please try again.');
+                                    if (window.appFunctions && typeof window.appFunctions.showAppAlert === 'function') {
+                                        window.appFunctions.showAppAlert({
+                                            title: 'Could not generate PDF',
+                                            message: 'Error generating planning estimate. Please try again.',
+                                            variant: 'error'
+                                        });
+                                    }
                                 }
                             };
                             
@@ -2231,7 +2243,13 @@
                                 }
                                 
                                 // Show error message
-                                alert('Error generating Detailed Report. Please try again.');
+                                if (window.appFunctions && typeof window.appFunctions.showAppAlert === 'function') {
+                                    window.appFunctions.showAppAlert({
+                                        title: 'Could not generate PDF',
+                                        message: 'Error generating planning estimate. Please try again.',
+                                        variant: 'error'
+                                    });
+                                }
                             };
                                                     } catch (workerError) {
                                 // Failed to create Web Worker
@@ -2247,7 +2265,13 @@
                             }
                             
                             // Show error message
-                            alert('PDF generation is not available in this browser. Please try a different browser.');
+                            if (window.appFunctions && typeof window.appFunctions.showAppAlert === 'function') {
+                                window.appFunctions.showAppAlert({
+                                    title: 'PDF unavailable',
+                                    message: 'PDF generation is not available in this browser. Please try a different browser.',
+                                    variant: 'warning'
+                                });
+                            }
                             return;
                         }
                     }
@@ -2299,7 +2323,13 @@
                     }
                     
                     // Show error message
-                    alert('Error preparing PDF data. Please try again.');
+                    if (window.appFunctions && typeof window.appFunctions.showAppAlert === 'function') {
+                        window.appFunctions.showAppAlert({
+                            title: 'Could not prepare PDF',
+                            message: 'Error preparing PDF data. Please try again.',
+                            variant: 'error'
+                        });
+                    }
                 }
             }
             
@@ -2533,8 +2563,12 @@
                                 saveButton.addEventListener('click', () => {
                                     if (window.appFunctions && window.appFunctions.handleManualSave) {
                                         window.appFunctions.handleManualSave();
-                                    } else {
-                                        alert('Save functionality not available. Please refresh the page.');
+                                    } else if (window.appFunctions && typeof window.appFunctions.showAppAlert === 'function') {
+                                        window.appFunctions.showAppAlert({
+                                            title: 'Save unavailable',
+                                            message: 'Save functionality is not available. Please refresh the page.',
+                                            variant: 'warning'
+                                        });
                                     }
                                 });
                             }
