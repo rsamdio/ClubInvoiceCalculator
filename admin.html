@@ -9,6 +9,8 @@
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), interest-cohort=()">
     <title>Admin Dashboard | Rotaract Club Invoice Calculator</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
 
     <!-- Favicon -->
     <link rel="icon" type="image/webp" href="converted-images/favicon.webp">
@@ -1508,7 +1510,7 @@
 
                 // Query users collection to find user by email field
                 const usersRef = window.firebaseCollection(window.firebaseDB, 'users');
-                const q = window.firebaseQuery(usersRef, window.firebaseWhere('email', '==', email.trim()));
+                const q = window.firebaseQuery(usersRef, window.firebaseWhere('email', '==', email.trim().toLowerCase()));
                 const querySnapshot = await window.firebaseGetDocs(q);
 
                 if (querySnapshot.empty) {
@@ -2214,8 +2216,8 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${escapeHTML(admin.updatedBy || 'Unknown')}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(admin.updatedAt)}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="demoteAdmin(${JSON.stringify(String(admin.id || ''))}, this)" class="inline-flex items-center px-3 py-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <button type="button" data-admin-id="${escapeHTML(String(admin.id || ''))}" class="demote-admin-btn inline-flex items-center px-3 py-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white text-xs font-medium rounded-md shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6" />
                                             </svg>
                                             Demote
@@ -2227,10 +2229,31 @@
                     </table>
                 </div>
             `;
+
+            container.querySelectorAll('.demote-admin-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    demoteAdmin(btn.getAttribute('data-admin-id'), btn);
+                });
+            });
         }
 
         // Demote admin
         async function demoteAdmin(adminId, buttonElement) {
+            if (!adminId) {
+                showNotification('Invalid administrator id.', 'error');
+                return;
+            }
+
+            if (window.currentUser && adminId === window.currentUser.uid) {
+                showNotification('You cannot demote yourself.', 'error');
+                return;
+            }
+
+            if (adminsData && adminsData.length <= 1) {
+                showNotification('Cannot demote the last administrator.', 'error');
+                return;
+            }
+
             const confirmed = await showConfirm({
                 title: 'Demote Administrator',
                 message: 'Are you sure you want to demote this administrator? They will lose access to the admin dashboard.',
@@ -2607,6 +2630,7 @@
         let confirmResolve = null;
         let isConfirmOpen = false;
         let currentEventListeners = [];
+        let confirmCleanupFn = null;
 
         function showConfirm(options = {}) {
             const {
@@ -2633,7 +2657,8 @@
             actionBtn.textContent = confirmText;
             actionBtn.className = `confirm-btn ${confirmButtonClass}`;
 
-            // Show dialog
+            // Clear any prior inline hide style so the dialog can show again
+            overlay.style.display = '';
             overlay.classList.add('show');
             isConfirmOpen = true;
 
@@ -2641,7 +2666,6 @@
             return new Promise((resolve) => {
                 confirmResolve = resolve;
 
-                // Create event handlers
                 const handleConfirm = () => {
                     hideConfirm();
                     resolve(true);
@@ -2663,15 +2687,6 @@
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         e.stopPropagation();
-                        
-                        // Immediately hide the popup
-                        const overlay = document.getElementById('confirm-overlay');
-                        if (overlay) {
-                            overlay.classList.remove('show');
-                            overlay.style.display = 'none';
-                        }
-                        
-                        // Clean up and resolve
                         hideConfirm();
                         resolve(true);
                     }
@@ -2684,63 +2699,41 @@
                     }
                 };
 
-                // Add event listeners
                 actionBtn.addEventListener('click', handleConfirm);
                 cancelBtn.addEventListener('click', handleCancel);
                 document.addEventListener('keydown', handleEscape);
                 document.addEventListener('keydown', handleEnter);
                 overlay.addEventListener('click', handleOutsideClick);
 
-                // Store cleanup function
-                const cleanup = () => {
+                confirmCleanupFn = () => {
                     actionBtn.removeEventListener('click', handleConfirm);
                     cancelBtn.removeEventListener('click', handleCancel);
                     document.removeEventListener('keydown', handleEscape);
                     document.removeEventListener('keydown', handleEnter);
                     overlay.removeEventListener('click', handleOutsideClick);
                 };
-
-                // Store cleanup function and mark as current
-                overlay.dataset.cleanup = cleanup;
-                currentEventListeners.push(cleanup);
+                currentEventListeners.push(confirmCleanupFn);
             });
         }
 
         function hideConfirm() {
             const overlay = document.getElementById('confirm-overlay');
             if (overlay) {
-                // Immediately hide the overlay
                 overlay.classList.remove('show');
                 overlay.style.display = 'none';
                 
-                                // Cleanup all event listeners
-                if (overlay.dataset.cleanup) {
+                if (typeof confirmCleanupFn === 'function') {
                     try {
-                        overlay.dataset.cleanup();
+                        confirmCleanupFn();
                     } catch (e) {
                         // Silent error handling for production
                     }
-                    delete overlay.dataset.cleanup;
+                    confirmCleanupFn = null;
                 }
-
-                // Cleanup any stored event listeners
-                currentEventListeners.forEach(cleanup => {
-                    try {
-                        cleanup();
-                    } catch (e) {
-                        // Silent error handling for production
-                    }
-                });
-                currentEventListeners = [];
-                
-                // Reset display after a short delay
-                setTimeout(() => {
-                    if (overlay) {
-                        overlay.style.display = '';
-                    }
-                }, 200);
+                delete overlay.dataset.cleanup;
             }
             isConfirmOpen = false;
+            confirmResolve = null;
         }
 
         // Force cleanup on page unload
@@ -2755,7 +2748,6 @@
 
         // Ensure cleanup on any navigation
         window.addEventListener('popstate', hideConfirm);
-        window.addEventListener('beforeunload', hideConfirm);
 
 
 

@@ -16,6 +16,15 @@
 				div.textContent = str;
 				return div.textContent || div.innerText || '';
 			},
+			escapeAttribute: function(str) {
+				if (typeof str !== 'string') return '';
+				return str
+					.replace(/&/g, '&amp;')
+					.replace(/"/g, '&quot;')
+					.replace(/'/g, '&#39;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;');
+			},
 			validateFile: function(file) {
 				const allowedTypes = [
 					'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

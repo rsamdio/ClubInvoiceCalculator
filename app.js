@@ -15,6 +15,17 @@ const SecurityUtils = {
         div.textContent = str;
         return div.textContent || div.innerText || '';
     },
+
+    // Escape for use inside HTML double-quoted attributes
+    escapeAttribute: function(str) {
+        if (typeof str !== 'string') return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    },
     
     // Validate and sanitize file input
     validateFile: function(file) {
@@ -565,6 +576,14 @@ let suppressCloudDirty = false;
 let savedStateTimeout = null;
 const CLOUD_WELCOME_MESSAGE = "You're signed in. Add members and adjust your settings, then click Save to Cloud to back up your roster. Nothing is saved until you do.";
 
+function isCloudDataDirty() {
+    return cloudSaveStatus === 'dirty' || cloudSaveStatus === 'saving';
+}
+
+function getCloudSaveStatus() {
+    return cloudSaveStatus;
+}
+
 function markCloudDataDirty() {
     if (suppressCloudDirty || !window.isAuthenticated || !window.currentUser) {
         return;
@@ -661,6 +680,10 @@ const DataCache = {
             data,
             expiry: Date.now() + this.ttl
         });
+    },
+
+    delete(key) {
+        this.cache.delete(key);
     },
     
     clear() {
@@ -1136,11 +1159,11 @@ function addMember(e) {
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center active-member-cell">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center prorated-months-cell">${duesBreakdown.proratedMonths || 0}</td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+            <button class="btn btn-secondary btn-sm !p-2 edit-member-btn" aria-label="Edit member" title="Edit member">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
             </button>
-            <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+            <button class="btn btn-danger btn-sm !p-2 remove-member-btn" aria-label="Remove member" title="Remove member">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
             </button>
         </td>
     `;
@@ -1191,24 +1214,48 @@ function showSuccessMessage(message, targetElement = null, isWelcomeMessage = fa
     successDiv.className = 'success-feedback fade-in';
     const sanitizedMessage = SecurityUtils.sanitizeText(message);
     successDiv.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span>${sanitizedMessage}</span>
     `;
     
-    // If target element is provided, show message near that element
-    if (targetElement) {
-        targetElement.parentNode.insertBefore(successDiv, targetElement.nextSibling);
-    } else {
-        // Default behavior - show near add member form
-        const addMemberForm = document.getElementById('add-member-form');
-        addMemberForm.parentNode.insertBefore(successDiv, addMemberForm.nextSibling);
-    }
+    placeContextualFeedback(successDiv, targetElement);
     
     setTimeout(() => {
+        const host = successDiv.parentElement;
         successDiv.remove();
+        if (host && host.hasAttribute('data-feedback-host') && host.childElementCount === 0) {
+            host.classList.add('hidden');
+        }
     }, 3000);
+}
+
+function placeContextualFeedback(feedbackEl, targetElement) {
+    let host = targetElement;
+    if (!host) {
+        const addMemberForm = document.getElementById('add-member-form');
+        if (addMemberForm && addMemberForm.parentNode) {
+            addMemberForm.parentNode.insertBefore(feedbackEl, addMemberForm.nextSibling);
+        }
+        return;
+    }
+
+    // Dedicated feedback slot (e.g. #roster-feedback) — keep message next to the action
+    if (host.hasAttribute('data-feedback-host')) {
+        host.replaceChildren(feedbackEl);
+        host.classList.remove('hidden');
+        try {
+            host.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (_) {
+            /* ignore */
+        }
+        return;
+    }
+
+    if (host.parentNode) {
+        host.parentNode.insertBefore(feedbackEl, host.nextSibling);
+    }
 }
 
 function showWelcomeMessage(message) {
@@ -1272,12 +1319,17 @@ function showFileUploadError(message) {
     }
     
     errorContainer.className = 'error-feedback fade-in mb-4';
+    const sanitizedMessage = SecurityUtils.sanitizeText(message);
     errorContainer.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>${message}</span>
+        <span></span>
     `;
+    const messageSpan = errorContainer.querySelector('span');
+    if (messageSpan) {
+        messageSpan.textContent = sanitizedMessage;
+    }
     errorContainer.classList.remove('hidden');
     
     currentErrorTimeout = setTimeout(() => {
@@ -1485,44 +1537,6 @@ try {
 } catch (e) {
 	// Safe no-op if overrides fail
 }
-
-// Export functions for use in HTML
-window.appFunctions = {
-    addMember,
-    updateTotal,
-    recalculateAllDues,
-    showSuccessMessage,
-    showErrorMessage,
-    showFileUploadError,
-    debouncedUpdateTotal,
-    formValidator,
-    initializeApp,
-    downloadCSVTemplate,
-    parseExcelFile,
-    parseCSVFile,
-    validateMemberData,
-    showPreview,
-    handleFileUpload,
-    handleGoogleSheetsImport,
-    confirmBulkSheetPicker,
-    cancelBulkSheetPicker,
-    addBulkMembers,
-    resetBulkUpload,
-    showSuccessAnimation,
-    updatePagination,
-    displayCurrentPage,
-    goToPage,
-    goToPreviousPage,
-    goToNextPage,
-    changePageSize,
-    populateYearSelector,
-    updateInvoiceDateDisplay,
-    editMember,
-    saveMember,
-    cancelEdit,
-    finishEditing,
-    resetCalculator
-};
 
 // Bulk Upload Functions
 function downloadCSVTemplate() {
@@ -1833,7 +1847,7 @@ function parseGoogleSheetsUrl(url) {
     const gidFromQuery = parsed.searchParams.get('gid');
     if (gidFromHash) {
         gid = gidFromHash[1];
-    } else if (gidFromQuery) {
+    } else if (gidFromQuery && /^\d+$/.test(gidFromQuery)) {
         gid = gidFromQuery;
     }
 
@@ -2061,22 +2075,33 @@ function showBulkSheetPicker(tabs, options = {}) {
         preferredValue = options.preferredSheetName;
     }
 
-    optionsContainer.innerHTML = tabs.map((tab, index) => {
+    optionsContainer.innerHTML = '';
+    tabs.forEach((tab, index) => {
         const value = tab.gid !== undefined && tab.gid !== null ? String(tab.gid) : String(tab.name);
-        const label = SecurityUtils.sanitizeHTML(tab.name);
-        const safeValue = SecurityUtils.sanitizeHTML(value);
         const checked = preferredValue
             ? value === preferredValue || tab.name === preferredValue
             : index === 0;
-        return `
-            <label class="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-green-50/80 has-[:checked]:bg-green-50">
-                <input type="radio" name="${radioName}" value="${safeValue}"
-                    class="h-4 w-4 shrink-0 text-green-600 border-green-300 focus:ring-green-500"
-                    ${checked ? 'checked' : ''}>
-                <span class="text-sm text-gray-800">${label}</span>
-            </label>
-        `;
-    }).join('');
+
+        const labelEl = document.createElement('label');
+        labelEl.className = 'flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-green-50/80 has-[:checked]:bg-green-50';
+
+        const input = document.createElement('input');
+        input.type = 'radio';
+        input.name = radioName;
+        input.value = value;
+        input.className = 'h-4 w-4 shrink-0 text-green-600 border-green-300 focus:ring-green-500';
+        if (checked) {
+            input.checked = true;
+        }
+
+        const span = document.createElement('span');
+        span.className = 'text-sm text-gray-800';
+        span.textContent = tab.name;
+
+        labelEl.appendChild(input);
+        labelEl.appendChild(span);
+        optionsContainer.appendChild(labelEl);
+    });
 
     if (source === 'excel') {
         optionsContainer.querySelectorAll('label').forEach((labelEl) => {
@@ -2106,6 +2131,10 @@ async function confirmBulkSheetPicker() {
     if (!picker || !selected) return;
 
     if (loadingOverlay) {
+        const loadingTitle = document.getElementById('loading-overlay-title');
+        if (loadingTitle) {
+            loadingTitle.textContent = options.source === 'excel' ? 'Importing Excel sheet' : 'Importing Google Sheet';
+        }
         loadingOverlay.classList.add('active');
     }
 
@@ -2311,13 +2340,14 @@ function showPreview(members) {
         <div class="mb-3 text-sm text-gray-600">${members.length} member(s) ready to import</div>
         ${members.map((member) => {
         const typeText = member.clubBase === 'Community-Based' ? 'Community-Based ($8)' : 'University-Based ($5)';
-        const leaveDateText = member.leaveDate ? ` | Left: ${member.leaveDate}` : '';
+        const leaveDateText = member.leaveDate ? ` | Left: ${SecurityUtils.sanitizeHTML(String(member.leaveDate))}` : '';
         const safeName = SecurityUtils.sanitizeHTML(member.name);
+        const safeJoinDate = SecurityUtils.sanitizeHTML(String(member.joinDate || ''));
         return `
             <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
                 <div class="flex-1">
                     <span class="font-medium text-gray-800">${safeName}</span>
-                    <span class="text-gray-500 ml-3">${member.joinDate}${leaveDateText}</span>
+                    <span class="text-gray-500 ml-3">${safeJoinDate}${leaveDateText}</span>
                     <span class="text-gray-500 ml-3">${typeText}</span>
                 </div>
             </div>
@@ -2338,17 +2368,35 @@ function showPreview(members) {
     }
     fileUploadArea.classList.add('hidden');
     
-    // Show preview after a short delay
+    // Show preview after a short delay, then bring it into view.
+    // After a long multi-sheet list the user may have scrolled away from this card.
     setTimeout(() => {
         uploadPreview.classList.remove('hidden');
+        const scrollTarget = document.getElementById('bulk-upload-card') || uploadPreview;
+        try {
+            scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (_) {
+            scrollTarget.scrollIntoView();
+        }
+        const confirmBtn = document.getElementById('confirm-upload');
+        if (confirmBtn && typeof confirmBtn.focus === 'function') {
+            try {
+                confirmBtn.focus({ preventScroll: true });
+            } catch (_) {
+                /* ignore */
+            }
+        }
     }, 300);
 }
 
 function handleFileUpload(file) {
     const importGeneration = ++bulkImportGeneration;
     bulkImportActive = true;
-    // Show loading state
     const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingTitle = document.getElementById('loading-overlay-title');
+    if (loadingTitle) {
+        loadingTitle.textContent = 'Importing roster';
+    }
     if (loadingOverlay) {
         loadingOverlay.classList.add('active');
     }
@@ -2476,11 +2524,11 @@ function addBulkMembers() {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center active-member-cell">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center prorated-months-cell">${duesBreakdown.proratedMonths || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                <button class="btn btn-secondary btn-sm !p-2 edit-member-btn" aria-label="Edit member" title="Edit member">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                 </button>
-                <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                <button class="btn btn-danger btn-sm !p-2 remove-member-btn" aria-label="Remove member" title="Remove member">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
                 </button>
             </td>
         `;
@@ -2765,6 +2813,9 @@ function updatePagination() {
                     : 'border-gray-300 hover:bg-gray-50'
             }`;
             pageBtn.textContent = i;
+            if (i === currentPage) {
+                pageBtn.setAttribute('aria-current', 'page');
+            }
             pageBtn.addEventListener('click', () => goToPage(i));
             pageNumbers.appendChild(pageBtn);
         }
@@ -2789,6 +2840,9 @@ function updatePagination() {
                     : 'border-gray-300 hover:bg-gray-50'
             }`;
             pageBtnMobile.textContent = i;
+            if (i === currentPage) {
+                pageBtnMobile.setAttribute('aria-current', 'page');
+            }
             pageBtnMobile.addEventListener('click', () => goToPage(i));
             pageNumbersMobile.appendChild(pageBtnMobile);
         }
@@ -3018,13 +3072,13 @@ function editMember(memberId) {
     const memberType = row.dataset.memberType;
 
     // Enhanced input fields with better styling and visibility - sanitized to prevent XSS
-    const sanitizedName = SecurityUtils.sanitizeHTML(name);
-    const sanitizedJoinDate = SecurityUtils.sanitizeHTML(joinDate);
-    const sanitizedLeaveDate = leaveDate && leaveDate !== 'null' ? SecurityUtils.sanitizeHTML(leaveDate) : '';
+    const safeName = SecurityUtils.escapeAttribute(name || '');
+    const safeJoinDate = SecurityUtils.escapeAttribute(joinDate || '');
+    const safeLeaveDate = leaveDate && leaveDate !== 'null' ? SecurityUtils.escapeAttribute(leaveDate) : '';
     
-    row.cells[0].innerHTML = `<input type="text" value="${sanitizedName}" class="edit-mode-input" placeholder="Enter member name">`;
-    row.cells[1].innerHTML = `<input type="date" value="${sanitizedJoinDate}" class="edit-mode-input">`;
-    row.cells[2].innerHTML = `<input type="date" value="${sanitizedLeaveDate}" class="edit-mode-input" placeholder="Leave date (optional)">`;
+    row.cells[0].innerHTML = `<input type="text" value="${safeName}" class="edit-mode-input" placeholder="Enter member name">`;
+    row.cells[1].innerHTML = `<input type="date" value="${safeJoinDate}" class="edit-mode-input">`;
+    row.cells[2].innerHTML = `<input type="date" value="${safeLeaveDate}" class="edit-mode-input" placeholder="Leave date (optional)">`;
     row.cells[3].innerHTML = `
         <select class="edit-mode-select">
             <option value="Community-Based" ${memberType === 'Community-Based' ? 'selected' : ''}>Community-Based ($8)</option>
@@ -3210,11 +3264,11 @@ function cancelEdit(memberId) {
 function finishEditing(row, memberId) {
     row.classList.remove('editing');
     row.cells[9].innerHTML = `
-        <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+        <button class="btn btn-secondary btn-sm !p-2 edit-member-btn" aria-label="Edit member" title="Edit member">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
         </button>
-        <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+        <button class="btn btn-danger btn-sm !p-2 remove-member-btn" aria-label="Remove member" title="Remove member">
+             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
         </button>
     `;
 
@@ -3250,10 +3304,14 @@ function unlockBodyScroll() {
     window.scrollTo(0, scrollY);
 }
 
+function getRosterFeedbackHost() {
+    return document.getElementById('roster-feedback');
+}
+
 function resetCalculator() {
     const memberCount = Array.isArray(window.allMemberRows) ? window.allMemberRows.length : 0;
     if (memberCount === 0) {
-        showSuccessMessage('Roster is already empty.');
+        showSuccessMessage('Roster is already empty.', getRosterFeedbackHost());
         return;
     }
     showResetRosterConfirmation(memberCount);
@@ -3362,7 +3420,7 @@ function performResetRoster() {
     clearRosterSearch();
     updateTotal();
     updatePagination();
-    showSuccessMessage('Roster has been reset.');
+    showSuccessMessage('Roster has been reset.', getRosterFeedbackHost());
     markCloudDataDirty();
 
     if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
@@ -3525,9 +3583,20 @@ async function logUserActivity(userId, activityType) {
         return;
     }
 
+    const firestoreActivityTypes = new Set([
+        'sign_in',
+        'sign_out',
+        'data_save',
+        'generate_pdf',
+        'bulk_upload',
+        'bulk_upload_sheets',
+        'cloud_load',
+        'continue_current_data',
+        'reset_roster'
+    ]);
+
     try {
         await CircuitBreaker.execute('firebase', async () => {
-            // Get current user data
             const user = window.currentUser;
             const currentTime = new Date().toISOString();
             
@@ -3535,26 +3604,28 @@ async function logUserActivity(userId, activityType) {
                 user_id: userId,
                 activity_type: activityType,
                 session_id: generateSessionId(),
-                // Add more context for better analytics
-                activity_context: 'club_invoice_calculator',
-                user_email: user.email || 'no_email'
+                activity_context: 'club_invoice_calculator'
             });
 
-            // Update user's main document with latest login info
+            // Skip Firestore profile writes for chatty UI events (Analytics-only)
+            if (!firestoreActivityTypes.has(activityType)) {
+                return;
+            }
+
+            const userEmail = (user.email || '').toLowerCase() || 'no email';
             const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
             try {
                 await window.firebaseUpdateDoc(userDocRef, {
                     displayName: user.displayName || 'Unknown',
-                    email: user.email || 'No email',
+                    email: userEmail,
                     lastLogin: user.metadata?.lastSignInTime || currentTime,
                     lastUpdated: currentTime
                 });
             } catch (error) {
-                // Document doesn't exist, create it
                 if (error.code === 'not-found') {
                     await window.firebaseSetDoc(userDocRef, {
                         displayName: user.displayName || 'Unknown',
-                        email: user.email || 'No email',
+                        email: userEmail,
                         lastLogin: user.metadata?.lastSignInTime || currentTime,
                         lastUpdated: currentTime,
                         createdAt: currentTime
@@ -3566,7 +3637,6 @@ async function logUserActivity(userId, activityType) {
         });
 
     } catch (error) {
-        // Handle error gracefully - don't interrupt user experience
         ErrorHandler.handleError(error, 'firebase');
     }
 }
@@ -3578,36 +3648,48 @@ async function logUserActivities(userId, activities) {
 
     try {
         await CircuitBreaker.execute('firebase', async () => {
-            // Get current user data
             const user = window.currentUser;
             const currentTime = new Date().toISOString();
             
-            // Log all activities to analytics
             activities.forEach(activityType => {
                 FirebaseAnalyticsChecker.logEvent('user_activity', {
                     user_id: userId,
                     activity_type: activityType,
                     session_id: generateSessionId(),
-                    activity_context: 'club_invoice_calculator',
-                    user_email: user.email || 'no_email'
+                    activity_context: 'club_invoice_calculator'
                 });
             });
 
-            // Update user's main document with latest info (single write for all activities)
+            const firestoreActivityTypes = new Set([
+                'sign_in',
+                'sign_out',
+                'data_save',
+                'generate_pdf',
+                'bulk_upload',
+                'bulk_upload_sheets',
+                'cloud_load',
+                'continue_current_data',
+                'reset_roster'
+            ]);
+            const shouldWriteFirestore = activities.some((a) => firestoreActivityTypes.has(a));
+            if (!shouldWriteFirestore) {
+                return;
+            }
+
+            const userEmail = (user.email || '').toLowerCase() || 'no email';
             const userDocRef = window.firebaseDoc(window.firebaseDB, 'users', user.uid);
             try {
                 await window.firebaseUpdateDoc(userDocRef, {
                     displayName: user.displayName || 'Unknown',
-                    email: user.email || 'No email',
+                    email: userEmail,
                     lastLogin: user.metadata?.lastSignInTime || currentTime,
                     lastUpdated: currentTime
                 });
             } catch (error) {
-                // Document doesn't exist, create it
                 if (error.code === 'not-found') {
                     await window.firebaseSetDoc(userDocRef, {
                         displayName: user.displayName || 'Unknown',
-                        email: user.email || 'No email',
+                        email: userEmail,
                         lastLogin: user.metadata?.lastSignInTime || currentTime,
                         lastUpdated: currentTime,
                         createdAt: currentTime
@@ -3619,7 +3701,6 @@ async function logUserActivities(userId, activities) {
         });
 
     } catch (error) {
-        // Handle error gracefully - don't interrupt user experience
         ErrorHandler.handleError(error, 'firebase');
     }
 }
@@ -3640,7 +3721,7 @@ async function logInvoiceSummary(userUid, invoiceSummary) {
         const summaryData = {
             id: `summary-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             displayName: user.displayName || 'Unknown',
-            email: user.email || 'No email',
+            email: (user.email || '').toLowerCase() || 'no email',
             timestamp: currentTime,
             lastUpdated: currentTime,
             activityType: 'invoice_summary',
@@ -3720,7 +3801,7 @@ async function saveUserBasicInfo(user) {
         // Create basic user document with essential information
         const userBasicInfo = {
             displayName: user.displayName || 'Unknown',
-            email: user.email || 'No email',
+            email: (user.email || '').toLowerCase(),
             lastLogin: user.metadata?.lastSignInTime || currentTime,
             lastUpdated: currentTime,
             photoURL: user.photoURL || null,
@@ -3767,12 +3848,28 @@ async function saveUserData(userUid, data) {
     if (data.memberRoster && Array.isArray(data.memberRoster)) {
         data.memberRoster.forEach(member => {
             if (member && typeof member === 'object' && member.id && member.name && member.joinDate && member.memberType) {
+                const name = String(member.name);
+                const joinDate = String(member.joinDate);
+                const leaveDate = member.leaveDate ? String(member.leaveDate) : '';
+                const memberType = String(member.memberType);
+                if (!SecurityUtils.validateMemberName(name)) {
+                    return;
+                }
+                if (!SecurityUtils.validateDate(joinDate)) {
+                    return;
+                }
+                if (leaveDate && !SecurityUtils.validateDate(leaveDate)) {
+                    return;
+                }
+                if (memberType !== 'Community-Based' && memberType !== 'University-Based') {
+                    return;
+                }
                 cleanMemberRoster.push({
                     id: String(member.id),
-                    name: String(member.name),
-                    joinDate: String(member.joinDate),
-                    leaveDate: member.leaveDate ? String(member.leaveDate) : '',
-                    memberType: String(member.memberType)
+                    name: name,
+                    joinDate: joinDate,
+                    leaveDate: leaveDate,
+                    memberType: memberType
                 });
             }
         });
@@ -3786,10 +3883,11 @@ async function saveUserData(userUid, data) {
 
     const user = window.currentUser;
     const currentTime = new Date().toISOString();
+    const userEmail = (user?.email || '').toLowerCase() || 'no email';
     
     const cleanData = {
         displayName: user?.displayName || 'Unknown',
-        email: user?.email || 'No email',
+        email: userEmail,
         lastLogin: user?.metadata?.lastSignInTime || currentTime,
         lastUpdated: currentTime,
         memberRoster: cleanMemberRoster,
@@ -3856,36 +3954,39 @@ async function saveUserData(userUid, data) {
         });
         return true;
     } catch (error) {
+        documentExistsCache.cache.delete(userUid);
         showErrorMessage('Failed to save data. Please try again.');
         return false;
     }
 }
 
-async function loadUserData(userUid) {
+async function loadUserData(userUid, options = {}) {
     if (!window.isAuthenticated || !userUid) {
         return;
     }
 
-    // Check cache first
+    // Always refresh from network on sign-in; skip stale DataCache snapshot
+    const forceRefresh = options.forceRefresh !== false;
     const cacheKey = `user_${userUid}`;
-    const cachedData = DataCache.get(cacheKey);
-    if (cachedData) {
-        // Use cached data
-        window.allMemberRows = window.allMemberRows || [];
-        
-        if (cachedData.memberRoster && Array.isArray(cachedData.memberRoster) && cachedData.memberRoster.length > 0) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            showDataChoiceDialog(cachedData);
-        } else {
-            showSuccessMessage(CLOUD_WELCOME_MESSAGE, null, true);
-            markCloudDataClean(false);
+    if (!forceRefresh) {
+        const cachedData = DataCache.get(cacheKey);
+        if (cachedData) {
+            window.allMemberRows = window.allMemberRows || [];
+            
+            if (cachedData.memberRoster && Array.isArray(cachedData.memberRoster) && cachedData.memberRoster.length > 0) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                showDataChoiceDialog(cachedData);
+            } else {
+                showSuccessMessage(CLOUD_WELCOME_MESSAGE, null, true);
+                markCloudDataClean(false);
+            }
+            return;
         }
-        return;
+    } else {
+        DataCache.delete(cacheKey);
     }
 
     try {
-        // Activity logging is now batched with sign_in in the auth state change handler
-        
         // Ensure allMemberRows is initialized
         window.allMemberRows = window.allMemberRows || [];
         
@@ -3945,6 +4046,17 @@ function showDataChoiceDialog(cloudData) {
     // Get current member count safely
     const currentMemberCount = window.allMemberRows ? window.allMemberRows.length : 0;
     const cloudMemberCount = cloudData && cloudData.memberRoster ? cloudData.memberRoster.length : 0;
+    const cloudUpdatedRaw = cloudData && (cloudData.lastUpdated || cloudData.lastLogin || null);
+    let cloudUpdatedLabel = 'Saved previously';
+    if (cloudUpdatedRaw) {
+        const parsed = new Date(cloudUpdatedRaw);
+        if (!Number.isNaN(parsed.getTime())) {
+            cloudUpdatedLabel = `Updated ${parsed.toLocaleString()}`;
+        }
+    }
+    const overwriteWarning = currentMemberCount > 0 && cloudMemberCount > 0
+        ? '<p class="data-choice-lead text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-3">Both sides have members. Loading cloud will replace your current session roster. Continuing with session keeps local work until you Save (which overwrites cloud).</p>'
+        : '';
     
     const dialog = document.createElement('div');
     dialog.id = 'data-choice-dialog';
@@ -3977,6 +4089,7 @@ function showDataChoiceDialog(cloudData) {
                 <p class="data-choice-lead">
                     We found data in your cloud storage and current session. Which would you like to use?
                 </p>
+                ${overwriteWarning}
 
                 <div class="data-choice-options">
                     <button type="button" id="use-current-data" class="data-choice-card">
@@ -3993,7 +4106,7 @@ function showDataChoiceDialog(cloudData) {
                             <p class="data-choice-card-desc">Keep your current work and continue where you left off</p>
                             <div class="data-choice-card-meta">
                                 <span>${currentMemberCount} member(s)</span>
-                                <span>Just now</span>
+                                <span>This session</span>
                             </div>
                         </div>
                     </button>
@@ -4012,7 +4125,7 @@ function showDataChoiceDialog(cloudData) {
                             <p class="data-choice-card-desc">Restore your previously saved data from the cloud</p>
                             <div class="data-choice-card-meta">
                                 <span>${cloudMemberCount} member(s)</span>
-                                <span>Saved</span>
+                                <span>${cloudUpdatedLabel}</span>
                             </div>
                         </div>
                     </button>
@@ -4020,7 +4133,7 @@ function showDataChoiceDialog(cloudData) {
             </div>
 
             <div class="data-choice-footer">
-                <p class="data-choice-tip"><strong>Tip:</strong> You can always save your current work to the cloud later</p>
+                <p class="data-choice-tip"><strong>Tip:</strong> Closing without choosing leaves your session as-is. Save to Cloud when you are ready to back up.</p>
                 <button type="button" id="cancel-dialog" class="data-choice-cancel">Cancel</button>
             </div>
         </div>
@@ -4228,22 +4341,27 @@ function loadMemberRoster(memberRoster) {
         // Set the due amount in dataset for PDF generation
         row.dataset.due = duesBreakdown.total;
 
+        const safeName = SecurityUtils.sanitizeHTML(member.name);
+        const safeJoinDate = SecurityUtils.sanitizeHTML(String(member.joinDate || ''));
+        const safeLeaveDate = member.leaveDate ? SecurityUtils.sanitizeHTML(String(member.leaveDate)) : '-';
+        const safeMemberType = SecurityUtils.sanitizeHTML(String(member.memberType || ''));
+
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-left text-sm text-gray-900">${SecurityUtils.sanitizeHTML(member.name)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">${member.joinDate}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">${member.leaveDate || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">${member.memberType}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-left text-sm text-gray-900">${safeName}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">${safeJoinDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">${safeLeaveDate}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">${safeMemberType}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 due-cell">${formatDuesBreakdown(duesBreakdown)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 local-due-cell">${formatLocalDuesBreakdown(duesBreakdown)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 local-due-with-tax-cell">${formatLocalDuesWithTaxBreakdown(duesBreakdown)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 active-member-cell">${duesBreakdown.fullYear > 0 ? 'Yes' : 'No'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900 prorated-months-cell">${duesBreakdown.proratedMonths || 0}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                <button class="btn btn-secondary btn-sm !p-2 edit-member-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
+                <button class="btn btn-secondary btn-sm !p-2 edit-member-btn" aria-label="Edit member" title="Edit member">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
                 </button>
-                <button class="btn btn-danger btn-sm !p-2 remove-member-btn">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                <button class="btn btn-danger btn-sm !p-2 remove-member-btn" aria-label="Remove member" title="Remove member">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
                 </button>
             </td>
         `;
@@ -4417,7 +4535,7 @@ function updateSaveButtonState(saveButton = null) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
                 <span class="hidden sm:inline">Unsaved · Save</span>
-                <span class="sm:hidden">Unsaved</span>
+                <span class="sm:hidden">Unsaved · Save</span>
             `;
             button.style.backgroundColor = '#d97706';
             button.onclick = handleManualSave;
@@ -4632,6 +4750,8 @@ window.appFunctions = {
     updateSaveButtonState,
     markCloudDataDirty,
     markCloudDataClean,
+    isCloudDataDirty,
+    getCloudSaveStatus,
     handleLoginToSave,
     cleanup,
     PerformanceMonitor,

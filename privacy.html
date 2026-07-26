@@ -13,6 +13,8 @@
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     
     <title>Privacy Policy | Rotaract Club Invoice Calculator</title>
+    <meta name="robots" content="index, follow">
+    <meta name="googlebot" content="index, follow">
 
     <meta name="description" content="Privacy Policy for the Rotaract Club Invoice Calculator - Learn how we collect, use, and protect your data.">
     <meta name="author" content="ZeoSpec">
@@ -194,7 +196,7 @@
                 <div class="legal-content">
                     <h1>Privacy Policy</h1>
                     
-                    <p class="last-updated">Last updated: January 7, 2025</p>
+                    <p class="last-updated">Last updated: July 26, 2026</p>
 
                     <h2>1. Introduction</h2>
                     <p>Rotaract South Asia MDIO ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use the Rotaract Club Invoice Calculator ("the Service").</p>
@@ -208,14 +210,16 @@
                         <li><strong>Member Data:</strong> Names, join dates, leave dates, and club base information for dues calculation purposes</li>
                         <li><strong>Account Information:</strong> If you choose to sign in, we collect your Google account information (email, name, profile picture)</li>
                         <li><strong>Usage Data:</strong> Information about how you use our Service, including features accessed and calculations performed</li>
+                        <li><strong>Google Sheets imports:</strong> If you paste a public Google Sheets link, the Service fetches that sheet’s CSV export. Member names in a sheet shared as “Anyone with the link can view” are world-readable while that sharing setting is active. Prefer CSV upload for private rosters.</li>
                     </ul>
 
                     <h3>2.2 Automatically Collected Information</h3>
                     <p>We automatically collect certain information when you visit our Service:</p>
                     <ul>
                         <li><strong>Device Information:</strong> Browser type, operating system, device identifiers</li>
-                        <li><strong>Usage Analytics:</strong> Pages visited, time spent on pages, features used</li>
+                        <li><strong>Usage Analytics:</strong> Pages visited, time spent on pages, features used (Google Analytics and Firebase Analytics; we do not send your email address as an Analytics event parameter)</li>
                         <li><strong>Technical Data:</strong> IP address, browser settings, cookies</li>
+                        <li><strong>Invoice summary metadata:</strong> When you generate a PDF while signed in, we may store browser user-agent, session id, email, and display name with a capped invoice summary history in your Firebase user document</li>
                     </ul>
 
                     <h2>3. How We Use Your Information</h2>
@@ -223,7 +227,7 @@
                     <ul>
                         <li>To provide and maintain our Service</li>
                         <li>To perform dues calculations and generate reports</li>
-                        <li>To save your data locally and optionally in the cloud</li>
+                        <li>To save your data in the current browser session and optionally in the cloud when you click Save to Cloud</li>
                         <li>To improve our Service and user experience</li>
                         <li>To analyze usage patterns and optimize performance</li>
                         <li>To provide customer support</li>
@@ -233,7 +237,7 @@
                     <h2>4. Data Storage and Security</h2>
                     
                     <h3>4.1 Browser Session Storage</h3>
-                    <p>While you use the calculator, your member roster is kept in your browser for the current visit (in page memory). It is not stored in localStorage as the primary backup. Closing the tab or clearing the session can clear unsaved roster data.</p>
+                    <p>While you use the calculator, your member roster is kept in page memory for the current visit. It is not stored in localStorage as the primary backup. If you sign in, Firebase may also enable IndexedDB offline persistence in supporting browsers, which can retain Firestore-synced data across reloads on that device. Closing the tab or clearing site data can remove unsaved session roster data.</p>
 
                     <h3>4.2 Cloud Storage (Optional)</h3>
                     <p>If you sign in with your Google account and click Save to Cloud, your roster and settings may be stored securely in Google Firebase so you can load them later on another device. Nothing is uploaded until you choose to save.</p>
@@ -253,6 +257,7 @@
                     <p>We may share your information in the following circumstances:</p>
                     <ul>
                         <li><strong>Service Providers:</strong> With trusted third-party service providers who assist us in operating our Service (e.g., Google Firebase, Google Analytics)</li>
+                        <li><strong>RSAMDIO administrators:</strong> Designated administrators of this Service can read saved user documents (including member rosters and invoice summaries) to support clubs and operate the admin dashboard. Admin access is controlled by Firebase authorization rules.</li>
                         <li><strong>Legal Requirements:</strong> When required by law or to protect our rights and safety</li>
                         <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
                     </ul>
@@ -292,7 +297,7 @@
                     <ul>
                         <li><strong>Access:</strong> Request access to your personal information</li>
                         <li><strong>Correction:</strong> Request correction of inaccurate information</li>
-                        <li><strong>Deletion:</strong> Request deletion of your personal information</li>
+                        <li><strong>Deletion:</strong> Request deletion of your personal information by emailing <a href="mailto:rsamdio@gmail.com">rsamdio@gmail.com</a> or <a href="mailto:privacy@zeospec.com">privacy@zeospec.com</a>. There is no self-service account delete button; an administrator can remove your cloud document after verifying your request. We aim to respond within 30 days.</li>
                         <li><strong>Portability:</strong> Request a copy of your data in a portable format</li>
                         <li><strong>Opt-out:</strong> Opt out of certain data collection and processing</li>
                     </ul>
@@ -300,9 +305,10 @@
                     <h2>8. Data Retention</h2>
                     <p>We retain your information for as long as necessary to provide our Service and fulfill the purposes outlined in this policy:</p>
                     <ul>
-                        <li><strong>Local Data:</strong> Stored in your browser until you clear it or use the reset function</li>
-                        <li><strong>Cloud Data:</strong> Retained until you delete your account or request deletion</li>
+                        <li><strong>Session Data:</strong> Held in page memory (and possibly IndexedDB for signed-in Firebase persistence) until you reset, sign out, or clear site data</li>
+                        <li><strong>Cloud Data:</strong> Retained until you request deletion or an administrator deletes your user document</li>
                         <li><strong>Analytics Data:</strong> Retained for up to 2 years for service improvement</li>
+                        <li><strong>Invoice summaries:</strong> Up to the 10 most recent PDF summary entries on your user document</li>
                     </ul>
 
                     <h2>9. Children's Privacy</h2>

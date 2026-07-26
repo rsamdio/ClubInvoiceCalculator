@@ -128,38 +128,24 @@ Logged when a PDF is generated for a signed-in user. Kept to the **10 most recen
 | `users` | Firebase UID | Roster, settings, invoice summaries, profile fields |
 | `admins` | Firebase UID | Admin access (`admin.html`); **document existence = admin** |
 
-## Example Firestore rules
+## Firestore rules
 
-Apply in the Firebase Console (or your rules deployment pipeline). These match the app’s access model:
+Canonical rules live in [`firestore.rules`](firestore.rules) and are deployed with:
+
+```bash
+firebase deploy --only firestore:rules --project clubinvoicecalculator
+```
+
+Do **not** deploy Pulse/RSAQA rules to this Firebase project. Bootstrap the first admin by creating `admins/{uid}` in the Console.
+
+### Model summary (matches `firestore.rules`)
 
 ```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isAdmin() {
-      return isSignedIn() &&
-             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    match /users/{uid} {
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow read, update: if request.auth != null && request.auth.uid == uid;
-      allow read, write: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
-      allow read, write: if isAdmin();
-    }
-  }
-}
+// users/{uid}: owner create/read/update; admin read/write/delete
+// admins/{uid}: self-read for gate; admin create/update; delete others only (not self)
 ```
+
+Older README snippet is superseded by the committed `firestore.rules` file.
 
 ## Dues rules (summary)
 

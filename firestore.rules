@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function validSettings(s) {
+      return s is map
+        && (!('taxPercentage' in s) || (s.taxPercentage is number && s.taxPercentage >= 0 && s.taxPercentage <= 100))
+        && (!('currencyRate' in s) || (s.currencyRate is number && s.currencyRate > 0 && s.currencyRate <= 100000))
+        && (!('invoiceYear' in s) || (s.invoiceYear is string && s.invoiceYear.size() <= 8));
+    }
+
+    function validInvoiceSummaries(summaries) {
+      return !(summaries is list) || summaries.size() <= 10;
+    }
+
+    function validUserWrite() {
+      let data = request.resource.data;
+      return (!('memberRoster' in data) || (data.memberRoster is list && data.memberRoster.size() <= 2000))
+        && (!('settings' in data) || validSettings(data.settings))
+        && (!('invoiceSummaries' in data) || validInvoiceSummaries(data.invoiceSummaries));
+    }
+
+    match /users/{uid} {
+      allow create: if isSelf(uid) && validUserWrite();
+      allow read: if isSelf(uid) || isAdmin();
+      allow update: if (isSelf(uid) || isAdmin()) && validUserWrite();
+      allow delete: if isAdmin();
+    }
+
+    match /admins/{uid} {
+      // Self-read for admin gate; any admin can manage admins collection.
+      // Bootstrap first admin via Firebase Console.
+      allow read: if isSelf(uid) || isAdmin();
+      allow create, update: if isAdmin();
+      // Prevent deleting your own admin doc (reduces last-admin lockout risk)
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+  }
+}

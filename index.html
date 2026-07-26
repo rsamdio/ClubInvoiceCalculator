@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- Security Headers -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://docs.google.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://docs.google.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta http-equiv="X-Frame-Options" content="DENY">
@@ -25,9 +25,17 @@
     <meta property="og:site_name" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO" />
     <meta property="og:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
     <meta property="og:image:type" content="image/webp" />
-    <meta property="og:image:width" content="600" />
-    <meta property="og:image:height" content="400" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
     <meta property="og:description" content="Rotaract Club Invoice Calculator is an interactive tool by Rotaract South Asia MDIO (RSAMDIO) to help Rotaractors estimate their Club Invoices with precision and ease.">
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Rotaract Club Invoice Calculator | Rotaract South Asia MDIO" />
+    <meta name="twitter:description" content="Estimate Rotaract club January RI invoices with roster, tax, and local currency breakdowns." />
+    <meta name="twitter:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta name="twitter:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
     
     <meta name="keywords" content="Rotaract Club Invoice Calculator, Rotaract Dues Calculator, Rotary Club Dues, RSAMDIO Calculator, Rotaract South Asia MDIO, Club Invoice Tool, RI Dues Calculator, Rotaract Membership Dues, Rotary International Dues, Club Invoice Generator, Rotaract Financial Calculator, Membership Dues Tool, Rotaract Club Management, Rotary Club Financial Tool" />
 
@@ -40,10 +48,8 @@
     <meta http-equiv="Expires" content="0">
     
     <!-- SEO Meta Tags -->
-    <meta name="robots" content="noindex, nofollow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="googlebot" content="noindex, nofollow">
-    <!-- <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="googlebot" content="index, follow"> -->
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow">
     <meta name="author" content="Rotaract South Asia MDIO">
     <meta name="copyright" content="Rotaract South Asia MDIO">
     <meta name="language" content="English">
@@ -239,13 +245,13 @@
     gtag('config', 'G-4371E35K36');
     </script>
 
-    <!-- PDF generation runs entirely inside a Web Worker (pdf-worker.min.js) which imports its own dependencies. -->
+    <!-- PDF generation runs entirely inside a Web Worker (pdf-worker.js) which imports its own dependencies. -->
     
     <!-- App Modules (behavior-preserving, no UI changes) -->
     <script src="./modules/security.min.js" defer></script>
     <script src="./modules/calculations.js" defer></script>
 
-    <!-- External JavaScript for better performance -->
+    <!-- App core: unminified for safer local/debug. Minifier now preserves string spaces; production may use *.min.js. -->
     <script src="./app.js" defer></script>
 
     <!-- Firebase SDK -->
@@ -342,7 +348,7 @@
         "screenshot": "https://dues.rsamdio.org/converted-images/calculatorogimg.webp",
         "softwareVersion": "2.0",
         "datePublished": "2024-08-06",
-        "dateModified": "2025-01-07"
+        "dateModified": "2026-07-26"
     }
     </script>
 
@@ -414,7 +420,7 @@
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-content">
             <div class="loading-spinner mx-auto mb-4"></div>
-            <h3 class="text-lg font-bold text-gray-800 mb-2">Generating Detailed Report</h3>
+            <h3 id="loading-overlay-title" class="text-lg font-bold text-gray-800 mb-2">Working…</h3>
             <p id="loading-message" class="text-gray-600 font-medium mb-4">Preparing...</p>
             
             <div class="loading-progress">
@@ -457,6 +463,12 @@
                 </a>
 
                 <div id="login-container" class="app-bar-auth">
+                    <button type="button" id="help-button" class="auth-help-btn" aria-label="Help" aria-haspopup="dialog" aria-controls="instructions-modal" title="Help">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="auth-help-label">Help</span>
+                    </button>
                     <!-- Login State (Default) -->
                     <div id="login-state" class="auth-signin-btn" role="button" tabindex="0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -636,19 +648,20 @@
                             <p class="stat-chip-hint">Total Months in Prorata Calculation</p>
                         </div>
                         <div class="summary-cta">
-                            <button type="button" id="downloadPdfBtn" class="btn-pdf">
+                            <button type="button" id="downloadPdfBtn" class="btn-pdf" aria-describedby="pdf-estimate-note">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
-                                <span>Generate Detailed Report</span>
+                                <span>Download Planning Estimate (PDF)</span>
                             </button>
-                            <div id="pdfStatus" class="mt-2 text-center hidden">
+                            <p id="pdf-estimate-note" class="text-xs text-gray-500 mt-2 text-center">Planning estimate only - not Rotary International's official invoice. Add members before generating.</p>
+                            <div id="pdfStatus" class="mt-2 text-center hidden" aria-live="polite">
                                 <div class="inline-flex items-center space-x-2 text-blue-600">
                                     <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    <span>Generating Detailed Report...</span>
+                                    <span>Preparing planning estimate PDF...</span>
                                 </div>
                             </div>
                         </div>
@@ -728,7 +741,7 @@
                     </div>
 
                     <!-- Bulk Upload -->
-                    <div class="card entry-card">
+                    <div id="bulk-upload-card" class="card entry-card">
                         <div class="panel-header panel-header-compact">
                             <div>
                                 <h2 class="panel-title text-lg">Bulk Upload Roster</h2>
@@ -891,6 +904,8 @@
                         </div>
                     </div>
 
+                    <div id="roster-feedback" data-feedback-host class="hidden mb-3" role="status" aria-live="polite"></div>
+
                     <div class="mb-4 w-full">
                         <div class="relative w-full">
                             <label for="roster-search-input" class="sr-only">Search members</label>
@@ -1021,6 +1036,10 @@
                         </svg>
                         <h3 class="text-lg font-medium text-gray-900 mb-2">No members yet</h3>
                         <p class="text-gray-500 mb-4">Add members individually or upload a roster file to get started</p>
+                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                            <button type="button" id="empty-state-add-btn" class="btn btn-primary px-4 py-2">Add a member</button>
+                            <button type="button" id="empty-state-bulk-btn" class="btn btn-secondary px-4 py-2">Bulk upload / Sheets</button>
+                        </div>
                     </div>
                 </section>
 
@@ -1107,24 +1126,24 @@
                             </div>
 
                             <div class="bg-white rounded-lg p-4 border border-blue-100">
-                                <h4 class="font-semibold text-blue-800 mb-3">Calculation Methods</h4>
+                                <h4 class="font-semibold text-blue-800 mb-3">How This Calculator Bills (Jan 1 Snapshot)</h4>
                                 <div class="space-y-3 text-sm text-blue-700">
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Active Members (as on 1st Jan):</span> Pay complete annual dues for the entire year (Upcoming 12 months - Jan to Dec)
+                                            <span class="font-semibold">Members active on 1 January:</span> Billed full-year annual dues for the invoice year (Jan–Dec).
                                         </div>
                                     </div>
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Members Joining/Leaving in the middle of the year:</span> Dues are prorated based on membership duration
+                                            <span class="font-semibold">Join after 1 January of the invoice year:</span> This invoice shows $0 for that member. Catch-up (proration) appears on the next January invoice.
                                         </div>
                                     </div>
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-blue-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Prorata Formula:</span> (Annual Dues ÷ 12) × Number of Months
+                                            <span class="font-semibold">Prior-year mid-year joiners:</span> Next January invoice includes full year plus prorated catch-up for months in the prior year. Formula: (Annual ÷ 12) × months.
                                         </div>
                                     </div>
                                 </div>
@@ -1140,24 +1159,24 @@
 
                         <div class="space-y-5">
                             <div class="bg-white rounded-lg p-4 border border-green-100">
-                                <h4 class="font-semibold text-green-800 mb-3">Proration Principles</h4>
+                                <h4 class="font-semibold text-green-800 mb-3">Join &amp; Leave on This Invoice</h4>
                                 <div class="space-y-3 text-sm text-green-700">
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Monthly Basis:</span> Dues are calculated on a monthly basis for fair distribution
+                                            <span class="font-semibold">Join on 1 January of the invoice year:</span> Full-year dues on that invoice (no catch-up the following year for that join).
                                         </div>
                                     </div>
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Join Date Rules:</span> Membership starts from the month of joining (or next month if the date of joining is after 1st of the month)
+                                            <span class="font-semibold">Leave after the invoice date:</span> Does not reduce that January invoice. Leaving before 1 January can result in $0 or catch-up-only depending on join year.
                                         </div>
                                     </div>
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Leave Date Rules:</span> Membership ends at the month of leaving
+                                            <span class="font-semibold">Leave on 1 January:</span> Still treated as active for that invoice (generated as of Jan 1).
                                         </div>
                                     </div>
                                 </div>
@@ -1169,19 +1188,19 @@
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Join Date:</span> Determines when membership begins and proration starts
+                                            <span class="font-semibold">Join Date:</span> Drives whether this invoice shows full year, catch-up, or $0.
                                         </div>
                                     </div>
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Leave Date:</span> Determines when membership ends and proration stops
+                                            <span class="font-semibold">Leave Date:</span> Matters mainly when the member left before the Jan 1 invoice snapshot.
                                         </div>
                                     </div>
                                     <div class="flex items-start">
                                         <div class="w-2 h-2 bg-green-500 rounded-full mr-3 mt-2 flex-shrink-0"></div>
                                         <div>
-                                            <span class="font-semibold">Invoice Year:</span> The year for which dues are being calculated (Upcoming 12 months - Jan to Dec).
+                                            <span class="font-semibold">Invoice Year:</span> The January invoice year you are estimating (upcoming Jan–Dec RI period).
                                         </div>
                                     </div>
                                 </div>
@@ -1325,7 +1344,11 @@
             }
         });
         
-        window.addEventListener('beforeunload', () => {
+        window.addEventListener('beforeunload', (event) => {
+            if (window.appFunctions && window.appFunctions.isCloudDataDirty && window.appFunctions.isCloudDataDirty()) {
+                event.preventDefault();
+                event.returnValue = '';
+            }
             if (window.appFunctions && window.appFunctions.cleanup) {
                 window.appFunctions.cleanup();
             }
@@ -1844,9 +1867,12 @@
                 // Prevent default form submission behavior
                 event.preventDefault();
                 event.stopPropagation();
-                
-                // Log current member count for debugging
+
                 const memberCount = document.getElementById('member-roster-body').querySelectorAll('tr').length;
+                if (memberCount === 0) {
+                    alert('Add at least one member before downloading a planning estimate PDF.');
+                    return;
+                }
 
                 // Log user activity if authenticated
                 if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logUserActivity) {
@@ -1857,8 +1883,11 @@
             });
 
             function generatePDFReport() {
-                // Show loading overlay for better UX
                 const loadingOverlay = document.getElementById('loading-overlay');
+                const loadingTitle = document.getElementById('loading-overlay-title');
+                if (loadingTitle) {
+                    loadingTitle.textContent = 'Preparing planning estimate PDF';
+                }
                 if (loadingOverlay) {
                     loadingOverlay.classList.add('active');
                 }
@@ -1890,72 +1919,82 @@
                         progressBar.style.width = '10%';
                     }
                     
-                    // Get summary data from the existing calculations
-                    const taxAmount = parseFloat(document.getElementById('tax-breakdown').textContent.replace(/[^0-9.-]+/g, '')) || 0;
-                    const totalAmount = parseFloat(document.getElementById('total-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
                     const totalMembers = document.getElementById('total-members').textContent || '0';
                     const totalProratedMonths = document.getElementById('total-prorated-months').textContent || '0';
                     const taxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
                     const invoiceYear = getSelectedInvoiceYear();
+                    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
 
-                    // Extract Full Year and Prorated amounts from the base amount breakdown
+                    // Build PDF amounts from roster data (not fragile DOM text / minified spacing)
+                    const calculateDue = (window.DuesCalculator && typeof window.DuesCalculator.calculateIndividualDue === 'function')
+                        ? window.DuesCalculator.calculateIndividualDue
+                        : null;
+
+                    const formatUsdParts = (fullYear, prorated) => {
+                        const fy = Math.round(Number(fullYear) * 100) / 100;
+                        const pr = Math.round(Number(prorated) * 100) / 100;
+                        const total = Math.round((fy + pr) * 100) / 100;
+                        return `$${fy.toFixed(2)} + $${pr.toFixed(2)} = $${total.toFixed(2)}`;
+                    };
+                    const formatLocalParts = (fullYear, prorated, rate) => {
+                        const fy = Math.round(Number(fullYear) * rate * 100) / 100;
+                        const pr = Math.round(Number(prorated) * rate * 100) / 100;
+                        const total = Math.round((fy + pr) * 100) / 100;
+                        return `${fy.toFixed(2)} + ${pr.toFixed(2)} = ${total.toFixed(2)}`;
+                    };
+
                     let totalFullYearAmount = 0;
                     let totalProratedAmount = 0;
-                    
-                    // Use the existing calculated values from member roster cells
-                    const memberRowsForSummary = document.getElementById('member-roster-body').querySelectorAll('tr');
-                    memberRowsForSummary.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 7) {
-                            const estBaseDue = cells[4].textContent.trim();
-                            const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
-                            if (dueMatch) {
-                                const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
-                                const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
-                                
-                                totalFullYearAmount += fullYearAmount;
-                                totalProratedAmount += proratedAmount;
-                            }
-                        }
-                    });
-
-                    // Get currency rate for calculations
-                    const currencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
-                    
-                    // Prepare member data for PDF
                     const memberData = [];
                     const memberRows = document.getElementById('member-roster-body').querySelectorAll('tr');
-                    
+
                     memberRows.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 9) {
-                            const name = cells[0].textContent.trim();
-                            const joinDate = cells[1].textContent.trim();
-                            const leaveDate = cells[2].textContent.trim() || 'Active';
-                            const clubBase = cells[3].textContent.trim();
-                            const estBaseDue = cells[4].textContent.trim();
-                            const estLocalDue = cells[5].textContent.trim();
-                            
-                            // Format the "Est. Base + Tax (Local)" column for PDF
-                            let formattedEstLocalWithTax = cells[6].textContent.trim();
-                            
-                            // Extract the total amount and tax amount from the existing format
-                            // Current format: "696.00 + 125.28 = 821.28"
-                            const taxMatch = formattedEstLocalWithTax.match(/(\d+\.?\d*) \+ (\d+\.?\d*) = (\d+\.?\d*)/);
-                            if (taxMatch) {
-                                const baseAmount = parseFloat(taxMatch[1]);
-                                const taxAmount = parseFloat(taxMatch[2]);
-                                const totalAmount = parseFloat(taxMatch[3]);
-                                
-                                // Format as requested: "Total with Tax\n(Tax: total tax amount)"
-                                formattedEstLocalWithTax = `${totalAmount.toFixed(2)}\n(Tax: ${taxAmount.toFixed(2)})`;
-                            }
-                            
-                            const activeMember = cells[7].textContent.trim();
-                            const proratedMonths = parseInt(cells[8].textContent.trim()) || 0;
-                            
-                            memberData.push([name, joinDate, leaveDate, clubBase, estBaseDue, estLocalDue, formattedEstLocalWithTax, activeMember, proratedMonths]);
+                        if (!row || !row.dataset) return;
+                        const name = (row.dataset.name || row.cells?.[0]?.textContent || '').trim();
+                        const joinDate = (row.dataset.joinDate || row.cells?.[1]?.textContent || '').trim();
+                        const leaveRaw = (row.dataset.leaveDate || '').trim();
+                        const leaveDateDisplay = leaveRaw || 'Active';
+                        let clubBase = (row.dataset.memberType || '').trim();
+                        if (!clubBase && row.cells?.[3]) {
+                            const cellType = (row.cells[3].textContent || '').trim();
+                            if (cellType.startsWith('Community')) clubBase = 'Community-Based';
+                            else if (cellType.startsWith('University')) clubBase = 'University-Based';
+                            else clubBase = cellType;
                         }
+                        if (!name || !joinDate || !clubBase) return;
+
+                        let fullYear = 0;
+                        let prorated = 0;
+                        let proratedMonths = 0;
+                        if (calculateDue) {
+                            const dues = calculateDue(joinDate, clubBase, invoiceYear, leaveRaw || null);
+                            fullYear = Number(dues.fullYear) || 0;
+                            prorated = Number(dues.prorated) || 0;
+                            proratedMonths = Number(dues.proratedMonths) || 0;
+                        }
+
+                        totalFullYearAmount += fullYear;
+                        totalProratedAmount += prorated;
+
+                        const estBaseDue = formatUsdParts(fullYear, prorated);
+                        const estLocalDue = formatLocalParts(fullYear, prorated, currencyRate);
+                        const baseLocal = Math.round((fullYear + prorated) * currencyRate * 100) / 100;
+                        const taxLocal = Math.round((baseLocal * taxPercentage) / 100 * 100) / 100;
+                        const totalLocalWithTax = Math.round((baseLocal + taxLocal) * 100) / 100;
+                        const formattedEstLocalWithTax = `${totalLocalWithTax.toFixed(2)}\n(Tax: ${taxLocal.toFixed(2)})`;
+                        const activeMember = fullYear > 0 ? 'Yes' : 'No';
+
+                        memberData.push([
+                            name,
+                            joinDate,
+                            leaveDateDisplay,
+                            clubBase,
+                            estBaseDue,
+                            estLocalDue,
+                            formattedEstLocalWithTax,
+                            activeMember,
+                            proratedMonths
+                        ]);
                     });
                     
                     // Add totals row
@@ -1976,6 +2015,13 @@
                     
                     const totalLocalEstDueDisplay = `${formattedTotalFullYearLocal} + ${formattedTotalProratedLocal} = ${formattedTotalLocalEstDue}`;
                     
+                    // USD tax / total from the same roster math (do not scrape DOM text)
+                    const baseAmount = Math.round((totalFullYearAmount + totalProratedAmount) * 100) / 100;
+                    const taxOnFullYearDues = Math.round((totalFullYearAmount * taxPercentage) / 100 * 100) / 100;
+                    const taxOnProratedDues = Math.round((totalProratedAmount * taxPercentage) / 100 * 100) / 100;
+                    const taxAmount = Math.round((taxOnFullYearDues + taxOnProratedDues) * 100) / 100;
+                    const totalAmount = Math.round((baseAmount + taxAmount) * 100) / 100;
+
                     // Calculate local amounts with separate tax calculation for totals
                     const fullYearLocalAmount = Math.round(totalFullYearAmount * currencyRate * 100) / 100;
                     const proratedLocalAmount = Math.round(totalProratedAmount * currencyRate * 100) / 100;
@@ -2023,12 +2069,11 @@
                     const pdfData = {
                         memberData: memberData,
                         summaryData: {
-                            baseAmount: totalFullYearAmount + totalProratedAmount, // Use calculated base amount
+                            baseAmount: baseAmount,
                             taxAmount: taxAmount,
                             totalWithTax: totalAmount,
                             totalFullYearAmount: totalFullYearAmount,
                             totalProratedAmount: totalProratedAmount,
-                            // Local currency amounts
                             baseLocalAmount: baseLocalAmount,
                             taxLocalAmount: taxLocalAmount,
                             totalLocalAmount: totalLocalAmount,
@@ -2065,47 +2110,41 @@
                                     // Log invoice summary to Firestore if available
                                     try {
                                         if (window.isAuthenticated && window.currentUser && window.appFunctions && window.appFunctions.logInvoiceSummary) {
-                                            // Get fresh, current values from the web application for accurate logging
-                                            const currentBaseAmount = parseFloat(document.getElementById('base-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
-                                            const currentTaxAmount = parseFloat(document.getElementById('tax-breakdown').textContent.replace(/[^0-9.-]+/g, '')) || 0;
-                                            const currentTotalAmount = parseFloat(document.getElementById('total-invoice-amount').textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                                            // Log from roster math (same as PDF) — do not scrape fragile DOM text
                                             const currentTotalMembers = document.getElementById('total-members').textContent || '0';
                                             const currentTotalProratedMonths = document.getElementById('total-prorated-months').textContent || '0';
                                             const currentTaxPercentage = parseFloat(document.getElementById('tax-percentage').value) || 0;
                                             const currentCurrencyRate = parseFloat(document.getElementById('currency-rate')?.value) || 96;
                                             const currentInvoiceYear = getSelectedInvoiceYear();
                                             
-                                            // Recalculate current prorated values to ensure accuracy
                                             let currentTotalFullYearAmount = 0;
                                             let currentTotalProratedAmount = 0;
+                                            const calcDueForLog = (window.DuesCalculator && typeof window.DuesCalculator.calculateIndividualDue === 'function')
+                                                ? window.DuesCalculator.calculateIndividualDue
+                                                : null;
                                             
                                             const memberRowsForLogging = document.getElementById('member-roster-body').querySelectorAll('tr');
                                             memberRowsForLogging.forEach(row => {
-                                                const cells = row.querySelectorAll('td');
-                                                if (cells.length >= 7) {
-                                                    const estBaseDue = cells[4].textContent.trim();
-                                                    const dueMatch = estBaseDue.match(/\$([0-9,]+\.?[0-9]*) \+ \$([0-9,]+\.?[0-9]*) = \$([0-9,]+\.?[0-9]*)/);
-                                                    if (dueMatch) {
-                                                        const fullYearAmount = parseFloat(dueMatch[1].replace(/,/g, '')) || 0;
-                                                        const proratedAmount = parseFloat(dueMatch[2].replace(/,/g, '')) || 0;
-                                                        
-                                                        currentTotalFullYearAmount += fullYearAmount;
-                                                        currentTotalProratedAmount += proratedAmount;
-                                                    }
-                                                }
+                                                if (!row || !row.dataset || !calcDueForLog) return;
+                                                const joinDate = (row.dataset.joinDate || '').trim();
+                                                const leaveRaw = (row.dataset.leaveDate || '').trim();
+                                                const clubBase = (row.dataset.memberType || '').trim();
+                                                if (!joinDate || !clubBase) return;
+                                                const dues = calcDueForLog(joinDate, clubBase, currentInvoiceYear, leaveRaw || null);
+                                                currentTotalFullYearAmount += Number(dues.fullYear) || 0;
+                                                currentTotalProratedAmount += Number(dues.prorated) || 0;
                                             });
                                             
-                                            // Calculate current local amounts
+                                            const currentBaseAmount = Math.round((currentTotalFullYearAmount + currentTotalProratedAmount) * 100) / 100;
                                             const currentFullYearLocalAmount = Math.round(currentTotalFullYearAmount * currentCurrencyRate * 100) / 100;
                                             const currentProratedLocalAmount = Math.round(currentTotalProratedAmount * currentCurrencyRate * 100) / 100;
                                             const currentBaseLocalAmount = currentFullYearLocalAmount + currentProratedLocalAmount;
                                             
-                                            // Calculate current tax amounts (USD)
                                             const currentTaxOnFullYearDues = Math.round((currentTotalFullYearAmount * currentTaxPercentage) / 100 * 100) / 100;
                                             const currentTaxOnProratedDues = Math.round((currentTotalProratedAmount * currentTaxPercentage) / 100 * 100) / 100;
                                             const currentTotalTaxAmount = currentTaxOnFullYearDues + currentTaxOnProratedDues;
+                                            const currentTotalAmount = Math.round((currentBaseAmount + currentTotalTaxAmount) * 100) / 100;
                                             
-                                            // Calculate current local currency tax
                                             const currentTaxOnLocalAnnualDues = Math.round((currentFullYearLocalAmount * currentTaxPercentage) / 100 * 100) / 100;
                                             const currentTaxOnLocalProratedDues = Math.round((currentProratedLocalAmount * currentTaxPercentage) / 100 * 100) / 100;
                                             const currentTaxLocalAmount = currentTaxOnLocalAnnualDues + currentTaxOnLocalProratedDues;
@@ -2117,9 +2156,9 @@
                                                 currencyRate: Math.round(currentCurrencyRate * 100) / 100,
                                                 totalMembers: Number(currentTotalMembers) || 0,
                                                 totalProratedMonths: Number(currentTotalProratedMonths) || 0,
-                                                baseAmount: Math.round((currentTotalFullYearAmount + currentTotalProratedAmount) * 100) / 100,
+                                                baseAmount: currentBaseAmount,
                                                 taxAmount: Math.round(currentTotalTaxAmount * 100) / 100,
-                                                totalWithTax: Math.round(currentTotalAmount * 100) / 100,
+                                                totalWithTax: currentTotalAmount,
                                                 totalFullYearAmount: Math.round(currentTotalFullYearAmount * 100) / 100,
                                                 totalProratedAmount: Math.round(currentTotalProratedAmount * 100) / 100,
                                                 baseLocalAmount: Math.round(currentBaseLocalAmount * 100) / 100,
@@ -2268,6 +2307,24 @@
             const instructionsModal = document.getElementById('instructions-modal');
             const closeModalBtn = document.getElementById('close-modal-btn');
             const gotItBtn = document.getElementById('got-it-btn');
+            const helpButton = document.getElementById('help-button');
+            const HELP_SEEN_KEY = 'cic-instructions-seen-v1';
+
+            function markHelpSeen() {
+                try {
+                    localStorage.setItem(HELP_SEEN_KEY, '1');
+                } catch (_) {
+                    // ignore storage failures
+                }
+            }
+
+            function shouldShowHelpOnce() {
+                try {
+                    return localStorage.getItem(HELP_SEEN_KEY) !== '1';
+                } catch (_) {
+                    return true;
+                }
+            }
 
             function showModal() {
                 instructionsModal.classList.add('active');
@@ -2279,11 +2336,36 @@
                 instructionsModal.classList.remove('active');
                 document.body.classList.remove('modal-open');
                 document.body.style.overflow = '';
+                markHelpSeen();
             }
 
             // Simple event listeners
             closeModalBtn.addEventListener('click', hideModal);
             gotItBtn.addEventListener('click', hideModal);
+            if (helpButton) {
+                helpButton.addEventListener('click', showModal);
+            }
+
+            const emptyAddBtn = document.getElementById('empty-state-add-btn');
+            const emptyBulkBtn = document.getElementById('empty-state-bulk-btn');
+            if (emptyAddBtn) {
+                emptyAddBtn.addEventListener('click', () => {
+                    const form = document.getElementById('add-member-form');
+                    if (form) {
+                        form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const nameInput = document.getElementById('member-name');
+                        if (nameInput) nameInput.focus();
+                    }
+                });
+            }
+            if (emptyBulkBtn) {
+                emptyBulkBtn.addEventListener('click', () => {
+                    const area = document.getElementById('file-upload-area') || document.getElementById('bulk-upload-sources');
+                    if (area) {
+                        area.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
             
             // Close on outside click
             instructionsModal.addEventListener('click', (e) => {
@@ -2330,6 +2412,10 @@
                                 if (window.appFunctions && window.appFunctions.loadUserData) {
                                     window.appFunctions.loadUserData(user.uid);
                                 }
+
+                                if (shouldShowHelpOnce() && !document.querySelector('.modal-overlay.active')) {
+                                    showModal();
+                                }
                             } else {
                                 // User is signed out
                                 window.currentUser = null;
@@ -2340,9 +2426,8 @@
                                     window.appFunctions.clearSessionRoster();
                                 }
                                 
-                                // Show instructions modal for non-authenticated users
-                                // Only show if no other modal is currently active
-                                if (!document.querySelector('.modal-overlay.active')) {
+                                // First-visit help only (localStorage), not every signed-out session
+                                if (shouldShowHelpOnce() && !document.querySelector('.modal-overlay.active')) {
                                     showModal();
                                 }
                             }
@@ -2598,6 +2683,15 @@
                     
                     newLogoutButton.addEventListener('click', async (e) => {
                         e.preventDefault();
+
+                        const hasLocalMembers = window.allMemberRows && window.allMemberRows.length > 0;
+                        const isDirty = window.appFunctions && window.appFunctions.isCloudDataDirty && window.appFunctions.isCloudDataDirty();
+                        if (hasLocalMembers || isDirty) {
+                            const proceed = window.confirm('You have unsaved roster changes or session members. Sign out and clear this session?');
+                            if (!proceed) {
+                                return;
+                            }
+                        }
                         
                         // Show loading state in dropdown
                         const originalText = newLogoutButton.innerHTML;
@@ -2865,7 +2959,7 @@
                     Download PDF
                 </h4>
                 <ul>
-                    <li><strong>Generate Detailed Report:</strong> Downloads a PDF with summary totals and the full roster.</li>
+                    <li><strong>Download Planning Estimate (PDF):</strong> Downloads a planning PDF with summary totals and the full roster. Not RI's official invoice.</li>
                     <li><strong>Estimate only:</strong> Use this for planning. Final figures come from Rotary's official invoice process.</li>
                 </ul>
 

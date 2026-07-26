@@ -5,47 +5,86 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
 
+def _strip_js_line_comment(line: str) -> str:
+    """Remove // comments without touching // or content inside strings."""
+    quote_open = False
+    quote_char = ''
+    out = []
+    i = 0
+    while i < len(line):
+        c = line[i]
+        if not quote_open and i + 1 < len(line) and line[i] == '/' and line[i + 1] == '/':
+            break
+        out.append(c)
+        if c in ('"', "'", '`'):
+            if not quote_open:
+                quote_open = True
+                quote_char = c
+            elif quote_char == c:
+                quote_open = False
+                quote_char = ''
+        if c == '\\' and quote_open and i + 1 < len(line):
+            out.append(line[i + 1])
+            i += 1
+        i += 1
+    return ''.join(out)
+
+
+def _apply_outside_strings(js: str, pattern: str, repl: str) -> str:
+    """Apply a regex substitution only to code outside string/template literals.
+
+    Critical: naive \\s* around }() breaks dues format strings like
+    `${x.toFixed(2)} + ${y}` → `${x.toFixed(2)}+ ${y}` which broke PDF totals.
+    """
+    parts = []
+    buf = []
+    quote_open = False
+    quote_char = ''
+    i = 0
+    while i < len(js):
+        c = js[i]
+        if quote_open:
+            buf.append(c)
+            if c == '\\' and i + 1 < len(js):
+                buf.append(js[i + 1])
+                i += 2
+                continue
+            if c == quote_char:
+                parts.append(''.join(buf))
+                buf = []
+                quote_open = False
+                quote_char = ''
+            i += 1
+            continue
+        if c in ('"', "'", '`'):
+            if buf:
+                parts.append(re.sub(pattern, repl, ''.join(buf)))
+                buf = []
+            quote_open = True
+            quote_char = c
+            buf.append(c)
+            i += 1
+            continue
+        buf.append(c)
+        i += 1
+    if buf:
+        chunk = ''.join(buf)
+        parts.append(re.sub(pattern, repl, chunk) if not quote_open else chunk)
+    return ''.join(parts)
+
+
 def minify_js(js: str) -> str:
     # Remove /* */ comments (naive, but safe enough for our codebase)
     js = re.sub(r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/", "", js)
-    # Remove // comments (only when not in string) - simple line-based
-    lines = []
-    for line in js.splitlines():
-        # Preserve URLs like http:// by only splitting when // starts a comment
-        quote_open = False
-        quote_char = ''
-        out = []
-        i = 0
-        while i < len(line):
-            c = line[i]
-            if not quote_open and i+1 < len(line) and line[i] == '/' and line[i+1] == '/':
-                # start of comment
-                break
-            out.append(c)
-            if c in ('"', "'", '`'):
-                if not quote_open:
-                    quote_open = True
-                    quote_char = c
-                elif quote_char == c:
-                    quote_open = False
-                    quote_char = ''
-            if c == '\\' and quote_open:
-                # skip next char in string
-                if i+1 < len(line):
-                    out.append(line[i+1])
-                    i += 1
-            i += 1
-        lines.append(''.join(out))
-    js = '\n'.join(lines)
-    # Collapse whitespace
-    js = re.sub(r"\s+", " ", js)
-    # Keep newlines between statements to avoid ASI pitfalls minimally
-    js = re.sub(r"\s*;\s*", ";", js)
-    js = re.sub(r"\s*\{\s*", "{", js)
-    js = re.sub(r"\s*\}\s*", "}", js)
-    js = re.sub(r"\s*\(\s*", "(", js)
-    js = re.sub(r"\s*\)\s*", ")", js)
-    js = re.sub(r"\s*,\s*", ",", js)
+    js = '\n'.join(_strip_js_line_comment(line) for line in js.splitlines())
+    # Collapse whitespace outside strings only
+    js = _apply_outside_strings(js, r"\s+", " ")
+    js = _apply_outside_strings(js, r"\s*;\s*", ";")
+    js = _apply_outside_strings(js, r"\s*\{\s*", "{")
+    js = _apply_outside_strings(js, r"\s*\}\s*", "}")
+    js = _apply_outside_strings(js, r"\s*\(\s*", "(")
+    js = _apply_outside_strings(js, r"\s*\)\s*", ")")
+    js = _apply_outside_strings(js, r"\s*,\s*", ",")
     return js.strip()
 
 def minify_css(css: str) -> str:
