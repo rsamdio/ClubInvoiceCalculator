@@ -1,9 +1,27 @@
 User-agent: *
 Allow: /
-Disallow: /admin
+Disallow: /admin.html
 
-# Sitemap location
 Sitemap: https://dues.rsamdio.org/sitemap.xml
 
-# Crawl delay (optional)
-Crawl-delay: 1
+# Generative engines / AI crawlers — allow public estimate docs
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://accounts.google.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+
+    <title>How RI Dues Work | Rotaract Club Invoice Calculator</title>
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow">
+    <meta name="description" content="How the Rotaract Club Invoice Calculator models January 1 RI dues: Community-Based $8, University-Based $5, prorated catch-up, and join-timing outcomes.">
+    <meta name="author" content="Rotaract South Asia MDIO">
+    <link rel="canonical" href="https://dues.rsamdio.org/how-ri-dues-work.html">
+
+    <meta property="og:title" content="How RI Dues Work | Rotaract Club Invoice Calculator">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dues.rsamdio.org/how-ri-dues-work.html">
+    <meta property="og:site_name" content="Rotaract Club Invoice Calculator" />
+    <meta property="og:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
+    <meta property="og:description" content="January 1 snapshot billing, $8/$5 annual rates, and catch-up proration as modeled by the RSAMDIO Club Invoice Calculator.">
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="How RI Dues Work | Rotaract Club Invoice Calculator" />
+    <meta name="twitter:description" content="January 1 snapshot billing, $8/$5 annual rates, and catch-up proration for Rotaract club invoice estimates." />
+    <meta name="twitter:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta name="twitter:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
+
+    <link rel="icon" type="image/webp" href="converted-images/favicon.webp">
+    <link rel="icon" type="image/x-icon" href="converted-images/favicon.ico">
+    <link rel="shortcut icon" href="converted-images/favicon.ico">
+
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
+    <link rel="stylesheet" href="./styles.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4371E35K36"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-4371E35K36');
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "DefinedTermSet",
+        "name": "Rotaract Club Invoice Calculator dues terms",
+        "url": "https://dues.rsamdio.org/how-ri-dues-work.html",
+        "hasDefinedTerm": [
+            {
+                "@type": "DefinedTerm",
+                "name": "Community-Based",
+                "description": "Club base type billed at $8 USD annual RI dues per member on this estimate."
+            },
+            {
+                "@type": "DefinedTerm",
+                "name": "University-Based",
+                "description": "Club base type billed at $5 USD annual RI dues per member on this estimate."
+            },
+            {
+                "@type": "DefinedTerm",
+                "name": "Invoice year",
+                "description": "The January–December RI period you are estimating; invoice date is 1 January of that year."
+            },
+            {
+                "@type": "DefinedTerm",
+                "name": "Prorated catch-up",
+                "description": "Partial-year dues for months in the prior calendar year, calculated as (Annual ÷ 12) × months, typically appearing on the next January invoice for mid-year joiners."
+            }
+        ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Rotaract Club Invoice Calculator",
+                "item": "https://dues.rsamdio.org/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "How RI dues work",
+                "item": "https://dues.rsamdio.org/how-ri-dues-work.html"
+            }
+        ]
+    }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7fafc; color: #4a5568; margin: 0; padding: 0; }
+        .method-content { max-width: 860px; margin: 0 auto; line-height: 1.7; }
+        .method-content h2 { color: #2d3748; font-size: 1.35rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; }
+        .method-content p { margin-bottom: 0.85rem; }
+        .method-content dt { font-weight: 600; color: #2d3748; margin-top: 0.75rem; }
+        .method-content dd { margin-left: 0; margin-bottom: 0.5rem; color: #4a5568; }
+        .outcome-table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.925rem; }
+        .outcome-table th, .outcome-table td { border: 1px solid #e2e8f0; padding: 0.65rem 0.75rem; text-align: left; vertical-align: top; }
+        .outcome-table th { background: #f7fafc; font-weight: 600; color: #2d3748; }
+        .quote-block { border-left: 3px solid #93c5fd; background: #eff6ff; padding: 0.85rem 1rem; margin: 1rem 0; color: #1e3a5f; font-size: 0.95rem; }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-10">
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 mb-6 border border-blue-100">
+                <picture>
+                    <source srcset="converted-images/rsamdio.webp" type="image/webp">
+                    <img src="rsamdio.png" alt="RSAMDIO Logo" class="mx-auto h-20 mb-5 drop-shadow-lg" decoding="async" fetchpriority="high">
+                </picture>
+                <h1 class="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">How RI Dues Work on This Estimate</h1>
+                <p class="text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">The January 1 snapshot model used by the Rotaract Club Invoice Calculator (RSAMDIO)</p>
+            </div>
+        </header>
+
+        <nav class="mb-8" aria-label="Page navigation">
+            <div class="flex flex-wrap justify-center gap-3">
+                <a href="index.html" class="btn btn-primary">Open Calculator</a>
+                <a href="faq.html" class="btn btn-secondary">FAQ</a>
+            </div>
+        </nav>
+
+        <main class="method-content">
+            <div class="card p-6 sm:p-8 shadow-lg border-0">
+                <p>
+                    Rotary International Club Invoices are based on membership as of <strong>1 January</strong>.
+                    This calculator produces a <strong>planning estimate</strong> that follows that snapshot for club treasurers — it is not the official invoice.
+                </p>
+                <blockquote class="quote-block">
+                    “Your Club Invoice is based on your membership count as of 1 January.” Keep My Rotary membership updated by 31 December.
+                    <span class="block mt-2 text-sm">
+                        — Adapted from Rotary’s guidance;
+                        <a href="https://my.rotary.org/en/club-invoice-faq" target="_blank" rel="noopener noreferrer" class="underline font-medium">official Club Invoice FAQ</a>
+                    </span>
+                </blockquote>
+
+                <h2>Key terms</h2>
+                <dl>
+                    <dt>Community-Based</dt>
+                    <dd>Club base billed at <strong>$8 USD</strong> annual RI dues per member on this estimate.</dd>
+                    <dt>University-Based</dt>
+                    <dd>Club base billed at <strong>$5 USD</strong> annual RI dues per member on this estimate.</dd>
+                    <dt>Invoice year</dt>
+                    <dd>The January–December period you select; the invoice date is <strong>1 January</strong> of that year.</dd>
+                    <dt>Prorated catch-up</dt>
+                    <dd>Partial-year dues for months in the prior calendar year: <strong>(Annual ÷ 12) × months</strong>, typically on the next January invoice for mid-year joiners.</dd>
+                </dl>
+
+                <h2>Annual rates (this calculator)</h2>
+                <table class="outcome-table">
+                    <caption class="sr-only">Annual RI dues rates</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Club base</th>
+                            <th scope="col">Annual RI dues (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Community-Based</td>
+                            <td>$8 / member / year</td>
+                        </tr>
+                        <tr>
+                            <td>University-Based</td>
+                            <td>$5 / member / year</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Join timing → outcome on this invoice</h2>
+                <table class="outcome-table">
+                    <caption class="sr-only">How join timing affects estimated dues</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Join timing</th>
+                            <th scope="col">Result on selected January invoice</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Active on 1 January (joined before prior year, or Jan 1 of invoice year)</td>
+                            <td>Full-year annual dues</td>
+                        </tr>
+                        <tr>
+                            <td>Joined mid-year in the <em>prior</em> calendar year</td>
+                            <td>Full year + prorated catch-up for months in the prior year</td>
+                        </tr>
+                        <tr>
+                            <td>Joined after 1 January of the <em>invoice</em> year</td>
+                            <td>$0 on this invoice; catch-up starts next January</td>
+                        </tr>
+                        <tr>
+                            <td>Left before 1 January of the invoice year</td>
+                            <td>$0 or catch-up-only, depending on join year</td>
+                        </tr>
+                        <tr>
+                            <td>Leave on or after 1 January of the invoice year</td>
+                            <td>No reduction on that January invoice (snapshot already taken)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h2>Tax and local currency</h2>
+                <p>
+                    The calculator applies your configured tax percentage separately to annual and prorated USD amounts, then converts using your USD-to-local rate for local totals. Adjust these in Invoice Summary on the calculator.
+                </p>
+
+                <div class="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-lg text-center">
+                    <p class="text-sm text-blue-800 mb-3">Estimate your club’s January invoice with your roster.</p>
+                    <a href="index.html" class="btn btn-primary inline-flex">Open the Calculator</a>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-12 py-6 border-t border-gray-100">
+            <div class="max-w-5xl mx-auto px-2 text-center">
+                <p class="text-xs text-gray-400 mb-2">© <span id="current-year"></span> Rotaract South Asia MDIO · Planning estimates only</p>
+                <div class="flex flex-wrap justify-center gap-3 text-xs">
+                    <a href="index.html" class="text-gray-400 hover:text-gray-600">Calculator</a>
+                    <a href="faq.html" class="text-gray-400 hover:text-gray-600">FAQ</a>
+                    <a href="terms.html" class="text-gray-400 hover:text-gray-600">Terms</a>
+                    <a href="privacy.html" class="text-gray-400 hover:text-gray-600">Privacy</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

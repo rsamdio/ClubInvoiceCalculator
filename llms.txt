@@ -1,0 +1,24 @@
+# Rotaract Club Invoice Calculator (RSAMDIO)
+> Free planning estimate for Rotaract club invoices based on a January 1 membership snapshot. Built by Rotaract South Asia MDIO.
+
+## Pages
+- Home: https://dues.rsamdio.org/
+- FAQ: https://dues.rsamdio.org/faq.html
+- How RI dues work (this estimate): https://dues.rsamdio.org/how-ri-dues-work.html
+- Privacy: https://dues.rsamdio.org/privacy.html
+- Terms: https://dues.rsamdio.org/terms.html
+- Organization: https://rsamdio.org/
+
+## Rates used in this estimate (USD per member per year)
+- Community-Based clubs: $8
+- University-Based clubs: $5
+
+## Billing model (this calculator)
+- Invoice date: 1 January of the selected invoice year
+- Members active on 1 January: full-year annual dues for that invoice year
+- Join after 1 January of the invoice year: $0 on this invoice; prorated catch-up appears on the next January invoice
+- Prior-year mid-year joiners: next January includes full year plus prorated catch-up for months in the prior year — formula (Annual ÷ 12) × months
+
+## Disclaimer
+This tool produces indicative planning estimates only. It is not an official Rotary International Club Invoice. Verify membership and amounts in My Rotary and with official RI sources before payment.
+Official Club Invoice FAQ: https://my.rotary.org/en/club-invoice-faq
