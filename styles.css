@@ -2089,6 +2089,7 @@ body.modal-open {
 .tool-card-yellow { background: #fefce8; border-color: #fde68a; }
 .tool-card-teal { background: #f0fdfa; border-color: #99f6e4; }
 .tool-card-rose { background: #fff1f2; border-color: #fecdd3; }
+.tool-card-indigo { background: #eef2ff; border-color: #c7d2fe; }
 
 .site-footer {
     margin-top: 2rem;
