@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.gstatic.com https://ssl.gstatic.com https://www.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.gstatic.com https://*.gstatic.com https://*.googleapis.com https://www.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
+
+    <title>Learn Club Invoice Basics | Rotaract Club Invoice Calculator</title>
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow">
+    <meta name="description" content="Free eight-stage worksheet by Rotaract South Asia MDIO to learn January 1 club invoices: $8/$5 dues, months, local currency, tax, and roster practice.">
+    <meta name="author" content="Rotaract South Asia MDIO">
+    <link rel="canonical" href="https://dues.rsamdio.org/learn/">
+    <link rel="alternate" type="text/plain" href="https://dues.rsamdio.org/llms.txt" title="llms.txt">
+
+    <meta property="og:title" content="Learn Club Invoice Basics | Rotaract Club Invoice Calculator">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dues.rsamdio.org/learn/">
+    <meta property="og:site_name" content="Rotaract Club Invoice Calculator" />
+    <meta property="og:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
+    <meta property="og:description" content="Practice how a Rotaract club January invoice is built. Same $8/$5 rates and 1 January snapshot as the RSAMDIO calculator. Self-paced or live session.">
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Learn Club Invoice Basics | Rotaract Club Invoice Calculator" />
+    <meta name="twitter:description" content="Eight-stage worksheet for January RI invoice estimates: $8/$5 dues, local currency, tax, and roster practice." />
+    <meta name="twitter:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta name="twitter:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
+
+    <meta name="theme-color" content="#004aad">
+    <meta name="apple-mobile-web-app-title" content="Club Invoice Basics">
+    <meta name="copyright" content="Rotaract South Asia MDIO">
+
+    <link rel="icon" type="image/webp" href="../converted-images/favicon.webp">
+    <link rel="icon" type="image/x-icon" href="../converted-images/favicon.ico">
+    <link rel="shortcut icon" href="../converted-images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="worksheet.css">
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4371E35K36"></script>
+    <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-4371E35K36');
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "LearningResource",
+        "name": "Club Invoice Basics",
+        "alternateName": "Rotaract Club Invoice Learning Worksheet",
+        "description": "Free eight-stage worksheet by Rotaract South Asia MDIO that teaches how the Rotaract Club Invoice Calculator estimates a January RI invoice.",
+        "url": "https://dues.rsamdio.org/learn/",
+        "image": "https://dues.rsamdio.org/converted-images/calculatorogimg.webp",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "learningResourceType": "Worksheet",
+        "educationalLevel": "Beginner",
+        "teaches": [
+            "January 1 Rotaract club invoice snapshot",
+            "Community-Based $8 and University-Based $5 annual dues",
+            "Monthly dues and local currency conversion",
+            "Catch-up proration and local tax"
+        ],
+        "isPartOf": {
+            "@type": "WebApplication",
+            "name": "Rotaract Club Invoice Calculator",
+            "url": "https://dues.rsamdio.org/"
+        },
+        "provider": {
+            "@type": "Organization",
+            "name": "Rotaract South Asia MDIO",
+            "url": "https://rsamdio.org/"
+        },
+        "author": {
+            "@type": "Organization",
+            "name": "Rotaract South Asia MDIO",
+            "url": "https://rsamdio.org/"
+        }
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is Club Invoice Basics?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "A free eight-stage worksheet by Rotaract South Asia MDIO that teaches how the Rotaract Club Invoice Calculator estimates a January RI invoice. You can learn at your own pace or join a live session with a 6-digit code."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Do I need a Google account to use the worksheet?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "No. Self-paced answers stay on your device. Live sessions use a 6-digit host code. You do not sign in with Google to learn."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What dues rates does the worksheet use?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "The same estimate rates as the calculator: $8 USD per member per year for Community-Based clubs and $5 USD for University-Based clubs, billed as a 1 January snapshot."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Rotaract Club Invoice Calculator",
+                "item": "https://dues.rsamdio.org/"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Club Invoice Basics",
+                "item": "https://dues.rsamdio.org/learn/"
+            }
+        ]
+    }
+    </script>
+</head>
+<body class="is-landing">
+    <header class="ws-header">
+        <div class="ws-header-inner">
+            <div class="ws-brand">
+                <img src="../converted-images/rsamdio.webp" alt="Rotaract South Asia MDIO" class="ws-logo" width="40" height="40">
+                <div>
+                    <p class="ws-kicker">Learning worksheet</p>
+                    <h1>Club Invoice Basics</h1>
+                </div>
+            </div>
+            <div class="ws-header-actions">
+                <p id="save-status" class="ws-save-status" aria-live="polite"></p>
+                <button type="button" id="btn-reset" class="btn btn-secondary btn-sm">Reset worksheet</button>
+                <a href="../index.html" class="ws-link-quiet" target="_blank" rel="noopener noreferrer">Open the live calculator</a>
+            </div>
+        </div>
+        <nav class="ws-progress" aria-label="Worksheet stages">
+            <ol id="stage-nav"></ol>
+        </nav>
+    </header>
+
+    <main class="ws-main">
+        <section id="landing" class="ws-landing">
+            <p class="ws-stage-label">Club Invoice Basics</p>
+            <h2>How do you want to learn?</h2>
+            <p class="ws-lead">Practice how a Rotaract club January invoice is calculated, using the $8 / $5 rates, and drive the similar values as that of <a href="../index.html" class="ws-lead-link">Club Invoice Calculator</a> by <a href="https://rsamdio.org/" class="ws-lead-link" target="_blank" rel="noopener noreferrer">Rotaract South Asia MDIO</a>. Go at your own pace, or join a live session with a host.</p>
+            <div class="ws-landing-cards">
+                <button type="button" id="btn-self-pace" class="ws-landing-card">
+                    <span class="ws-landing-card-title">Learn at my own pace</span>
+                    <span class="ws-landing-card-meta">Your answers stay on this phone. You do not need to sign in.</span>
+                </button>
+                <button type="button" id="btn-join-live" class="ws-landing-card">
+                    <span class="ws-landing-card-title">Join a live session</span>
+                    <span class="ws-landing-card-meta">Type the 6-digit code your host shows on the screen.</span>
+                </button>
+            </div>
+            <a href="host.html" class="ws-host-link">I’m running a session</a>
+        </section>
+
+        <section id="join-panel" class="ws-stage" hidden>
+            <p class="ws-stage-label">Live session</p>
+            <h2>Enter your session code</h2>
+            <p class="ws-lead">Type the 6-digit code on the host's screen. You do not need a Google account.</p>
+            <div class="ws-card">
+                <p class="ws-card-title">Session code</p>
+                <div class="ws-otp" id="join-otp" role="group" aria-label="6-digit session code">
+                    <input class="ws-otp-cell" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="one-time-code" aria-label="Digit 1">
+                    <input class="ws-otp-cell" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" aria-label="Digit 2">
+                    <input class="ws-otp-cell" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" aria-label="Digit 3">
+                    <input class="ws-otp-cell" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" aria-label="Digit 4">
+                    <input class="ws-otp-cell" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" aria-label="Digit 5">
+                    <input class="ws-otp-cell" type="text" inputmode="numeric" maxlength="1" pattern="[0-9]*" autocomplete="off" aria-label="Digit 6">
+                </div>
+            </div>
+            <p id="join-error" class="ws-reflect is-off" hidden></p>
+            <div class="ws-inline-actions">
+                <button type="button" id="btn-join-back" class="btn btn-secondary">Back</button>
+                <button type="button" id="btn-join-go" class="btn btn-primary">Continue</button>
+            </div>
+        </section>
+
+        <!-- Stage 0: Setup -->
+        <section class="ws-stage" data-stage="0" hidden>
+            <p class="ws-stage-label">Stage 1 of 8</p>
+            <h2>Who is filling this worksheet?</h2>
+            <p id="lead-setup" class="ws-lead">We will use your name and club type in the questions that follow.</p>
+
+            <div class="ws-stack">
+                <div class="ws-card">
+                    <p class="ws-card-title">About you</p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Your name</span>
+                            <input type="text" id="learner-name" autocomplete="name" placeholder="e.g. Priya">
+                        </label>
+                        <label class="ws-field">
+                            <span>Your role</span>
+                            <input type="text" id="learner-role" placeholder="e.g. Club Treasurer">
+                        </label>
+                        <label class="ws-field ws-span-2" id="live-email-field" hidden>
+                            <span>Email address</span>
+                            <input type="email" id="learner-email" autocomplete="email" placeholder="you@example.com">
+                            <span class="ws-field-note">We may use this for a follow-up or a certificate. It is not used to sign you in.</span>
+                        </label>
+                        <label class="ws-field">
+                            <span>District number</span>
+                            <input type="text" id="learner-district" inputmode="numeric" placeholder="e.g. 3232">
+                        </label>
+                        <label class="ws-field">
+                            <span>Club name</span>
+                            <input type="text" id="club-name" placeholder="e.g. Rotaract Club of Chennai">
+                        </label>
+                    </div>
+                </div>
+
+                <div class="ws-card">
+                    <p class="ws-card-title">Choose your club base</p>
+                    <p class="ws-card-help">University-based and community-based clubs pay different annual RI dues. Pick yours once. Every later number uses this.</p>
+                    <div class="ws-choice-row" role="radiogroup" aria-label="Club base">
+                        <button type="button" class="ws-choice" data-base="university">
+                            <span class="ws-choice-title">Institution / University-Based</span>
+                            <span class="ws-choice-meta">Campus clubs</span>
+                        </button>
+                        <button type="button" class="ws-choice" data-base="community">
+                            <span class="ws-choice-title">Community-Based</span>
+                            <span class="ws-choice-meta">Community clubs</span>
+                        </button>
+                    </div>
+                    <p id="base-status" class="ws-inline-note" aria-live="polite"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stage 1: Invoice year -->
+        <section class="ws-stage" data-stage="1" hidden>
+            <p class="ws-stage-label">Stage 2 of 8</p>
+            <h2>What are you paying for?</h2>
+            <p id="lead-invoice" class="ws-lead">A January invoice covers one Rotary year. You are paying for that calendar year, not for random months.</p>
+
+            <div class="ws-callout">
+                <strong>Think first.</strong> If the invoice is dated January 2027, which months does that payment cover? Pick the start and the end.
+            </div>
+
+            <div class="ws-stack">
+            <div class="ws-period" data-period="2026">
+                <p class="ws-period-title">Jan 2026 invoice covers</p>
+                <div class="ws-period-row">
+                    <label class="ws-field">
+                        <span>Start month</span>
+                        <select data-check="invoice-2026-start-month" aria-label="Jan 2026 start month">
+                            <option value="">Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>Start year</span>
+                        <select data-check="invoice-2026-start-year" aria-label="Jan 2026 start year">
+                            <option value="">Year</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>End month</span>
+                        <select data-check="invoice-2026-end-month" aria-label="Jan 2026 end month">
+                            <option value="">Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>End year</span>
+                        <select data-check="invoice-2026-end-year" aria-label="Jan 2026 end year">
+                            <option value="">Year</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="ws-period" data-period="2027">
+                <p class="ws-period-title">Jan 2027 invoice covers</p>
+                <div class="ws-period-row">
+                    <label class="ws-field">
+                        <span>Start month</span>
+                        <select data-check="invoice-2027-start-month" aria-label="Jan 2027 start month">
+                            <option value="">Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>Start year</span>
+                        <select data-check="invoice-2027-start-year" aria-label="Jan 2027 start year">
+                            <option value="">Year</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>End month</span>
+                        <select data-check="invoice-2027-end-month" aria-label="Jan 2027 end month">
+                            <option value="">Month</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>End year</span>
+                        <select data-check="invoice-2027-end-year" aria-label="Jan 2027 end year">
+                            <option value="">Year</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </div>
+            </div>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="invoice">Check my thinking</button>
+            <div class="ws-reflect" data-reflect="invoice" hidden></div>
+        </section>
+
+        <!-- Stage 2: Months from join date -->
+        <section class="ws-stage" data-stage="2" hidden>
+            <p class="ws-stage-label">Stage 3 of 8</p>
+            <h2>How many months count?</h2>
+            <p id="lead-months" class="ws-lead">For a <strong>January 2027</strong> invoice, catch-up covers months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.</p>
+            <p class="ws-hint-static">If someone joins on the 1st, that month counts. If they join later in the month, start from the next month.</p>
+
+            <div class="ws-month-list">
+                <article class="ws-month-card">
+                    <div class="ws-month-date">
+                        <span class="ws-month-day">1</span>
+                        <span class="ws-month-meta">
+                            <strong>July 2026</strong>
+                            <span>Joined on the 1st</span>
+                        </span>
+                    </div>
+                    <label class="ws-field">
+                        <span>Months of 2026 that count</span>
+                        <select data-check="months-july" aria-label="Months for 1 July 2026">
+                            <option value="">Select months</option>
+                            <option value="0">0 months</option>
+                            <option value="1">1 month</option>
+                            <option value="2">2 months</option>
+                            <option value="3">3 months</option>
+                            <option value="4">4 months</option>
+                            <option value="5">5 months</option>
+                            <option value="6">6 months</option>
+                            <option value="7">7 months</option>
+                            <option value="8">8 months</option>
+                            <option value="9">9 months</option>
+                            <option value="10">10 months</option>
+                            <option value="11">11 months</option>
+                            <option value="12">12 months</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </article>
+                <article class="ws-month-card">
+                    <div class="ws-month-date">
+                        <span class="ws-month-day">17</span>
+                        <span class="ws-month-meta">
+                            <strong>August 2026</strong>
+                            <span>Joined after the 1st</span>
+                        </span>
+                    </div>
+                    <label class="ws-field">
+                        <span>Months of 2026 that count</span>
+                        <select data-check="months-aug" aria-label="Months for 17 August 2026">
+                            <option value="">Select months</option>
+                            <option value="0">0 months</option>
+                            <option value="1">1 month</option>
+                            <option value="2">2 months</option>
+                            <option value="3">3 months</option>
+                            <option value="4">4 months</option>
+                            <option value="5">5 months</option>
+                            <option value="6">6 months</option>
+                            <option value="7">7 months</option>
+                            <option value="8">8 months</option>
+                            <option value="9">9 months</option>
+                            <option value="10">10 months</option>
+                            <option value="11">11 months</option>
+                            <option value="12">12 months</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </article>
+                <article class="ws-month-card">
+                    <div class="ws-month-date">
+                        <span class="ws-month-day">3</span>
+                        <span class="ws-month-meta">
+                            <strong>October 2026</strong>
+                            <span>Joined after the 1st</span>
+                        </span>
+                    </div>
+                    <label class="ws-field">
+                        <span>Months of 2026 that count</span>
+                        <select data-check="months-oct" aria-label="Months for 3 October 2026">
+                            <option value="">Select months</option>
+                            <option value="0">0 months</option>
+                            <option value="1">1 month</option>
+                            <option value="2">2 months</option>
+                            <option value="3">3 months</option>
+                            <option value="4">4 months</option>
+                            <option value="5">5 months</option>
+                            <option value="6">6 months</option>
+                            <option value="7">7 months</option>
+                            <option value="8">8 months</option>
+                            <option value="9">9 months</option>
+                            <option value="10">10 months</option>
+                            <option value="11">11 months</option>
+                            <option value="12">12 months</option>
+                        </select>
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </article>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="months">Check my months</button>
+            <div class="ws-reflect" data-reflect="months" hidden></div>
+        </section>
+
+        <!-- Stage 3: USD rates -->
+        <section class="ws-stage" data-stage="3" hidden>
+            <p class="ws-stage-label">Stage 4 of 8</p>
+            <h2>Annual and per-month dues (USD)</h2>
+            <p id="lead-usd" class="ws-lead">You chose <strong id="chosen-base-label">your club base</strong>. Enter only those rates. Every money amount on this worksheet must be rounded to two decimals.</p>
+            <p class="ws-hint-static">Monthly dues are your annual USD divided by 12, then rounded to the nearest cent. Enter exactly two decimals, not the long division result. Later stages reuse this rounded figure, so a wrong cent here makes the final invoice wrong.</p>
+
+            <div class="ws-card">
+                <p class="ws-card-title">USD rates</p>
+                <div class="ws-grid-2">
+                    <label class="ws-field">
+                        <span>Annual dues for your club type (USD)</span>
+                        <input type="number" inputmode="decimal" step="0.01" data-check="annual-usd" placeholder="e.g. ?">
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>Per-month dues (USD)</span>
+                        <input type="number" inputmode="decimal" step="0.01" data-check="month-usd" placeholder="Nearest cent">
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="usd-rates">Check USD rates</button>
+            <div class="ws-reflect" data-reflect="usd-rates" hidden></div>
+        </section>
+
+        <!-- Stage 4: Local currency -->
+        <section class="ws-stage" data-stage="4" hidden>
+            <p class="ws-stage-label">Stage 5 of 8</p>
+            <h2>Convert to local currency</h2>
+            <p id="lead-inr" class="ws-lead">Congratulations. You got the USD rates right. This worksheet uses a sample rate of <strong>$1 = 96</strong> in local currency. Multiply your rounded USD amounts by 96.</p>
+            <p class="ws-hint-static">Use the two-decimal USD figures from the last stage. Annual local currency is annual USD times 96. Monthly local currency is the rounded monthly USD times 96. Keep two decimals again.</p>
+
+            <div class="ws-card">
+                <p class="ws-card-title">Local-currency amounts</p>
+                <div class="ws-grid-2">
+                    <label class="ws-field">
+                        <span>Annual dues per member</span>
+                        <input type="number" inputmode="decimal" step="0.01" data-check="annual-inr">
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                    <label class="ws-field">
+                        <span>Prorated dues / month</span>
+                        <input type="number" inputmode="decimal" step="0.01" data-check="month-inr">
+                        <span class="ws-field-feedback" hidden></span>
+                    </label>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="inr">Check local-currency amounts</button>
+            <div class="ws-reflect" data-reflect="inr" hidden></div>
+        </section>
+
+        <!-- Stage 5: Sample roster -->
+        <section class="ws-stage" data-stage="5" hidden>
+            <p class="ws-stage-label">Stage 6 of 8</p>
+            <h2>Sample roster for the Jan 2027 invoice</h2>
+            <p id="lead-roster" class="ws-lead">Here are five members. Who is still <strong>active on 1 January 2027</strong>? How many <strong>2026 months</strong> of catch-up apply?</p>
+            <p class="ws-hint-static">A leave date before 1 Jan 2027 means they are not active on the invoice date. A join in 2024 (before the prior year) usually has no catch-up months on this invoice.</p>
+
+            <div class="ws-stack">
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 1</p>
+                    <p class="ws-member-chip"><span>Joined 10 February 2026</span><span>Left: none</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Active on 1 Jan 2027?</span>
+                            <select data-check="m1-active"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Months of 2026 that count</span>
+                            <select data-check="m1-months" aria-label="Member 1 months"><option value="">Select months</option><option value="0">0 months</option><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="4">4 months</option><option value="5">5 months</option><option value="6">6 months</option><option value="7">7 months</option><option value="8">8 months</option><option value="9">9 months</option><option value="10">10 months</option><option value="11">11 months</option><option value="12">12 months</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 2</p>
+                    <p class="ws-member-chip"><span>Joined 1 July 2026</span><span>Left: none</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Active on 1 Jan 2027?</span>
+                            <select data-check="m2-active"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Months of 2026 that count</span>
+                            <select data-check="m2-months" aria-label="Member 2 months"><option value="">Select months</option><option value="0">0 months</option><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="4">4 months</option><option value="5">5 months</option><option value="6">6 months</option><option value="7">7 months</option><option value="8">8 months</option><option value="9">9 months</option><option value="10">10 months</option><option value="11">11 months</option><option value="12">12 months</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 3</p>
+                    <p class="ws-member-chip"><span>Joined 30 December 2026</span><span>Left: none</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Active on 1 Jan 2027?</span>
+                            <select data-check="m3-active"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Months of 2026 that count</span>
+                            <select data-check="m3-months" aria-label="Member 3 months"><option value="">Select months</option><option value="0">0 months</option><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="4">4 months</option><option value="5">5 months</option><option value="6">6 months</option><option value="7">7 months</option><option value="8">8 months</option><option value="9">9 months</option><option value="10">10 months</option><option value="11">11 months</option><option value="12">12 months</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 4</p>
+                    <p class="ws-member-chip"><span>Joined 27 November 2024</span><span>Left: none</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Active on 1 Jan 2027?</span>
+                            <select data-check="m4-active"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Months of 2026 that count</span>
+                            <select data-check="m4-months" aria-label="Member 4 months"><option value="">Select months</option><option value="0">0 months</option><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="4">4 months</option><option value="5">5 months</option><option value="6">6 months</option><option value="7">7 months</option><option value="8">8 months</option><option value="9">9 months</option><option value="10">10 months</option><option value="11">11 months</option><option value="12">12 months</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 5</p>
+                    <p class="ws-member-chip"><span>Joined 12 March 2026</span><span>Left: 1 July 2026</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Active on 1 Jan 2027?</span>
+                            <select data-check="m5-active"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Months of 2026 that count</span>
+                            <select data-check="m5-months" aria-label="Member 5 months"><option value="">Select months</option><option value="0">0 months</option><option value="1">1 month</option><option value="2">2 months</option><option value="3">3 months</option><option value="4">4 months</option><option value="5">5 months</option><option value="6">6 months</option><option value="7">7 months</option><option value="8">8 months</option><option value="9">9 months</option><option value="10">10 months</option><option value="11">11 months</option><option value="12">12 months</option></select>
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <div class="ws-card">
+                    <p class="ws-card-title">Club totals</p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Total active members (count of Yes)</span>
+                            <input type="number" inputmode="numeric" data-check="total-active">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Total prorated months (sum)</span>
+                            <input type="number" inputmode="numeric" data-check="total-months">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="roster">Check roster</button>
+            <div class="ws-reflect" data-reflect="roster" hidden></div>
+        </section>
+
+        <!-- Stage 6: Per-member local currency -->
+        <section class="ws-stage" data-stage="6" hidden>
+            <p class="ws-stage-label">Stage 7 of 8</p>
+            <h2>Individual dues in local currency</h2>
+            <p id="lead-dues" class="ws-lead">Congratulations. You got the local-currency rates right. Use those annual and monthly amounts here. Active members get the annual amount. Prorated dues are the monthly amount times that member's months.</p>
+            <p id="hint-dues" class="ws-hint-static">You also got the roster months right. Each card shows that member's 2026 months. Annual is all or nothing on 1 January. Catch-up can still apply to someone who later left. Keep two decimals on every amount.</p>
+
+            <div class="ws-stack">
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 1</p>
+                    <p class="ws-member-chip"><span>Joined 10 February 2026</span><span>Left: none</span><span>10 months of 2026</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Annual due</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="a1">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Prorated dues</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="p1">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 2</p>
+                    <p class="ws-member-chip"><span>Joined 1 July 2026</span><span>Left: none</span><span>6 months of 2026</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Annual due</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="a2">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Prorated dues</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="p2">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 3</p>
+                    <p class="ws-member-chip"><span>Joined 30 December 2026</span><span>Left: none</span><span>0 months of 2026</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Annual due</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="a3">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Prorated dues</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="p3">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 4</p>
+                    <p class="ws-member-chip"><span>Joined 27 November 2024</span><span>Left: none</span><span>0 months of 2026</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Annual due</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="a4">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Prorated dues</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="p4">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+                <article class="ws-card">
+                    <p class="ws-card-title">Member 5</p>
+                    <p class="ws-member-chip"><span>Joined 12 March 2026</span><span>Left: 1 July 2026</span><span>4 months of 2026</span></p>
+                    <div class="ws-grid-2">
+                        <label class="ws-field">
+                            <span>Annual due</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="a5">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                        <label class="ws-field">
+                            <span>Prorated dues</span>
+                            <input type="number" inputmode="decimal" step="0.01" data-check="p5">
+                            <span class="ws-field-feedback" hidden></span>
+                        </label>
+                    </div>
+                </article>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="member-dues">Check member dues</button>
+            <div class="ws-reflect" data-reflect="member-dues" hidden></div>
+        </section>
+
+        <!-- Stage 7: Tax + final table -->
+        <section class="ws-stage" data-stage="7" hidden>
+            <p class="ws-stage-label">Stage 8 of 8</p>
+            <h2>Final table (Jan 2027 invoice)</h2>
+            <p id="lead-final" class="ws-lead">Congratulations. You got the roster and rates right. This is the same layout as the club invoice. Local tax on this sample is 18%.</p>
+            <p id="hint-final" class="ws-hint-static">Use your roster totals and the local-currency rates you already checked. Quantity times unit price equals the line total. Tax is 18% of the matching dues line, not 18% of the grand total. Previous balance is unpaid dues carried from an earlier invoice. This sample club has none, so enter 0.</p>
+
+            <div class="ws-card ws-tax-row">
+                <label class="ws-field">
+                    <span>Local tax %</span>
+                    <input type="number" inputmode="decimal" step="0.01" data-check="tax-pct">
+                    <span class="ws-field-feedback" hidden></span>
+                </label>
+            </div>
+
+            <div class="ws-invoice-wrap">
+                <table class="ws-invoice-sheet">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Quantity / unit of measure</th>
+                            <th>Description</th>
+                            <th>Unit price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ws-invoice-qty">
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Quantity, Rotaract Dues</span>
+                                    <input type="number" data-check="qty-members" aria-label="Rotaract Dues quantity">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td class="ws-invoice-unit">Members</td>
+                            <td class="ws-invoice-desc">Rotaract Dues</td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Unit price, Rotaract Dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="unit-annual">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Total, Rotaract Dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="tot-annual">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ws-invoice-qty">
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Quantity, Pro Rata Rotaract Dues</span>
+                                    <input type="number" data-check="qty-months" aria-label="Pro Rata Rotaract Dues quantity">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td class="ws-invoice-unit">Months</td>
+                            <td class="ws-invoice-desc">Pro Rata Rotaract Dues</td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Unit price, Pro Rata Rotaract Dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="unit-prorata">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Total, Pro Rata Rotaract Dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="tot-prorata">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ws-invoice-qty">
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Quantity, local tax on dues</span>
+                                    <input type="number" data-check="qty-tax-m" aria-label="Local tax on dues quantity">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td class="ws-invoice-unit">Members</td>
+                            <td class="ws-invoice-desc">Local tax (18%) Dues</td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Unit price, local tax on dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="unit-tax-a">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Total, local tax on dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="tot-tax-a">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ws-invoice-qty">
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Quantity, local tax on pro rata dues</span>
+                                    <input type="number" data-check="qty-tax-mo" aria-label="Local tax on pro rata quantity">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td class="ws-invoice-unit">Months</td>
+                            <td class="ws-invoice-desc">Local tax (18%) Dues Pro Rata Rotaract Dues</td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Unit price, local tax on pro rata dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="unit-tax-p">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Total, local tax on pro rata dues</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="tot-tax-p">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr class="ws-invoice-sum">
+                            <td colspan="4">TOTAL JAN-DEC CHARGES</td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Total Jan-Dec charges</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="grand">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="4">PREVIOUS BALANCE <span class="ws-invoice-note">unpaid amount from an earlier invoice. This sample has none, so enter 0.</span></td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Previous balance</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="prev-bal">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                        <tr class="ws-invoice-sum ws-invoice-balance">
+                            <td colspan="4">TOTAL CLUB BALANCE</td>
+                            <td>
+                                <label class="ws-field">
+                                    <span class="ws-sr-only">Total club balance</span>
+                                    <input type="number" inputmode="decimal" step="0.01" data-check="club-bal">
+                                    <span class="ws-field-feedback" hidden></span>
+                                </label>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn btn-secondary ws-check-btn" data-check-group="final">Check final invoice</button>
+            <div class="ws-reflect" data-reflect="final" hidden></div>
+
+            <div id="complete-banner" class="ws-complete" hidden>
+                <h3>Congratulations. Worksheet complete</h3>
+                <p>You got every stage right: invoice year, months, rates, local currency, the roster, tax, and totals. Try the live calculator with your own club next.</p>
+                <a class="btn btn-primary" href="../index.html" target="_blank" rel="noopener noreferrer">Open the live calculator</a>
+            </div>
+        </section>
+
+        <footer class="ws-nav-bar">
+            <button type="button" id="btn-prev" class="btn btn-secondary">Back</button>
+            <p id="nav-hint" class="ws-nav-hint"></p>
+            <button type="button" id="btn-next" class="btn btn-primary">Continue</button>
+        </footer>
+    </main>
+
+    <div id="ws-celebrate" class="host-modal learn-dialog" hidden>
+        <div class="host-modal-card learn-dialog-card ws-celebrate-card" role="dialog" aria-modal="true" aria-labelledby="ws-celebrate-title">
+            <p class="ws-stage-label">Worksheet complete</p>
+            <h3 id="ws-celebrate-title">Congratulations</h3>
+            <p id="ws-celebrate-body" class="ws-lead">You finished all eight stages.</p>
+            <div class="ws-inline-actions">
+                <button type="button" id="ws-celebrate-close" class="btn btn-secondary">Close</button>
+                <a class="btn btn-primary" href="../index.html" target="_blank" rel="noopener noreferrer">Open the live calculator</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js';
+        import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js';
+        import { firebaseConfig } from '../firebase-config.js';
+
+        const app = initializeApp(firebaseConfig);
+        window.learnFirebase = {
+            auth: getAuth(app),
+            db: getDatabase(app),
+            signInAnonymously,
+            onAuthStateChanged,
+            ref,
+            get,
+            set,
+            update
+        };
+    </script>
+    <script src="worksheet.js" defer></script>
+</body>
+</html>

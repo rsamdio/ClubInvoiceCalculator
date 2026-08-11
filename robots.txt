@@ -1,6 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
+Disallow: /learn/host.html
 
 Sitemap: https://dues.rsamdio.org/sitemap.xml
 

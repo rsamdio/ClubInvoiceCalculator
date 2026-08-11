@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -572,17 +572,23 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js';
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js';
         import { getFirestore, collection, query, orderBy, limit, getDocs, where, doc, getDoc, deleteDoc, updateDoc, setDoc, addDoc, getCountFromServer, startAfter } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js';
+        import { getDatabase, ref, set, remove } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js';
         import { firebaseConfig } from './firebase-config.js';
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const rtdb = getDatabase(app);
         const provider = new GoogleAuthProvider();
 
         // Make Firebase available globally
         window.firebaseAuth = auth;
         window.firebaseDB = db;
+        window.firebaseRtdb = rtdb;
+        window.firebaseRtdbRef = ref;
+        window.firebaseRtdbSet = set;
+        window.firebaseRtdbRemove = remove;
         window.firebaseProvider = provider;
         window.firebaseSignIn = signInWithPopup;
         window.firebaseSignOut = signOut;
@@ -706,13 +712,13 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-                        <p class="text-gray-600 mt-1">Manage users and administrators</p>
+                        <p class="text-gray-600 mt-1">Manage users, administrators, and workshop hosts</p>
                     </div>
                 </div>
             </div>
 
             <!-- Comprehensive Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Total Users -->
                 <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
                     <div class="flex items-center">
@@ -747,13 +753,28 @@
                     </div>
                 </div>
 
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500">Workshop Hosts</div>
+                            <div id="total-workshop-hosts" class="text-2xl font-bold text-indigo-600">-</div>
+                        </div>
+                    </div>
+                </div>
 
             </div>
 
             <!-- Navigation Tabs -->
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8">
                 <div class="p-6">
-                    <nav class="flex space-x-8" aria-label="Tabs">
+                    <nav class="flex flex-wrap gap-4" aria-label="Tabs">
                         <button id="users-tab" class="tab-button active flex items-center space-x-3">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -765,6 +786,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                             <span class="text-lg font-semibold">Administrators</span>
+                        </button>
+                        <button id="hosts-tab" class="tab-button flex items-center space-x-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span class="text-lg font-semibold">Workshop Hosts</span>
                         </button>
                     </nav>
                 </div>
@@ -978,6 +1005,35 @@
                     </div>
                 </div>
             </div>
+
+            <div id="hosts-content" class="tab-content hidden">
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Invite or remove by email</h3>
+                    <p class="text-gray-600 text-sm mb-4">The person must have signed in once (calculator or host console) so we can find their account.</p>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input
+                            type="email"
+                            id="host-email-search"
+                            placeholder="Enter user email address..."
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                        <button type="button" id="search-host-btn" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg">
+                            Search
+                        </button>
+                    </div>
+                    <div id="host-search-result" class="mt-6 hidden"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Workshop Hosts</h2>
+                        <button type="button" id="refresh-hosts-btn" class="btn-secondary px-4 py-2">
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="hosts-table-container"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1065,6 +1121,11 @@
                 lastFetched: null,
                 cacheDuration: 30 * 60 * 1000 // 30 minutes for admins
             },
+            hosts: {
+                data: null,
+                lastFetched: null,
+                cacheDuration: 30 * 60 * 1000
+            },
             stats: {
                 data: null,
                 lastFetched: null,
@@ -1123,6 +1184,17 @@
             }
         }
 
+        async function getWorkshopHostsCount() {
+            try {
+                const hostsRef = window.firebaseCollection(window.firebaseDB, 'workshopHosts');
+                const countSnapshot = await window.firebaseGetCountFromServer(hostsRef);
+                trackReads(1);
+                return countSnapshot.data().count;
+            } catch (error) {
+                return 0;
+            }
+        }
+
 
 
         // Optimized statistics loading with count queries
@@ -1133,14 +1205,16 @@
                     (Date.now() - firestoreCache.stats.lastFetched) < firestoreCache.stats.cacheDuration) {
                     return firestoreCache.stats.data;
                 }
-                const [usersCount, adminsCount] = await Promise.all([
+                const [usersCount, adminsCount, hostsCount] = await Promise.all([
                     getUsersCount(),
-                    getAdminsCount()
+                    getAdminsCount(),
+                    getWorkshopHostsCount()
                 ]);
 
                 const stats = {
                     totalUsers: usersCount,
-                    totalAdmins: adminsCount
+                    totalAdmins: adminsCount,
+                    totalWorkshopHosts: hostsCount
                 };
 
                 // Cache the statistics
@@ -1150,7 +1224,7 @@
 
                 return stats;
             } catch (error) {
-                return { totalUsers: 0, totalAdmins: 0 };
+                return { totalUsers: 0, totalAdmins: 0, totalWorkshopHosts: 0 };
             }
         }
 
@@ -1160,6 +1234,7 @@
                 // Update basic stats from count queries
                 updateElement('total-users', stats.totalUsers);
                 updateElement('total-admins', stats.totalAdmins);
+                updateElement('total-workshop-hosts', stats.totalWorkshopHosts);
             } catch (error) {
                 // Silent error handling
             }
@@ -1983,6 +2058,18 @@
             document.getElementById('no-user-found').classList.remove('hidden');
         }
 
+        async function syncRtdbFlag(path, enabled) {
+            if (!window.firebaseRtdb || !window.firebaseRtdbSet || !window.firebaseRtdbRemove) {
+                throw new Error('live-list-unavailable');
+            }
+            const node = window.firebaseRtdbRef(window.firebaseRtdb, path);
+            if (enabled) {
+                await window.firebaseRtdbSet(node, true);
+            } else {
+                await window.firebaseRtdbRemove(node);
+            }
+        }
+
         // Promote user to admin
         async function promoteUser() {
             if (!currentSearchedUser) return;
@@ -2006,6 +2093,12 @@
                     updatedBy: currentUser.email,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
+
+                try {
+                    await syncRtdbFlag('admins/' + currentSearchedUser.id, true);
+                } catch (mirrorError) {
+                    showNotification('Admin saved. Live-session access still needs a one-time host list setup.', 'error');
+                }
 
                 currentSearchedUser.isAdmin = true;
                 displayUserData(currentSearchedUser);
@@ -2043,6 +2136,11 @@
             try {
                 const adminDocRef = window.firebaseDoc(window.firebaseDB, 'admins', currentSearchedUser.id);
                 await window.firebaseDeleteDoc(adminDocRef);
+                try {
+                    await syncRtdbFlag('admins/' + currentSearchedUser.id, false);
+                } catch (mirrorError) {
+                    /* Firestore demote still succeeded */
+                }
 
                 currentSearchedUser.isAdmin = false;
                 displayUserData(currentSearchedUser);
@@ -2266,6 +2364,11 @@
 
             try {
                 await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'admins', adminId));
+                try {
+                    await syncRtdbFlag('admins/' + adminId, false);
+                } catch (mirrorError) {
+                    /* Firestore demote still succeeded */
+                }
                 showNotification('Administrator demoted successfully!', 'success');
                 
                 // Clear caches and refresh statistics
@@ -2329,6 +2432,213 @@
             }
         }
 
+        let allHostsData = [];
+        let currentHostSearch = null;
+
+        async function loadAllWorkshopHosts() {
+            try {
+                if (firestoreCache.hosts && firestoreCache.hosts.data &&
+                    (Date.now() - firestoreCache.hosts.lastFetched) < firestoreCache.hosts.cacheDuration) {
+                    allHostsData = firestoreCache.hosts.data;
+                    return;
+                }
+                const hostsRef = window.firebaseCollection(window.firebaseDB, 'workshopHosts');
+                const snap = await window.firebaseGetDocs(hostsRef);
+                trackReads(snap.size);
+                allHostsData = [];
+                snap.forEach((docSnap) => {
+                    allHostsData.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                firestoreCache.hosts.data = allHostsData;
+                firestoreCache.hosts.lastFetched = Date.now();
+            } catch (error) {
+                allHostsData = [];
+                throw error;
+            }
+        }
+
+        function displayWorkshopHosts() {
+            const container = document.getElementById('hosts-table-container');
+            if (!container) return;
+            if (!allHostsData.length) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No workshop hosts yet</h3>
+                        <p class="text-gray-500">Search by email above to invite the first host.</p>
+                    </div>
+                `;
+                return;
+            }
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${allHostsData.map((host) => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${escapeHTML(host.displayName || 'Unknown')}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(host.email || 'No email')}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(host.updatedAt)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button type="button" data-host-id="${escapeHTML(String(host.id || ''))}" class="remove-host-btn inline-flex items-center px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-md">
+                                            Remove Workshop Host
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            container.querySelectorAll('.remove-host-btn').forEach((btn) => {
+                btn.addEventListener('click', () => removeWorkshopHost(btn.getAttribute('data-host-id')));
+            });
+        }
+
+        function renderHostSearchResult() {
+            const box = document.getElementById('host-search-result');
+            if (!box || !currentHostSearch) {
+                if (box) box.classList.add('hidden');
+                return;
+            }
+            const user = currentHostSearch;
+            const actionLabel = user.isWorkshopHost ? 'Remove Workshop Host' : 'Invite as Workshop Host';
+            const actionClass = user.isWorkshopHost
+                ? 'bg-orange-500 hover:bg-orange-600'
+                : 'bg-green-600 hover:bg-green-700';
+            box.classList.remove('hidden');
+            box.innerHTML = `
+                <div class="border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <p class="text-lg font-semibold text-gray-900">${escapeHTML(user.displayName || 'Unnamed user')}</p>
+                        <p class="text-sm text-gray-600">${escapeHTML(user.email || '')}</p>
+                        <p class="text-xs mt-1 ${user.isWorkshopHost ? 'text-green-700' : 'text-gray-500'}">
+                            ${user.isWorkshopHost ? 'Already a workshop host' : 'Not a workshop host'}
+                        </p>
+                    </div>
+                    <button type="button" id="toggle-host-btn" class="inline-flex items-center px-4 py-2 ${actionClass} text-white font-medium rounded-lg">
+                        ${actionLabel}
+                    </button>
+                </div>
+            `;
+            const toggleBtn = document.getElementById('toggle-host-btn');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    if (user.isWorkshopHost) removeWorkshopHost(user.id);
+                    else inviteWorkshopHost(user);
+                });
+            }
+        }
+
+        async function searchWorkshopHostByEmail(email) {
+            if (!email || !email.trim()) {
+                showNotification('Please enter a valid email address', 'error');
+                return;
+            }
+            try {
+                const usersRef = window.firebaseCollection(window.firebaseDB, 'users');
+                const q = window.firebaseQuery(usersRef, window.firebaseWhere('email', '==', email.trim().toLowerCase()));
+                const snap = await window.firebaseGetDocs(q);
+                if (snap.empty) {
+                    currentHostSearch = null;
+                    const box = document.getElementById('host-search-result');
+                    if (box) {
+                        box.classList.remove('hidden');
+                        box.innerHTML = '<p class="text-gray-600">No user found with this email. They need to sign in once first.</p>';
+                    }
+                    return;
+                }
+                const docSnap = snap.docs[0];
+                const hostDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDB, 'workshopHosts', docSnap.id));
+                currentHostSearch = {
+                    id: docSnap.id,
+                    ...docSnap.data(),
+                    isWorkshopHost: hostDoc.exists()
+                };
+                renderHostSearchResult();
+            } catch (error) {
+                showNotification('Could not search for that email.', 'error');
+            }
+        }
+
+        async function inviteWorkshopHost(user) {
+            if (!user) return;
+            const confirmed = await showConfirm({
+                title: 'Invite as Workshop Host',
+                message: `Invite ${user.displayName || user.email} to run live learning sessions? They will not become a calculator admin.`,
+                confirmText: 'Invite as Workshop Host',
+                cancelText: 'Cancel',
+                confirmButtonClass: 'confirm-btn-success'
+            });
+            if (!confirmed) return;
+            try {
+                await window.firebaseSetDoc(window.firebaseDoc(window.firebaseDB, 'workshopHosts', user.id), {
+                    email: user.email,
+                    displayName: user.displayName || '',
+                    updatedBy: currentUser.email,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+                try {
+                    await syncRtdbFlag('workshopHosts/' + user.id, true);
+                } catch (mirrorError) {
+                    showNotification('Host saved. Live-session access still needs a one-time host list setup.', 'error');
+                }
+                if (currentHostSearch && currentHostSearch.id === user.id) {
+                    currentHostSearch.isWorkshopHost = true;
+                    renderHostSearchResult();
+                }
+                clearCache('hosts');
+                clearCache('stats');
+                await loadAllWorkshopHosts();
+                displayWorkshopHosts();
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
+                showNotification('Workshop host invited.', 'success');
+            } catch (error) {
+                showNotification('Failed to invite workshop host.', 'error');
+            }
+        }
+
+        async function removeWorkshopHost(hostId) {
+            if (!hostId) return;
+            const confirmed = await showConfirm({
+                title: 'Remove Workshop Host',
+                message: 'They will no longer be able to create or run live sessions.',
+                confirmText: 'Remove Workshop Host',
+                cancelText: 'Cancel',
+                confirmButtonClass: 'confirm-btn-danger'
+            });
+            if (!confirmed) return;
+            try {
+                await window.firebaseDeleteDoc(window.firebaseDoc(window.firebaseDB, 'workshopHosts', hostId));
+                try {
+                    await syncRtdbFlag('workshopHosts/' + hostId, false);
+                } catch (mirrorError) {
+                    /* Firestore remove still succeeded */
+                }
+                if (currentHostSearch && currentHostSearch.id === hostId) {
+                    currentHostSearch.isWorkshopHost = false;
+                    renderHostSearchResult();
+                }
+                clearCache('hosts');
+                clearCache('stats');
+                await loadAllWorkshopHosts();
+                displayWorkshopHosts();
+                const stats = await loadDashboardStatistics();
+                updateStatisticsDisplay(stats);
+                showNotification('Workshop host removed.', 'success');
+            } catch (error) {
+                showNotification('Failed to remove workshop host.', 'error');
+            }
+        }
+
         async function switchTab(tabName) {
             // Hide all tab contents
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -2382,6 +2692,16 @@
                     await loadAllAdmins();
                 }
                 displayAllAdmins();
+            } else if (tabName === 'hosts') {
+                try {
+                    if (allHostsData.length === 0) {
+                        await loadAllWorkshopHosts();
+                    }
+                    displayWorkshopHosts();
+                } catch (error) {
+                    displayWorkshopHosts();
+                    showNotification('Could not load workshop hosts. Deploy the latest Firestore rules, then refresh.', 'error');
+                }
             }
         }
 
@@ -2422,17 +2742,22 @@
             const elements = {
                 usersTab: document.getElementById('users-tab'),
                 adminsTab: document.getElementById('admins-tab'),
+                hostsTab: document.getElementById('hosts-tab'),
                 searchBtn: document.getElementById('search-user-btn'),
                 emailInput: document.getElementById('user-email-search'),
                 promoteBtn: document.getElementById('promote-user-btn'),
                 demoteBtn: document.getElementById('demote-user-btn'),
                 deleteBtn: document.getElementById('delete-user-btn'),
-                refreshAdminsBtn: document.getElementById('refresh-admins-btn')
+                refreshAdminsBtn: document.getElementById('refresh-admins-btn'),
+                searchHostBtn: document.getElementById('search-host-btn'),
+                hostEmailInput: document.getElementById('host-email-search'),
+                refreshHostsBtn: document.getElementById('refresh-hosts-btn')
             };
             
             // Tab switching
             if (elements.usersTab) elements.usersTab.addEventListener('click', () => switchTab('users'));
             if (elements.adminsTab) elements.adminsTab.addEventListener('click', () => switchTab('admins'));
+            if (elements.hostsTab) elements.hostsTab.addEventListener('click', () => switchTab('hosts'));
 
             // Search functionality
             if (elements.searchBtn && elements.emailInput) {
@@ -2477,6 +2802,32 @@
             if (exportMemberRosterBtn) exportMemberRosterBtn.addEventListener('click', exportMemberRosterAsCSV);
 
             // Admin refresh
+            if (elements.searchHostBtn && elements.hostEmailInput) {
+                elements.searchHostBtn.addEventListener('click', () => {
+                    searchWorkshopHostByEmail(elements.hostEmailInput.value.trim());
+                });
+                elements.hostEmailInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchWorkshopHostByEmail(elements.hostEmailInput.value.trim());
+                    }
+                });
+            }
+            if (elements.refreshHostsBtn) {
+                elements.refreshHostsBtn.addEventListener('click', async () => {
+                    try {
+                        clearCache('hosts');
+                        await loadAllWorkshopHosts();
+                        displayWorkshopHosts();
+                        const stats = await loadDashboardStatistics();
+                        updateStatisticsDisplay(stats);
+                        showNotification('Workshop hosts refreshed.', 'success');
+                    } catch (error) {
+                        showNotification('Failed to refresh workshop hosts.', 'error');
+                    }
+                });
+            }
+
             if (elements.refreshAdminsBtn) elements.refreshAdminsBtn.addEventListener('click', async () => {
                 try {
                     // Clear cache and reload

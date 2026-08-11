@@ -3,6 +3,9 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "database": {
+    "rules": "database.rules.json"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
@@ -14,7 +17,13 @@
       "AGENTS.md",
       "README.md",
       "build_minify.py",
-      "**/*.md"
+      "**/*.md",
+      "learning/**",
+      "ref/**",
+      "**/*.pdf",
+      "database.rules.json",
+      "firestore.rules",
+      "firestore.indexes.json"
     ],
     "headers": [
       {
@@ -34,7 +43,7 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://docs.google.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://rsamdio.org https://www.rsamdio.org http://localhost:3000"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.googletagmanager.com https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://docs.google.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self' https://rsamdio.org https://www.rsamdio.org http://localhost:3000"
           }
         ]
       },
@@ -51,7 +60,20 @@
           },
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+            "value": "default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://www.googleapis.com https://apis.google.com; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+          }
+        ]
+      },
+      {
+        "source": "learn/host.html",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
           }
         ]
       },
@@ -61,6 +83,15 @@
           {
             "key": "Cache-Control",
             "value": "public,max-age=31536000,immutable"
+          }
+        ]
+      },
+      {
+        "source": "learn/**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public,max-age=300"
           }
         ]
       }

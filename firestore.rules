@@ -48,5 +48,11 @@ service cloud.firestore {
       // Prevent deleting your own admin doc (reduces last-admin lockout risk)
       allow delete: if isAdmin() && request.auth.uid != uid;
     }
+
+    match /workshopHosts/{uid} {
+      allow get: if isSelf(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

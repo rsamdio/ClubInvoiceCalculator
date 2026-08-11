@@ -7,7 +7,8 @@
     storageBucket: "clubinvoicecalculator.firebasestorage.app",
     messagingSenderId: "1010215102213",
     appId: "1:1010215102213:web:48d8280eefc5b4d738b96c",
-    measurementId: "G-083Q3E73D9"
+    measurementId: "G-083Q3E73D9",
+    databaseURL: "https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app"
   };
 
 export { firebaseConfig };

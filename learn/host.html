@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://ssl.gstatic.com https://www.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.gstatic.com https://ssl.gstatic.com https://*.gstatic.com https://*.googleapis.com https://www.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com https://ssl.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), unload=(self)">
+    <title>Session Host | Rotaract Club Invoice Calculator</title>
+    <meta name="description" content="Host console for Club Invoice Basics live sessions. Sign in to open a room and share a 6-digit code.">
+    <link rel="canonical" href="https://dues.rsamdio.org/learn/host.html">
+    <meta property="og:title" content="Session Host | Rotaract Club Invoice Calculator">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://dues.rsamdio.org/learn/host.html">
+    <meta property="og:site_name" content="Rotaract Club Invoice Calculator" />
+    <meta property="og:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta property="og:image:type" content="image/webp" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
+    <meta property="og:description" content="Host console for Club Invoice Basics live sessions. Sign in to open a room and share a 6-digit code.">
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Session Host | Rotaract Club Invoice Calculator" />
+    <meta name="twitter:description" content="Host console for Club Invoice Basics live sessions." />
+    <meta name="twitter:image" content="https://dues.rsamdio.org/converted-images/calculatorogimg.webp" />
+    <meta name="twitter:image:alt" content="Rotaract Club Invoice Calculator by Rotaract South Asia MDIO" />
+    <link rel="icon" type="image/webp" href="../converted-images/favicon.webp">
+    <link rel="icon" type="image/x-icon" href="../converted-images/favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="worksheet.css">
+</head>
+<body>
+    <header class="ws-header">
+        <div class="ws-header-inner">
+            <div class="ws-brand">
+                <img src="../converted-images/rsamdio.webp" alt="RSAMDIO" class="ws-logo" width="40" height="40">
+                <div>
+                    <p class="ws-kicker">Workshop host</p>
+                    <h1>Live session console</h1>
+                </div>
+            </div>
+            <div class="ws-header-actions">
+                <span id="host-user-label" class="ws-save-status"></span>
+                <button type="button" id="btn-host-signout" class="btn btn-secondary btn-sm" hidden>Sign out</button>
+                <a href="index.html" class="ws-link-quiet">Participant worksheet</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="ws-main host-main">
+        <section id="host-signed-out" class="ws-landing">
+            <p class="ws-stage-label">Hosts and calculator admins</p>
+            <h2>Sign in to run a session</h2>
+            <p class="ws-lead">Create a session, show the 6-digit code, and watch progress. Participants join with the code. They never sign in with Google.</p>
+            <button type="button" id="btn-host-signin" class="btn btn-primary">Sign in with Google</button>
+        </section>
+
+        <section id="host-checking" class="ws-landing" hidden>
+            <p class="ws-lead">Checking your access…</p>
+        </section>
+
+        <section id="host-denied" class="ws-landing" hidden>
+            <h2>You are not a session host yet</h2>
+            <p class="ws-lead">Calculator admins can host without being added to this list. If you are an admin, sign out and sign in again. Otherwise ask an admin to add you from the Workshop Hosts tab.</p>
+            <a href="../admin.html" class="btn btn-secondary">Open admin dashboard</a>
+        </section>
+
+        <section id="host-console" hidden>
+            <nav class="host-steps" aria-label="Host steps">
+                <button type="button" id="host-step-list" class="host-step is-on">
+                    <span class="host-step-num">1</span>
+                    <span>All sessions</span>
+                </button>
+                <span class="host-step-arrow" aria-hidden="true"></span>
+                <button type="button" id="host-step-session" class="host-step" disabled>
+                    <span class="host-step-num">2</span>
+                    <span id="host-step-session-label">This session</span>
+                </button>
+            </nav>
+            <p id="host-action-status" class="ws-inline-note" aria-live="polite"></p>
+
+            <div id="host-list-step">
+                <div class="host-toolbar">
+                    <div>
+                        <h2 class="host-heading">Your sessions</h2>
+                        <p class="ws-lead host-lead">Only rooms you created. Open one to see the classroom board. Other hosts run their own codes.</p>
+                    </div>
+                    <button type="button" id="btn-new-session" class="btn btn-primary">New session</button>
+                </div>
+                <div class="host-list-tools">
+                    <div id="host-list-filters" class="host-list-filters" role="tablist" aria-label="Filter sessions">
+                        <button type="button" class="host-list-filter is-on" data-filter="all">All</button>
+                        <button type="button" class="host-list-filter" data-filter="open">Open</button>
+                        <button type="button" class="host-list-filter" data-filter="closed">Closed</button>
+                    </div>
+                    <label class="host-search-label host-list-search">
+                        <span class="ws-sr-only">Search sessions</span>
+                        <input id="host-list-search" type="search" placeholder="Search by name or code" autocomplete="off">
+                    </label>
+                </div>
+                <div id="host-room-list" class="host-room-list"></div>
+            </div>
+
+            <div id="host-session-step" hidden>
+            <div id="host-active" class="host-active">
+                <div class="host-code-card">
+                    <p id="host-session-title" class="ws-stage-label">Club Invoice Basics</p>
+                    <p id="host-code-display" class="host-code">------</p>
+                    <p id="host-room-status" class="ws-inline-note">Waiting for people to join…</p>
+                    <div id="host-stats" class="host-stats" hidden>
+                        <div class="host-stat">
+                            <strong id="stat-joined">0</strong>
+                            <span>In the room</span>
+                        </div>
+                        <div class="host-stat">
+                            <strong id="stat-done">0</strong>
+                            <span id="stat-done-label">Finished</span>
+                        </div>
+                        <div class="host-stat">
+                            <strong id="stat-quiet">0</strong>
+                            <span>Quiet 2+ min</span>
+                        </div>
+                    </div>
+                    <div class="ws-inline-actions">
+                        <button type="button" id="btn-copy-code" class="btn btn-secondary">Copy code</button>
+                        <button type="button" id="btn-hide-names" class="btn btn-secondary">Hide names</button>
+                        <button type="button" id="btn-export" class="btn btn-secondary">Export CSV</button>
+                        <button type="button" id="btn-close-session" class="btn btn-secondary">Close this session</button>
+                    </div>
+                    <p id="host-closed-note" class="ws-inline-note" hidden>This session is closed. People cannot join or change answers.</p>
+                </div>
+
+                <div id="host-stage-chips" class="host-stage-chips"></div>
+                <div class="host-board-tools">
+                    <label class="host-search-label">
+                        <span class="ws-sr-only">Search participants</span>
+                        <input id="host-search" type="search" placeholder="Search name, email, club, or district" autocomplete="off">
+                    </label>
+                </div>
+
+                <div class="ws-table-wrap">
+                    <table class="ws-table host-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Club</th>
+                                <th>District</th>
+                                <th>Stage</th>
+                                <th>Last active</th>
+                                <th>Finished</th>
+                            </tr>
+                        </thead>
+                        <tbody id="host-participant-rows">
+                            <tr><td colspan="6">No one has joined yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="host-detail" class="host-modal" hidden>
+        <div class="host-modal-card">
+            <div class="host-modal-head">
+                <h3 id="host-detail-title">Participant</h3>
+                <button type="button" id="btn-close-detail" class="btn btn-secondary btn-sm">Close</button>
+            </div>
+            <p class="ws-lead host-detail-lead">Use this when someone is stuck. See which stages they have passed, then walk over and help them. You do not need to tap anything here.</p>
+            <div id="host-detail-body" class="host-detail-body"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js';
+        import { getDatabase, ref, get, set, update, onValue, off } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js';
+        import { firebaseConfig } from '../firebase-config.js';
+
+        const app = initializeApp(firebaseConfig);
+        window.hostFirebase = {
+            auth: getAuth(app),
+            firestore: getFirestore(app),
+            rtdb: getDatabase(app),
+            provider: new GoogleAuthProvider(),
+            signInWithPopup,
+            signOut,
+            onAuthStateChanged,
+            doc,
+            getDoc,
+            setDoc,
+            ref,
+            get,
+            set,
+            update,
+            onValue,
+            off
+        };
+    </script>
+    <script src="host.js" defer></script>
+</body>
+</html>
