@@ -4,15 +4,17 @@ Guidance for AI agents and developers working in this repository.
 
 ## Project summary
 
-Static web app for **Rotaract South Asia MDIO (RSAMDIO)** that calculates club membership invoices, manages member rosters, syncs data to Firebase, and generates PDF reports.
+Static web app for **Rotaract South Asia MDIO (RSAMDIO)** that calculates club membership invoices, manages member rosters, syncs data to Firebase, generates PDF reports, and teaches the same January invoice model in **Club Invoice Basics** (`/learn/`).
 
 | Item | Value |
 |------|-------|
 | Production URL | https://dues.rsamdio.org/ |
+| Learn worksheet | https://dues.rsamdio.org/learn/ |
+| Host console | https://dues.rsamdio.org/learn/host.html (noindex) |
 | Firebase project | `clubinvoicecalculator` |
 | Stack | Vanilla JS, HTML, CSS — **no npm / bundler** |
-| Backend | Firebase Auth (Google) + Firestore |
-| UI | Tailwind CSS (CDN) + `styles.css` |
+| Backend | Firebase Auth (Google + Anonymous for live join) + Firestore + RTDB (`asia-southeast1`) |
+| UI | Tailwind CSS (CDN) + `styles.css` / `learn/worksheet.css` |
 | Hosting | Firebase Hosting (`_redirects` handles Netlify → primary domain) |
 
 ## Repository layout
@@ -20,15 +22,26 @@ Static web app for **Rotaract South Asia MDIO (RSAMDIO)** that calculates club m
 ```
 ClubInvoiceCalculator/
 ├── index.html              # Main calculator (~2900 lines; UI + inline wiring + PDF trigger)
-├── admin.html              # Admin dashboard (~2800 lines; self-contained inline JS)
+├── admin.html              # Admin dashboard; Workshop Hosts tab
 ├── app.js                  # Core logic (~3500 lines): members, Firebase, bulk upload
+├── learn/
+│   ├── index.html          # Club Invoice Basics worksheet (self-paced + live join)
+│   ├── worksheet.js        # Worksheet stages, localStorage, live RTDB writes
+│   ├── worksheet.css       # Shared learn + host styles
+│   ├── host.html           # Live session console (noindex)
+│   └── host.js             # Host rooms, classroom board, two-step nav
+├── faq.html / how-ri-dues-work.html
+├── llms.txt / sitemap.xml / robots.txt
 ├── modules/
 │   ├── calculations.js     # Pure dues math + formatting (window.DuesCalculator, DuesFormatter)
 │   └── security.js         # Validation + sanitization (window.SecurityUtils, FormValidator)
 ├── pdf-worker.js           # Web Worker PDF generation (jsPDF + autoTable)
-├── firebase-config.js      # Firebase config (ESM export)
+├── firebase-config.js      # Firebase config (ESM export; includes databaseURL)
+├── firebase.json           # Hosting, Firestore, and RTDB deploy config
+├── database.rules.json     # RTDB rules for rooms / hostRooms / host flags
+├── firestore.rules         # users, admins, workshopHosts
 ├── styles.css              # Custom CSS (buttons, cards, dropdowns, tables)
-├── build_minify.py         # Generates *.min.css and *.min.js
+├── build_minify.py         # Generates *.min.css and *.min.js (calculator only)
 ├── firestore.indexes.json  # Firestore composite indexes for admin queries
 ├── privacy.html / terms.html
 ├── vendor/                 # Local libs (jspdf; xlsx/papaparse/autotable referenced but may be missing)
@@ -44,7 +57,9 @@ ClubInvoiceCalculator/
 
 ```
 index.html → app.js + modules/* + pdf-worker.js → Firebase Auth + Firestore
-admin.html → inline JS → Firestore (admin gate via admins/{uid})
+admin.html → inline JS → Firestore (admin gate via admins/{uid}; Workshop Hosts tab)
+learn/index.html → worksheet.js → localStorage and/or Anonymous Auth + RTDB
+learn/host.html → host.js → Google Auth + Firestore gate + RTDB rooms
 ```
 
 ## Data models
@@ -83,8 +98,25 @@ Logged when a PDF is generated. Capped at **10 most recent** entries (sorted by 
 |------------|--------|---------|
 | `users` | Firebase UID | Roster, settings, invoice summaries, profile metadata |
 | `admins` | Firebase UID | Admin access — **doc existence = admin** |
+| `workshopHosts` | Firebase UID | Learn-session hosts (separate from calculator admins) |
 
-Security rules (see `README.md`): users read/write own docs; admins can read/write any user doc.
+Security rules (see `README.md`): users read/write own docs; admins can read/write any user doc. Admins manage `workshopHosts`. Calculator admins can also host without being on that list.
+
+### Live learn rooms (RTDB)
+
+Regional URL: `https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app`
+
+RTDB cannot read Firestore, so host/admin gates are mirrored:
+
+| Path | Purpose |
+|------|---------|
+| `admins/{uid}` | `true` if calculator admin |
+| `workshopHosts/{uid}` | `true` if invited host |
+| `hostRooms/{uid}/{CODE}` | Index of rooms that host created |
+| `rooms/{CODE}/meta` | `{ title, status, createdBy, createdAt, closedAt, joinedCount?, completedCount? }` |
+| `rooms/{CODE}/participants/{anonUid}` | Progress + profile; self-write while room is open |
+
+Hosts only see rooms they created. Participant join uses **Anonymous Auth** (enable in Firebase Auth; auto-cleanup unused anonymous users). Join codes are 6 digits. `createdBy` / `joinedAt` / `completedAt` are write-once. Open rooms do not store live counts on `meta`; close snapshots `joinedCount` / `completedCount`.
 
 ## Dues calculation rules
 
@@ -121,7 +153,9 @@ Tax and local currency are applied in `updateTotal()` using `taxPercentage` and 
 3. **Bulk import:** CSV/XLSX → lazy-load PapaParse/XLSX → `validateMemberData()` → preview → `addBulkMembers()`.
 4. **Cloud sync:** Manual Save → `getCurrentData()` → `saveUserData()` / `loadUserData()` with local-vs-cloud conflict dialog.
 5. **PDF:** Inline in `index.html` → worker message → `logInvoiceSummary()` on success.
-6. **Admin:** Sign in → check `admins/{uid}` → search users by email, view roster/invoices, promote admins.
+6. **Admin:** Sign in → check `admins/{uid}` → search users by email, view roster/invoices, promote admins, invite/delete workshop hosts.
+7. **Learn (self-paced):** `/learn/` → localStorage `rsamdio-learn-worksheet-v1` → eight stages; no email, no sign-in.
+8. **Learn (live):** participant enters 6-digit code → Anonymous Auth → writes `rooms/{CODE}/participants/{uid}`. Host at `/learn/host.html` signs in with Google (admin or `workshopHosts/{uid}`) → two-step console (all sessions → this session).
 
 ## Public API (`window.appFunctions`)
 
@@ -142,10 +176,13 @@ HTML inline scripts depend on this object — do not rename or remove exports wi
 | PDF layout | `pdf-worker.js` |
 | Auth / save / load | `app.js` + `index.html` auth wiring |
 | Admin features | `admin.html` inline script |
-| Custom styling | `styles.css` + Tailwind classes in HTML |
-| Firebase project | `firebase-config.js` |
+| Workshop hosts | `admin.html` Workshop Hosts tab + `firestore.rules` + RTDB `workshopHosts/{uid}` |
+| Learn worksheet | `learn/index.html` + `learn/worksheet.js` + `learn/worksheet.css` |
+| Learn host console | `learn/host.html` + `learn/host.js` + `database.rules.json` |
+| Custom styling | `styles.css` + Tailwind classes in HTML; learn uses `worksheet.css` |
+| Firebase project | `firebase-config.js` (must keep `databaseURL` on asia-southeast1) |
 | Firestore indexes | `firestore.indexes.json` |
-| SEO / meta | `index.html`, `sitemap.xml`, `robots.txt` |
+| SEO / GEO | `index.html`, `learn/index.html`, `faq.html`, `how-ri-dues-work.html`, `sitemap.xml`, `robots.txt`, `llms.txt` |
 
 ## Build and deploy
 
@@ -159,11 +196,15 @@ Generates: `styles.min.css`, `app.min.js`, `modules/*.min.js`, `pdf-worker.min.j
 
 Production HTML should reference `.min.js` / `styles.min.css` (see `README.md`). Current `index.html` mixes minified and unminified scripts — verify before deploy.
 
-Deploy:
+`learn/*.js` and `learn/*.css` are **not** minified. Hosting gives them a short cache (`max-age=300`) so host/worksheet updates are not stuck for a year.
+
+Deploy (this project only: `clubinvoicecalculator`):
 
 ```bash
-firebase deploy
+firebase deploy --only hosting,database,firestore:rules --project clubinvoicecalculator
 ```
+
+Hosting alone is not enough for live rooms. Do not deploy this repo to other Firebase projects.
 
 ## Coding conventions for this repo
 
@@ -184,6 +225,12 @@ firebase deploy
 4. **Tailwind via CDN** — classes are JIT-compiled at runtime; no local Tailwind build.
 5. **`window.appFunctions` assigned twice** in `app.js` — second assignment (~line 3429) is the complete export with Firebase helpers.
 6. **Auth init split** — `initializeFirebaseAuth()` exists in `app.js` but primary auth flow is `initializeFirebaseAuthDirectly()` in `index.html`.
+7. **RTDB region** — database lives in `asia-southeast1`. A US `*.firebaseio.com` URL or a CSP that only allows `*.firebasedatabase.app` (one subdomain) will hang New session.
+8. **Anonymous Auth** — live join fails with `ADMIN_ONLY_OPERATION` if Anonymous sign-in is off.
+9. **Host vs admin** — calculator admins can host without `workshopHosts/{uid}`. RTDB still needs the mirrored `admins/{uid}: true` flag (written on first successful host action).
+10. **`[hidden]`** — learn CSS sets `[hidden] { display: none !important }` because `.btn` / `.learn-dialog-field` would otherwise override the attribute.
+11. **User-facing copy** — no long em dashes; say **local currency** and **local tax**, never INR / ₹ / India ICGST.
+12. **Do not index** `/learn/host.html` or `/admin.html`. Public learn page is `/learn/`.
 
 ## Internal utilities (`app.js`)
 
@@ -207,6 +254,10 @@ Manual QA (no automated test suite):
 - [ ] Google sign-in; save and reload cloud data
 - [ ] Generate PDF; verify summary logged for authenticated users
 - [ ] Admin: sign in as admin, search user, view roster and invoice history
+- [ ] Admin: Workshop Hosts tab list / invite / remove
+- [ ] `/learn/`: self-paced path; no email; stages check exact two-decimal money
+- [ ] Host: New session, join with 6-digit code, board updates, close, export CSV
+- [ ] Hosts only see their own sessions; two-step All sessions → This session
 
 ## Do not
 

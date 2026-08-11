@@ -14,10 +14,11 @@ Figures are estimates only. Official invoices come from Rotary (My Rotary). Dues
 |------|--------|
 | App | Vanilla HTML, CSS, JavaScript (no npm app toolchain) |
 | UI | Tailwind CSS (CDN) + `styles.css` / `styles.min.css` |
-| Auth / data | Firebase Auth (Google) + Cloud Firestore |
+| Auth / data | Firebase Auth (Google + Anonymous for live `/learn` join) + Cloud Firestore + Realtime Database (`asia-southeast1`) |
 | Firebase project | `clubinvoicecalculator` |
 | PDF | Web Worker (`pdf-worker.js`) with jsPDF + autoTable |
-| Admin | `admin.html` (access gated by `admins/{uid}` docs) |
+| Admin | `admin.html` (access gated by `admins/{uid}` docs; Workshop Hosts tab) |
+| Learn | `/learn/` worksheet + `/learn/host.html` live-session console |
 
 ## Features
 
@@ -28,19 +29,26 @@ Figures are estimates only. Official invoices come from Rotary (My Rotary). Dues
 - **Cloud backup (optional):** Google sign-in; **manual Save to Cloud only** (nothing autosaves). Button shows Unsaved / Saving / Saved while signed in
 - **Sign-in conflict:** if cloud data exists, choose current session or load from cloud
 - **First-visit help:** instructions modal matching the current UI flow
+- **Club Invoice Basics:** eight-stage worksheet at [`/learn/`](https://dues.rsamdio.org/learn/) (self-paced on-device, or live session via a 6-digit host code). Same $8 / $5 January 1 model as the calculator.
 
 ## Repository layout
 
 ```
 ClubInvoiceCalculator/
 ├── index.html              # Main calculator
-├── admin.html              # Admin dashboard
+├── admin.html              # Admin dashboard + Workshop Hosts
 ├── app.js / app.min.js     # Core app logic
+├── learn/                  # Club Invoice Basics worksheet + host console
+├── faq.html / how-ri-dues-work.html
+├── llms.txt / sitemap.xml / robots.txt
 ├── modules/
 │   ├── calculations.js     # Dues math (also mirrored in app.js)
 │   └── security.js         # Validation / sanitization (also mirrored in app.js)
 ├── pdf-worker.js           # PDF generation worker
-├── firebase-config.js      # Client Firebase config
+├── firebase-config.js      # Client Firebase config (includes RTDB URL)
+├── firebase.json           # Hosting + Firestore + RTDB
+├── database.rules.json     # Live-session RTDB rules
+├── firestore.rules         # users, admins, workshopHosts
 ├── styles.css              # Custom styles
 ├── build_minify.py         # Generates *.min.css / *.min.js
 ├── firestore.indexes.json  # Composite indexes for admin queries
@@ -65,7 +73,13 @@ ClubInvoiceCalculator/
    Then open `http://localhost:8080`.
 
 3. **Firebase (if using your own project)**  
-   Update `firebase-config.js`, enable Google Authentication and Firestore, and apply security rules (example below). This repo does not currently include `firebase.json` / `.firebaserc`; production hosting is configured outside the tree (Firebase Hosting and/or Netlify with `_redirects`).
+   Update `firebase-config.js` (keep `databaseURL` on the asia-southeast1 RTDB), enable Google Authentication, Anonymous Authentication (live `/learn` join), Firestore, and Realtime Database. Deploy rules from this repo:
+
+   ```bash
+   firebase deploy --only hosting,database,firestore:rules --project clubinvoicecalculator
+   ```
+
+   Production is Firebase Hosting on `dues.rsamdio.org`. `_redirects` still sends the Netlify subdomain there.
 
 4. **After editing JS or CSS**
    ```bash
@@ -97,6 +111,13 @@ ClubInvoiceCalculator/
 - On sign-in with existing cloud data, pick **current session** or **load from cloud**.
 - **Reset Roster** clears the session roster after confirmation (does not by itself update the cloud).
 
+### Club Invoice Basics (`/learn/`)
+1. Open [Learn Club Invoice Basics](https://dues.rsamdio.org/learn/).
+2. **Learn at my own pace** keeps answers on the device. No Google account.
+3. **Join a live session** uses the 6-digit code from a host. Email is for follow-up only, not a login.
+4. Hosts sign in at [`/learn/host.html`](https://dues.rsamdio.org/learn/host.html). Calculator admins can host; other hosts are invited from **Admin → Workshop Hosts**.
+5. The host console is two steps: all of *your* sessions, then that session’s classroom board. Other hosts cannot see your rooms.
+
 ## Data model
 
 ### Member (`users/{uid}.memberRoster[]`)
@@ -127,6 +148,7 @@ Logged when a PDF is generated for a signed-in user. Kept to the **10 most recen
 |------------|--------|---------|
 | `users` | Firebase UID | Roster, settings, invoice summaries, profile fields |
 | `admins` | Firebase UID | Admin access (`admin.html`); **document existence = admin** |
+| `workshopHosts` | Firebase UID | Learn-session hosts (admins can host without this doc) |
 
 ## Firestore rules
 
@@ -143,9 +165,20 @@ Do **not** deploy Pulse/RSAQA rules to this Firebase project. Bootstrap the firs
 ```javascript
 // users/{uid}: owner create/read/update; admin read/write/delete
 // admins/{uid}: self-read for gate; admin create/update; delete others only (not self)
+// workshopHosts/{uid}: self-get or admin; list/write admin only
 ```
 
 Older README snippet is superseded by the committed `firestore.rules` file.
+
+## Realtime Database rules
+
+Canonical rules live in [`database.rules.json`](database.rules.json):
+
+```bash
+firebase deploy --only database --project clubinvoicecalculator
+```
+
+Live rooms live at `rooms/{6-digit-code}`. Each host only lists rooms under `hostRooms/{theirUid}`. Participants join with Anonymous Auth and can write only their own participant node while the room is `open`.
 
 ## Dues rules (summary)
 
@@ -181,6 +214,12 @@ High-level behavior:
 - Serve over HTTP, not `file://`
 - Ensure `vendor/` contains jspdf, autotable, xlsx, and papaparse
 - Hard-refresh after changing JS/CSS; run `python3 build_minify.py` if you rely on `.min` assets
+
+**Learn / live sessions**
+- Enable Anonymous Authentication for join-with-code
+- Hosts must be a calculator admin or listed under Workshop Hosts
+- Deploy RTDB rules (`database.rules.json`) and keep `databaseURL` on asia-southeast1
+- `/learn/host.html` is not a public page (noindex)
 
 ## Support
 
