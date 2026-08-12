@@ -56,39 +56,38 @@
         'm1-months': 'They joined 10 Feb 2026, after the 1st. What is the first countable month? Then count through December 2026.',
         'm2-active': 'Are they still a member on the invoice date?',
         'm2-months': 'They joined on 1 July, so July counts. How many months to December?',
-        'm3-active': 'A late-December join is still on the roster on 1 Jan. How much of 2026 can you bill as catch-up?',
+        'm3-active': 'A late-December join is still on the roster on 1 Jan. Are they active on the invoice date?',
         'm3-months': 'They joined 30 Dec, after the 1st. Is there a next month still inside 2026?',
         'm4-active': 'They joined in 2024 and never left. Are they active on 1 Jan 2027?',
-        'm4-months': 'Catch-up on a January 2027 invoice is about 2026 months. Did this person join in 2026?',
+        'm4-months': 'Pro Rata Dues on a January 2027 invoice is about 2026 months. Did this person join in 2026?',
         'm5-active': 'Compare the leave date with 1 January 2027.',
         'm5-months': 'They left on 1 July 2026. Count months from their effective start through the month they left.',
         'total-active': 'Count only the members you marked Yes.',
         'total-months': 'Add the five month numbers. Include zeros.',
-        'a1': 'If they are active, annual due is your annual local-currency amount. If not, it is 0.',
-        'a2': 'Same rule as Member 1. Are they active?',
-        'a3': 'Same rule. Active on 1 Jan gets the annual local-currency amount.',
-        'a4': 'Same rule. They joined long before 2026.',
+        'a1': 'If they are active on 1 Jan 2027, annual dues are your annual local-currency amount. If not, it is 0.',
+        'a2': 'Same rule as Member 1. Are they active on 1 Jan 2027?',
+        'a3': 'Same rule. Active on 1 Jan 2027 gets the annual dues amount.',
+        'a4': 'Same rule. They joined long before 2026. Are they active on 1 Jan 2027?',
         'a5': 'If they had already left before 1 Jan 2027, do they get annual dues on this invoice?',
-        'p1': 'Rounded monthly local-currency amount times this member\'s prorated months. Keep two decimals.',
-        'p2': 'Rounded monthly local-currency amount times this member\'s months. Keep two decimals.',
-        'p3': 'Rounded monthly local-currency amount times their months. What were their months?',
-        'p4': 'Rounded monthly local-currency amount times their months. What were their months?',
-        'p5': 'They can still have catch-up for 2026 even if they are not active on 1 Jan. Rounded monthly local-currency amount times their months.',
-        'tax-pct': 'This sample uses local tax of 18%.',
+        'p1': 'Rounded monthly local-currency amount times this member\'s unbilled 2026 months. Keep two decimals.',
+        'p2': 'Rounded monthly local-currency amount times this member\'s unbilled 2026 months. Keep two decimals.',
+        'p3': 'Rounded monthly local-currency amount times their unbilled 2026 months. What were their months?',
+        'p4': 'Rounded monthly local-currency amount times their unbilled 2026 months. What were their months?',
+        'p5': 'They can still have Pro Rata Dues for unbilled 2026 months even if they are not active on 1 Jan 2027. Monthly amount × their months.',
         'qty-members': 'This should match total active members.',
-        'unit-annual': 'Unit price is annual dues per member in local currency.',
-        'tot-annual': 'Active members times the annual local-currency amount.',
-        'qty-months': 'This should match total prorated months.',
-        'unit-prorata': 'Unit price is prorated dues per month in local currency.',
+        'unit-annual': 'Unit price is Annual Dues per member in local currency.',
+        'tot-annual': 'Active members times the Annual Dues local-currency amount.',
+        'qty-months': 'This should match total Pro Rata Dues months.',
+        'unit-prorata': 'Unit price is Pro Rata Dues per month in local currency.',
         'tot-prorata': 'Total months times the monthly local-currency amount.',
-        'qty-tax-m': 'Tax on annual dues uses the same member quantity.',
-        'unit-tax-a': '18% of the annual local-currency unit price. Round to two decimals.',
-        'tot-tax-a': '18% of the annual dues total. Round to two decimals.',
-        'qty-tax-mo': 'Tax on pro rata uses the same month quantity.',
-        'unit-tax-p': '18% of the monthly local-currency unit price. Round to two decimals. The raw 18% often has extra digits.',
-        'tot-tax-p': '18% of the prorated total. Round to two decimals.',
+        'qty-tax-m': 'Tax on Annual Dues uses the same member quantity.',
+        'unit-tax-a': 'This sample\'s 18% of the Annual Dues unit price. Round to two decimals.',
+        'tot-tax-a': 'This sample\'s 18% of the Annual Dues total. Round to two decimals.',
+        'qty-tax-mo': 'Tax on Pro Rata Dues uses the same month quantity.',
+        'unit-tax-p': 'This sample\'s 18% of the monthly local-currency unit price. Round to two decimals. The raw 18% often has extra digits.',
+        'tot-tax-p': 'This sample\'s 18% of the Pro Rata Dues total. Round to two decimals.',
         'grand': 'Add the four already-rounded money totals: Rotaract Dues, Pro Rata, and both local-tax lines.',
-        'prev-bal': 'Previous balance is unpaid dues from an earlier invoice. This sample club has none, so enter 0.',
+        'prev-bal': 'Previous balance is a carryover from earlier invoices. Unpaid dues increase what the club owes; a credit or overpayment reduces the bill. This sample has none, so enter 0.',
         'club-bal': 'Jan-Dec charges plus previous balance.'
     };
 
@@ -115,11 +114,11 @@
         },
         'member-dues': {
             ok: 'You got the per-member amounts right. Take these onto the invoice table next.',
-            off: 'Annual is all or nothing on 1 Jan. Prorated is the rounded monthly local-currency amount times months. Keep two decimals on every amount.'
+            off: 'Annual is all or nothing on 1 Jan 2027. Pro Rata Dues is the monthly local-currency amount × unbilled 2026 months from the previous invoice. Keep two decimals on every amount.'
         },
         final: {
             ok: 'You built the invoice correctly. You can now explain this table to a club.',
-            off: 'Use the same lines as the invoice: Members for Rotaract Dues, Months for Pro Rata, then 18% local tax on each. Add the four totals. Previous balance is unpaid dues from earlier. This sample is 0, so club balance matches Jan-Dec charges.'
+            off: 'Use the same lines as the invoice: Members for Rotaract Dues, Months for Pro Rata, then this sample\'s 18% local tax on each. Add the four totals. Previous balance is a carryover (unpaid adds; credit reduces). This sample is 0, so club balance matches Jan-Dec charges.'
         }
     };
 
@@ -198,7 +197,6 @@
             p3: { type: 'money', value: proratas[2] },
             p4: { type: 'money', value: proratas[3] },
             p5: { type: 'money', value: proratas[4] },
-            'tax-pct': { type: 'number', value: TAX },
             'qty-members': { type: 'number', value: activeCount },
             'unit-annual': { type: 'money', value: annualInr },
             'tot-annual': { type: 'money', value: totAnnual },
@@ -227,7 +225,7 @@
         inr: ['annual-inr', 'month-inr'],
         roster: ['m1-active', 'm1-months', 'm2-active', 'm2-months', 'm3-active', 'm3-months', 'm4-active', 'm4-months', 'm5-active', 'm5-months', 'total-active', 'total-months'],
         'member-dues': ['a1', 'a2', 'a3', 'a4', 'a5', 'p1', 'p2', 'p3', 'p4', 'p5'],
-        final: ['tax-pct', 'qty-members', 'unit-annual', 'tot-annual', 'qty-months', 'unit-prorata', 'tot-prorata', 'qty-tax-m', 'unit-tax-a', 'tot-tax-a', 'qty-tax-mo', 'unit-tax-p', 'tot-tax-p', 'grand', 'prev-bal', 'club-bal']
+        final: ['qty-members', 'unit-annual', 'tot-annual', 'qty-months', 'unit-prorata', 'tot-prorata', 'qty-tax-m', 'unit-tax-a', 'tot-tax-a', 'qty-tax-mo', 'unit-tax-p', 'tot-tax-p', 'grand', 'prev-bal', 'club-bal']
     };
 
     function fieldEl(key) {
@@ -746,7 +744,7 @@
         const months = document.getElementById('lead-months');
         if (months) {
             months.innerHTML = (prefix || '') +
-                'for a <strong>January 2027</strong> invoice, catch-up covers months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.';
+                'for a <strong>January 2027</strong> invoice, Pro Rata Dues covers months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.';
         }
 
         const usd = document.getElementById('lead-usd');
@@ -775,7 +773,7 @@
         const roster = document.getElementById('lead-roster');
         if (roster) {
             roster.innerHTML = (prefix || '') +
-                'here are five members. Who is still <strong>active on 1 January 2027</strong>? How many <strong>2026 months</strong> of catch-up apply?';
+                'here are five members. Who is still <strong>active on 1 January 2027</strong>? How many <strong>2026 months</strong> of Pro Rata Dues apply?';
         }
 
         const dues = document.getElementById('lead-dues');
@@ -786,18 +784,18 @@
                 dues.innerHTML = cheer +
                     'you got the local-currency rates right: <strong>' + annual +
                     '</strong> annual and <strong>' + monthly +
-                    '</strong> per month. Active members get ' + annual +
-                    '. Prorated dues are ' + monthly +
-                    ' times that member\'s months.';
+                    '</strong> per month. Active members get <strong>' + annual +
+                    '</strong> for 2027. Pro Rata Dues are <strong>' + monthly +
+                    '</strong> × that member\'s unbilled 2026 months.';
             } else {
                 dues.innerHTML = (prefix || '') +
-                    'use the rounded annual and monthly local-currency amounts you already worked out. Active members get the annual amount. Prorated dues are the monthly amount times that member\'s months. Keep two decimals.';
+                    'use the rounded annual and monthly local-currency amounts you already worked out. Active members get the annual amount for 2027. Pro Rata Dues are the monthly amount × that member\'s unbilled 2026 months (months not billed on the previous January invoice). Keep two decimals.';
             }
         }
 
         const hintDues = document.getElementById('hint-dues');
         if (hintDues) {
-            hintDues.innerHTML = 'You also got the roster months right. Each card shows that member\'s 2026 months. Annual is all or nothing on 1 January. Catch-up can still apply to someone who later left. Keep two decimals on every amount.';
+            hintDues.innerHTML = 'Each card already shows that member\'s unbilled 2026 months. Those months were not on the Jan 2026 invoice, so they appear as Pro Rata Dues here. Annual is only if they are active on 1 January 2027. Pro Rata can still apply if they left later in 2026. Keep two decimals.';
         }
 
         const fin = document.getElementById('lead-final');
@@ -811,18 +809,21 @@
                 fin.innerHTML = cheer +
                     'you got the roster and rates right. You have <strong>' + members +
                     ' active members</strong> and <strong>' + monthsTotal +
-                    ' months</strong> of catch-up. Annual dues are <strong>' + annual +
-                    '</strong> and monthly dues are <strong>' + monthly +
-                    '</strong>. Local tax is <strong>18%</strong>.';
+                    ' months</strong> of Pro Rata Dues. Annual Dues are <strong>' + annual +
+                    '</strong> and the Pro Rata unit price is <strong>' + monthly +
+                    '</strong>. For this sample, local tax is <strong>18%</strong>.';
             } else {
                 fin.innerHTML = (prefix || '') +
-                    'this is the same layout as the club invoice. Fill quantity, unit price, and total on each line. Local tax on this sample is 18%.';
+                    'this is the same layout as the club invoice. Fill quantity, unit price, and total on each line. For this sample, local tax is 18%.';
             }
         }
         if (hintFinal && rates) {
             hintFinal.innerHTML = 'Rotaract Dues quantity is the <strong>' + rates['total-active'].value +
                 ' active members</strong>. Pro Rata quantity is the <strong>' + rates['total-months'].value +
-                ' months</strong>. Unit prices are the annual and monthly amounts you already got right. Tax is 18% of the matching dues line, not 18% of the grand total. Previous balance is unpaid dues from an earlier invoice. This sample club has none, so enter 0.';
+                ' unbilled 2026 months</strong>. Unit prices are the Annual Dues and monthly amounts you already got right. For this sample, tax is 18% of each matching dues line, not 18% of the grand total. Previous balance is a carryover from earlier invoices: unpaid dues add to the bill; a credit or overpayment reduces it. This sample club has none, so enter 0.';
+        }
+        if (hintFinal && !rates) {
+            hintFinal.innerHTML = 'Use your roster totals and the local-currency rates you already checked. Quantity times unit price equals the line total. For this sample, tax is 18% of each matching dues line, not 18% of the grand total. Previous balance is a carryover from earlier invoices: unpaid dues add to the bill; a credit or overpayment reduces it. This sample club has none, so enter 0.';
         }
     }
 

@@ -46,7 +46,7 @@
 
 				if (joinYear === invoiceYear - 1) {
 					// Jan 1 joiners were already billed the full prior year on that year's invoice.
-					// Next invoice is full-year only (no 12-month catch-up proration).
+					// Next invoice is full-year Annual Dues only (no 12-month Pro Rata Dues).
 					if (joinedOnJanuaryFirst) {
 						if (leaveDateStr) {
 							const leaveDate = new Date(leaveDateStr + 'T00:00:00');
@@ -93,7 +93,7 @@
 						}
 						return { fullYear: baseDues, prorated: 0, total: baseDues, proratedMonths: 0 };
 					}
-					// Joined after 1 January → no dues on this invoice; catch-up starts next year
+					// Joined after 1 January → no dues on this invoice; Pro Rata Dues start next year
 					return { fullYear: 0, prorated: 0, total: 0, proratedMonths: 0 };
 				}
 

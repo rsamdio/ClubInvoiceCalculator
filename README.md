@@ -29,7 +29,7 @@ Figures are estimates only. Official invoices come from Rotary (My Rotary). Dues
 - **Cloud backup (optional):** Google sign-in; **manual Save to Cloud only** (nothing autosaves). Button shows Unsaved / Saving / Saved while signed in
 - **Sign-in conflict:** if cloud data exists, choose current session or load from cloud
 - **First-visit help:** instructions modal matching the current UI flow
-- **Club Invoice Basics:** eight-stage worksheet at [`/learn/`](https://dues.rsamdio.org/learn/) (self-paced on-device, or live session via a 6-digit host code). Same $8 / $5 January 1 model as the calculator.
+- **Rotaract Club Invoice Basics:** eight-stage worksheet at [`/learn/`](https://dues.rsamdio.org/learn/) (self-paced on-device, or live session via a 6-digit host code). Same $8 / $5 January 1 model as the calculator.
 
 ## Repository layout
 
@@ -38,7 +38,7 @@ ClubInvoiceCalculator/
 ├── index.html              # Main calculator
 ├── admin.html              # Admin dashboard + Workshop Hosts
 ├── app.js / app.min.js     # Core app logic
-├── learn/                  # Club Invoice Basics worksheet + host console
+├── learn/                  # Rotaract Club Invoice Basics worksheet + host console
 ├── faq.html / how-ri-dues-work.html
 ├── llms.txt / sitemap.xml / robots.txt
 ├── modules/
@@ -111,8 +111,8 @@ ClubInvoiceCalculator/
 - On sign-in with existing cloud data, pick **current session** or **load from cloud**.
 - **Reset Roster** clears the session roster after confirmation (does not by itself update the cloud).
 
-### Club Invoice Basics (`/learn/`)
-1. Open [Learn Club Invoice Basics](https://dues.rsamdio.org/learn/).
+### Rotaract Club Invoice Basics (`/learn/`)
+1. Open [Rotaract Club Invoice Basics](https://dues.rsamdio.org/learn/).
 2. **Learn at my own pace** keeps answers on the device. No Google account.
 3. **Join a live session** uses the 6-digit code from a host. Email is for follow-up only, not a login.
 4. Hosts sign in at [`/learn/host.html`](https://dues.rsamdio.org/learn/host.html). Calculator admins can host; other hosts are invited from **Admin → Workshop Hosts**.
@@ -193,9 +193,9 @@ Implemented in both `modules/calculations.js` and `app.js`. Keep them in sync wh
 
 High-level behavior:
 - Invoice year = January 1 of the selected year
-- Join on 1 January of the invoice year → full-year dues on that invoice
-- Join after 1 January of the invoice year → $0 on that invoice (catch-up starts the following year)
-- Join on 1 January of the prior year → full-year dues only on the next invoice (no 12-month catch-up)
+- Join on 1 January of the invoice year → full-year Annual Dues on that invoice
+- Join after 1 January of the invoice year → $0 on that invoice (Pro Rata Dues start the following year)
+- Join on 1 January of the prior year → full-year Annual Dues only on the next invoice (no 12-month Pro Rata Dues)
 - Mid-year leave after January 1 does not reduce the January 1 snapshot invoice
 
 ## Troubleshooting

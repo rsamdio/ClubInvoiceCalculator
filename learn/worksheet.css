@@ -737,11 +737,6 @@ body.is-landing #btn-reset {
 .ws-table-final td:last-child,
 .ws-table-final th:last-child { text-align: right; }
 
-.ws-tax-row {
-    max-width: 12rem;
-    margin-bottom: 0.85rem;
-}
-
 .ws-invoice-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -796,7 +791,10 @@ body.is-landing #btn-reset {
 }
 
 .ws-invoice-sheet .ws-field { gap: 0.25rem; }
-.ws-invoice-sheet input { min-height: 2.35rem; }
+.ws-invoice-sheet input {
+    min-height: 2.35rem;
+    text-align: right;
+}
 
 .ws-invoice-sum td {
     background: #f7fafc;

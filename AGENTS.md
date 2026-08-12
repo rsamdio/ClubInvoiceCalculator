@@ -4,7 +4,7 @@ Guidance for AI agents and developers working in this repository.
 
 ## Project summary
 
-Static web app for **Rotaract South Asia MDIO (RSAMDIO)** that calculates club membership invoices, manages member rosters, syncs data to Firebase, generates PDF reports, and teaches the same January invoice model in **Club Invoice Basics** (`/learn/`).
+Static web app for **Rotaract South Asia MDIO (RSAMDIO)** that calculates club membership invoices, manages member rosters, syncs data to Firebase, generates PDF reports, and teaches the same January invoice model in **Rotaract Club Invoice Basics** (`/learn/`).
 
 | Item | Value |
 |------|-------|
@@ -25,7 +25,7 @@ ClubInvoiceCalculator/
 ├── admin.html              # Admin dashboard; Workshop Hosts tab
 ├── app.js                  # Core logic (~3500 lines): members, Firebase, bulk upload
 ├── learn/
-│   ├── index.html          # Club Invoice Basics worksheet (self-paced + live join)
+│   ├── index.html          # Rotaract Club Invoice Basics worksheet (self-paced + live join)
 │   ├── worksheet.js        # Worksheet stages, localStorage, live RTDB writes
 │   ├── worksheet.css       # Shared learn + host styles
 │   ├── host.html           # Live session console (noindex)
@@ -135,12 +135,12 @@ Invoice year = January 1 of the selected year.
 
 | Join timing | Result |
 |-------------|--------|
-| Previous year (`joinYear === invoiceYear - 1`), joined **after** Jan 1 | Full year (invoice year) + prorated catch-up for prior-year months |
-| Previous year, joined **Jan 1** | Full year only (no catch-up; prior year was already billed in full on that invoice) |
-| Current invoice year, joined **Jan 1** | Full year dues (active on the invoice date) |
-| Current invoice year, joined **after** Jan 1 | $0 (catch-up starts on the next year's invoice) |
-| Before previous year | Full year dues (unless left before invoice date → $0) |
-| Leave date before invoice date | $0 or prorated-only depending on join year |
+| Previous year (`joinYear === invoiceYear - 1`), joined **after** Jan 1 | Full-year Annual Dues (invoice year) + Pro Rata Dues for unbilled prior-year months |
+| Previous year, joined **Jan 1** | Full-year Annual Dues only (no Pro Rata Dues; prior year was already billed in full on that invoice) |
+| Current invoice year, joined **Jan 1** | Full-year Annual Dues (active on the invoice date) |
+| Current invoice year, joined **after** Jan 1 | $0 (Pro Rata Dues start on the next year's invoice) |
+| Before previous year | Full-year Annual Dues (unless left before invoice date → $0) |
+| Leave date before invoice date | $0 or Pro Rata Dues only, depending on join year |
 | Leave on Jan 1 of invoice year | Still active (invoice generated on Jan 1) |
 | Mid-year leave after invoice date | No reduction (invoice is a Jan 1 snapshot) |
 

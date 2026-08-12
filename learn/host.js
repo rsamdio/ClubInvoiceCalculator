@@ -1,6 +1,6 @@
 (function () {
     const CODE_LEN = 6;
-    const DEFAULT_TITLE = 'Club Invoice Basics';
+    const DEFAULT_TITLE = 'Rotaract Club Invoice Basics';
     const TITLE_MAX = 80;
     const IDLE_MS = 2 * 60 * 1000;
     const HIDE_NAMES_KEY = 'rsamdio-host-hide-names';
