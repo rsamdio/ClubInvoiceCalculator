@@ -55,6 +55,8 @@
         copyCode: document.getElementById('btn-copy-code'),
         hideNames: document.getElementById('btn-hide-names'),
         exportCsv: document.getElementById('btn-export'),
+        editSession: document.getElementById('btn-edit-session'),
+        deleteSession: document.getElementById('btn-delete-session'),
         closeSession: document.getElementById('btn-close-session'),
         closedNote: document.getElementById('host-closed-note'),
         rows: document.getElementById('host-participant-rows'),
@@ -215,6 +217,13 @@
             confirmBtn.textContent = opts.confirmLabel || 'OK';
             cancelBtn.textContent = opts.cancelLabel || 'Cancel';
             cancelBtn.hidden = !opts.cancelLabel && !opts.input;
+            if (opts.danger) {
+                confirmBtn.style.background = '#dc2626';
+                confirmBtn.style.borderColor = '#dc2626';
+            } else {
+                confirmBtn.style.background = '';
+                confirmBtn.style.borderColor = '';
+            }
             if (opts.input) {
                 field.hidden = false;
                 fieldLabel.textContent = opts.inputLabel || 'Session name';
@@ -793,6 +802,82 @@
         }
     }
 
+    async function editSession() {
+        if (!activeCode || !rooms[activeCode]) return;
+        const currentTitle = roomTitle(rooms[activeCode]);
+        const newTitle = await showLearnDialog({
+            title: 'Edit session name',
+            message: 'Change the name of this session.',
+            input: true,
+            inputLabel: 'Session name',
+            inputValue: currentTitle,
+            inputHint: 'Shown in your list as typed.',
+            inputMax: TITLE_MAX,
+            confirmLabel: 'Save',
+            cancelLabel: 'Cancel'
+        });
+        if (newTitle === false) return;
+        const titleToSave = String(newTitle || DEFAULT_TITLE).trim().slice(0, TITLE_MAX) || DEFAULT_TITLE;
+        if (titleToSave === currentTitle) return;
+
+        const fb = await waitForHostFirebase();
+        try {
+            await fb.update(fb.ref(fb.rtdb, 'rooms/' + activeCode + '/meta'), {
+                title: titleToSave
+            });
+            if (rooms[activeCode]) {
+                rooms[activeCode].title = titleToSave;
+            }
+            if (ui.sessionTitle) ui.sessionTitle.textContent = titleToSave;
+            renderRoomList();
+            setActionStatus('Session name updated.');
+        } catch (err) {
+            await showLearnDialog({
+                title: 'Could not save',
+                message: 'Could not update session name. Try again.',
+                confirmLabel: 'OK'
+            });
+        }
+    }
+
+    async function deleteSession() {
+        if (!activeCode) return;
+        const firstConfirm = await showLearnDialog({
+            title: 'Delete this session?',
+            message: 'Are you sure you want to delete this session? This action cannot be undone.',
+            confirmLabel: 'Delete session',
+            cancelLabel: 'Cancel',
+            danger: true
+        });
+        if (!firstConfirm) return;
+        
+        const secondConfirm = await showLearnDialog({
+            title: 'Final confirmation',
+            message: 'All data for this session will be removed from your view. Proceed?',
+            confirmLabel: 'Yes, delete permanently',
+            cancelLabel: 'Cancel',
+            danger: true
+        });
+        if (!secondConfirm) return;
+
+        const fb = await waitForHostFirebase();
+        try {
+            const codeToDelete = activeCode;
+            await fb.set(fb.ref(fb.rtdb, 'hostRooms/' + currentUser.uid + '/' + codeToDelete), null);
+            await fb.set(fb.ref(fb.rtdb, 'rooms/' + codeToDelete + '/meta'), null);
+            
+            delete rooms[codeToDelete];
+            setActionStatus('Session deleted.');
+            goToSessionList();
+        } catch (err) {
+            await showLearnDialog({
+                title: 'Could not delete',
+                message: 'Could not delete this session. Try again.',
+                confirmLabel: 'OK'
+            });
+        }
+    }
+
     async function copyCode() {
         if (!activeCode) return;
         try {
@@ -951,6 +1036,8 @@
             });
         }
         ui.closeSession.addEventListener('click', closeSession);
+        if (ui.editSession) ui.editSession.addEventListener('click', editSession);
+        if (ui.deleteSession) ui.deleteSession.addEventListener('click', deleteSession);
         if (ui.copyCode) ui.copyCode.addEventListener('click', copyCode);
         if (ui.hideNames) ui.hideNames.addEventListener('click', toggleHideNames);
         if (ui.exportCsv) ui.exportCsv.addEventListener('click', exportCsv);

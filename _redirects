@@ -1,2 +1,5 @@
+# Proxy Firebase Auth requests to Firebase under the custom domain
+/__/auth/* https://clubinvoicecalculator.firebaseapp.com/__/auth/:splat 200!
+
 # Redirect default Netlify subdomain to primary domain
 https://rotaractdues.netlify.app/* https://dues.rsamdio.org/:splat 301!
