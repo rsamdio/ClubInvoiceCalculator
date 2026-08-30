@@ -2,7 +2,7 @@
 
   const firebaseConfig = {
     apiKey: "AIzaSyAl7KwjVgU3Lx1RNeIPbevAeu2bziD8b2A",
-    authDomain: "clubinvoicecalculator.firebaseapp.com",
+    authDomain: "dues.rsamdio.org",
     projectId: "clubinvoicecalculator",
     storageBucket: "clubinvoicecalculator.firebasestorage.app",
     messagingSenderId: "1010215102213",
