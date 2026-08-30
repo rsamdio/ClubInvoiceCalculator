@@ -453,9 +453,12 @@
         ui.roomList.querySelectorAll('[data-code]').forEach((btn) => {
             btn.addEventListener('click', () => openRoom(btn.getAttribute('data-code')));
         });
-        if (ui.stepSession && activeCode) {
-            ui.stepSession.disabled = false;
-            if (ui.stepSessionLabel) ui.stepSessionLabel.textContent = roomTitle(rooms[activeCode]);
+        if (ui.stepSession) {
+            const hasActive = Boolean(activeCode && rooms[activeCode]);
+            ui.stepSession.disabled = !hasActive;
+            if (ui.stepSessionLabel) {
+                ui.stepSessionLabel.textContent = hasActive ? roomTitle(rooms[activeCode]) : 'This session';
+            }
         }
     }
 
@@ -640,6 +643,9 @@
                     showHostStep('session');
                 }
             } else {
+                if (activeCode && !rooms[activeCode]) {
+                    activeCode = null;
+                }
                 showHostStep('list');
             }
         });
@@ -829,6 +835,7 @@
                 rooms[activeCode].title = titleToSave;
             }
             if (ui.sessionTitle) ui.sessionTitle.textContent = titleToSave;
+            if (ui.stepSessionLabel) ui.stepSessionLabel.textContent = titleToSave;
             renderRoomList();
             setActionStatus('Session name updated.');
         } catch (err) {
@@ -867,6 +874,9 @@
             await fb.set(fb.ref(fb.rtdb, 'rooms/' + codeToDelete + '/meta'), null);
             
             delete rooms[codeToDelete];
+            if (activeCode === codeToDelete) {
+                activeCode = null;
+            }
             setActionStatus('Session deleted.');
             goToSessionList();
         } catch (err) {
