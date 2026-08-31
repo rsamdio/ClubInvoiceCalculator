@@ -1310,7 +1310,7 @@
         // Optimized Firebase authentication initialization
         function initializeAuth() {
             window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
-                if (user) {
+                if (user && !user.isAnonymous) {
                     currentUser = user;
                     updateAuthUI(user);
                     checkAdminAccess(user.email);

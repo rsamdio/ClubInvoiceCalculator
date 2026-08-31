@@ -962,10 +962,26 @@
     }
 
     async function upsertUserProfile(user) {
+        let email = user.email;
+        let displayName = user.displayName;
+        let photoURL = user.photoURL;
+
+        if (!email || !displayName) {
+            if (user.providerData && user.providerData.length > 0) {
+                for (const provider of user.providerData) {
+                    if (!email && provider.email) email = provider.email;
+                    if (!displayName && provider.displayName) displayName = provider.displayName;
+                    if (!photoURL && provider.photoURL) photoURL = provider.photoURL;
+                }
+            }
+        }
+
         const fb = await waitForHostFirebase();
         await fb.setDoc(fb.doc(fb.firestore, 'users', user.uid), {
-            email: String(user.email || '').toLowerCase(),
-            displayName: user.displayName || '',
+            email: String(email || '').toLowerCase().trim(),
+            displayName: displayName || '',
+            photoURL: photoURL || null,
+            uid: user.uid,
             updatedAt: new Date().toISOString()
         }, { merge: true });
     }
@@ -1073,8 +1089,8 @@
         }, 30000);
         const fb = await waitForHostFirebase();
         fb.onAuthStateChanged(fb.auth, (user) => {
-            currentUser = user;
-            if (!user) {
+            currentUser = user && !user.isAnonymous ? user : null;
+            if (!currentUser) {
                 canHost = false;
                 activeCode = null;
                 rooms = {};

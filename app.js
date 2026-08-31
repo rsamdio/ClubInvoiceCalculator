@@ -3548,7 +3548,7 @@ function initializeFirebaseAuth() {
 
     // Listen for auth state changes
     window.firebaseOnAuthStateChanged(window.firebaseAuth, async (user) => {
-        if (user) {
+        if (user && !user.isAnonymous) {
             // User is signed in - set all authentication state
             currentUser = user;
             window.currentUser = user;
@@ -3730,6 +3730,8 @@ async function logUserActivity(userId, activityType) {
                 await window.firebaseUpdateDoc(userDocRef, {
                     displayName: profile.displayName,
                     email: profile.email,
+                    photoURL: profile.photoURL,
+                    uid: user.uid,
                     lastLogin: user.metadata?.lastSignInTime || currentTime,
                     lastUpdated: currentTime
                 });
@@ -3738,6 +3740,8 @@ async function logUserActivity(userId, activityType) {
                     await window.firebaseSetDoc(userDocRef, {
                         displayName: profile.displayName,
                         email: profile.email,
+                        photoURL: profile.photoURL,
+                        uid: user.uid,
                         lastLogin: user.metadata?.lastSignInTime || currentTime,
                         lastUpdated: currentTime,
                         createdAt: currentTime
@@ -3794,6 +3798,8 @@ async function logUserActivities(userId, activities) {
                 await window.firebaseUpdateDoc(userDocRef, {
                     displayName: profile.displayName,
                     email: profile.email,
+                    photoURL: profile.photoURL,
+                    uid: user.uid,
                     lastLogin: user.metadata?.lastSignInTime || currentTime,
                     lastUpdated: currentTime
                 });
@@ -3802,6 +3808,8 @@ async function logUserActivities(userId, activities) {
                     await window.firebaseSetDoc(userDocRef, {
                         displayName: profile.displayName,
                         email: profile.email,
+                        photoURL: profile.photoURL,
+                        uid: user.uid,
                         lastLogin: user.metadata?.lastSignInTime || currentTime,
                         lastUpdated: currentTime,
                         createdAt: currentTime
@@ -4022,6 +4030,8 @@ async function saveUserData(userUid, data) {
     const cleanData = {
         displayName: profile.displayName,
         email: profile.email,
+        photoURL: profile.photoURL,
+        uid: user.uid,
         lastLogin: user?.metadata?.lastSignInTime || currentTime,
         lastUpdated: currentTime,
         memberRoster: cleanMemberRoster,

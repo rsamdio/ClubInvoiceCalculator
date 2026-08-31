@@ -2491,7 +2491,7 @@
                         
                         // Listen for auth state changes
                         window.firebaseOnAuthStateChanged(window.firebaseAuth, (user) => {
-                            if (user) {
+                            if (user && !user.isAnonymous) {
                                 // User is signed in
                                 // Set global variables for app.js
                                 window.currentUser = user;

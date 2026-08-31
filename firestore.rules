@@ -15,6 +15,10 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     function validSettings(s) {
       return s is map
         && (!('taxPercentage' in s) || (s.taxPercentage is number && s.taxPercentage >= 0 && s.taxPercentage <= 100))
@@ -34,9 +38,9 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow create: if isSelf(uid) && validUserWrite();
-      allow read: if isSelf(uid) || isAdmin();
-      allow update: if (isSelf(uid) || isAdmin()) && validUserWrite();
+      allow create: if isSelf(uid) && isVerifiedUser() && validUserWrite();
+      allow read: if (isSelf(uid) && isVerifiedUser()) || isAdmin();
+      allow update: if ((isSelf(uid) && isVerifiedUser()) || isAdmin()) && validUserWrite();
       allow delete: if isAdmin();
     }
 
