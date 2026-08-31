@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.gstatic.com https://ssl.gstatic.com https://www.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.gstatic.com https://*.gstatic.com https://*.googleapis.com https://www.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://dues.rsamdio.org https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.googletagmanager.com https://www.gstatic.com https://ssl.gstatic.com https://www.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.gstatic.com https://*.gstatic.com https://*.googleapis.com https://www.google.com https://www.recaptcha.net https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com https://asia-southeast1-clubinvoicecalculator.cloudfunctions.net; frame-src 'self' https://dues.rsamdio.org https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
@@ -194,6 +194,9 @@
                 </button>
             </div>
             <a href="host.html" class="ws-host-link">I’m running a session</a>
+            <div class="ws-landing-cert-note">
+                <p>🎓 <strong>Achievement:</strong> Complete the learning pathway to claim your certificate of completion.</p>
+            </div>
         </section>
 
         <section id="join-panel" class="ws-stage" hidden>
@@ -236,10 +239,10 @@
                     <span>Your role</span>
                     <input type="text" id="learner-role" placeholder="e.g. Club Treasurer">
                 </label>
-                        <label class="ws-field ws-span-2" id="live-email-field" hidden>
+                        <label class="ws-field ws-span-2" id="live-email-field">
                             <span>Email address</span>
-                            <input type="email" id="learner-email" autocomplete="email" placeholder="you@example.com">
-                            <span class="ws-field-note">We may use this for a follow-up or a certificate. It is not used to sign you in.</span>
+                            <input type="email" id="learner-email" inputmode="email" autocomplete="email" placeholder="user@example.com">
+                            <span class="ws-helper-text">Used to claim your Completion Certificate.</span>
                         </label>
                         <label class="ws-field">
                             <span>District number</span>
@@ -277,7 +280,7 @@
             <p id="lead-invoice" class="ws-lead">A January invoice covers one Rotary year. You are paying for that calendar year, not for random months.</p>
 
             <div class="ws-callout">
-                <strong>Think first.</strong> If the invoice is dated January 2027, which months does that payment cover? Pick the start and the end.
+                If the invoice is dated January 2027, which months does that payment cover? Pick the start and the end.
             </div>
 
             <div class="ws-stack">
@@ -926,8 +929,8 @@
 
             <div id="complete-banner" class="ws-complete" hidden>
                 <h3>Congratulations. Worksheet complete</h3>
-                <p>You got every stage right: invoice year, months, rates, local currency, the roster, tax, and totals. Try the live calculator with your own club next.</p>
-                <a class="btn btn-primary" href="../index.html" target="_blank" rel="noopener noreferrer">Open the live calculator</a>
+                <p>You got every stage right: invoice year, months, rates, local currency, the roster, tax, and totals.</p>
+                <button type="button" class="btn btn-primary" id="btn-banner-cert">Claim your certificate</button>
             </div>
         </section>
 
@@ -950,22 +953,68 @@
         </div>
     </div>
 
+    <div id="ws-certificate-modal" class="host-modal learn-dialog" hidden>
+        <div class="host-modal-card learn-dialog-card ws-certificate-card" role="dialog" aria-modal="true" aria-labelledby="ws-cert-title">
+            <h3 id="ws-cert-title">Congratulations</h3>
+            <p id="ws-cert-body" class="ws-lead">You've completed all stages! Review your details to claim your certificate.</p>
+            
+            <div id="ws-cert-form">
+                <label class="ws-field">
+                    <span>Name</span>
+                    <input type="text" id="cert-name">
+                </label>
+                <label class="ws-field">
+                    <span>Role</span>
+                    <input type="text" id="cert-role">
+                </label>
+                <label class="ws-field">
+                    <span>District number</span>
+                    <input type="text" id="cert-district">
+                </label>
+                <label class="ws-field">
+                    <span>Club name</span>
+                    <input type="text" id="cert-club">
+                </label>
+                <label class="ws-field" style="margin-top: 1rem;">
+                    <span>Email address</span>
+                    <input type="email" id="cert-email">
+                    <span class="ws-helper-text">You will use this email to access your certificate on Rotaract Certify.</span>
+                </label>
+                
+                <div class="ws-inline-actions" style="margin-top: 1.5rem;">
+                    <button type="button" id="ws-cert-cancel" class="btn btn-secondary">Cancel</button>
+                    <button type="button" id="ws-cert-submit" class="btn btn-primary">Claim your certificate</button>
+                </div>
+            </div>
+
+            <div id="ws-cert-success" hidden>
+                <div class="ws-inline-actions" style="margin-top: 1.5rem;">
+                    <button type="button" id="ws-cert-close-success" class="btn btn-secondary">Close</button>
+                    <a class="btn btn-primary" href="https://certify.rsamdio.org/clubinvoicebasics/" target="_blank" rel="noopener noreferrer">Go to Rotaract Certify</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js';
         import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js';
         import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-functions.js';
         import { firebaseConfig } from '../firebase-config.js';
 
         const app = initializeApp(firebaseConfig);
         window.learnFirebase = {
             auth: getAuth(app),
             db: getDatabase(app),
+            functions: getFunctions(app, 'asia-southeast1'),
             signInAnonymously,
             onAuthStateChanged,
             ref,
             get,
             set,
-            update
+            update,
+            httpsCallable
         };
     </script>
     <script src="worksheet.js" defer></script>

@@ -411,10 +411,15 @@
         state.groupsPassed[groupId] = allOk;
         if (groupId === 'final') {
             const banner = document.getElementById('complete-banner');
-            if (banner) banner.hidden = !allOk;
+            if (banner) {
+                banner.hidden = !allOk;
+            }
             if (allOk) {
                 if (!state.completedAt) state.completedAt = Date.now();
-                if (!wasFinal) showCelebration();
+                if (!wasFinal) {
+                    if (state.certificateSubmitted) showCelebration();
+                    else openCertificateModal();
+                }
             }
         }
         persistSoon();
@@ -643,7 +648,7 @@
         const emailEl = document.getElementById('learner-email');
         return {
             name: ((document.getElementById('learner-name') || {}).value || '').trim(),
-            email: state.mode === 'live' ? String((emailEl || {}).value || '').trim().toLowerCase() : '',
+            email: String((emailEl || {}).value || '').trim().toLowerCase(),
             role: ((document.getElementById('learner-role') || {}).value || '').trim(),
             district: ((document.getElementById('learner-district') || {}).value || '').trim(),
             clubName: ((document.getElementById('club-name') || {}).value || '').trim(),
@@ -678,9 +683,11 @@
                 clubBase: state.clubBase,
                 groupsPassed: state.groupsPassed,
                 learnerName: (document.getElementById('learner-name') || {}).value || '',
+                learnerEmail: (document.getElementById('learner-email') || {}).value || '',
                 learnerRole: (document.getElementById('learner-role') || {}).value || '',
                 learnerDistrict: (document.getElementById('learner-district') || {}).value || '',
                 clubName: (document.getElementById('club-name') || {}).value || '',
+                certificateSubmitted: state.certificateSubmitted || false,
                 fields: collectFields()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -840,9 +847,6 @@
                 sec.hidden = true;
             });
         }
-
-        const emailField = document.getElementById('live-email-field');
-        if (emailField) emailField.hidden = state.mode !== 'live';
     }
 
     function enterSelfPaced() {
@@ -880,10 +884,12 @@
         if (!data || data.version !== 1) return false;
 
         const nameEl = document.getElementById('learner-name');
+        const emailEl = document.getElementById('learner-email');
         const roleEl = document.getElementById('learner-role');
         const clubEl = document.getElementById('club-name');
         const districtEl = document.getElementById('learner-district');
         if (nameEl) nameEl.value = data.learnerName || '';
+        if (emailEl) emailEl.value = data.learnerEmail || '';
         if (roleEl) roleEl.value = data.learnerRole || '';
         if (clubEl) clubEl.value = data.clubName || '';
         if (districtEl) districtEl.value = data.learnerDistrict || '';
@@ -891,6 +897,7 @@
         state.clubBase = data.clubBase || null;
         state.groupsPassed = data.groupsPassed || {};
         state.maxReached = Number(data.maxReached) || 0;
+        state.certificateSubmitted = data.certificateSubmitted || false;
         applyFields(data.fields);
         applyClubBaseUI();
 
@@ -908,6 +915,7 @@
         state.groupsPassed = {};
         state.joinedAt = null;
         state.completedAt = null;
+        state.certificateSubmitted = false;
         hideCelebration();
         setJoinCode('');
         ['learner-name', 'learner-role', 'learner-email', 'learner-district', 'club-name'].forEach((id) => {
@@ -1042,6 +1050,116 @@
         if (el) el.hidden = true;
     }
 
+    function hideCertificateModal() {
+        const el = document.getElementById('ws-certificate-modal');
+        if (el) el.hidden = true;
+    }
+
+    function openCertificateModal() {
+        if (state.certificateSubmitted) {
+            showCelebration();
+            return;
+        }
+        const modal = document.getElementById('ws-certificate-modal');
+        if (!modal) return;
+        
+        const profile = profileFromForm();
+        const nameInput = document.getElementById('cert-name');
+        const emailInput = document.getElementById('cert-email');
+        const roleInput = document.getElementById('cert-role');
+        const districtInput = document.getElementById('cert-district');
+        const clubInput = document.getElementById('cert-club');
+
+        if (nameInput) nameInput.value = profile.name;
+        if (emailInput) emailInput.value = profile.email;
+        if (roleInput) roleInput.value = profile.role || '';
+        if (districtInput) districtInput.value = profile.district || '';
+        if (clubInput) clubInput.value = profile.clubName || '';
+        
+        document.getElementById('ws-cert-form').hidden = false;
+        document.getElementById('ws-cert-success').hidden = true;
+        
+        modal.hidden = false;
+    }
+
+    async function submitCertificate() {
+        if (state.certificateSubmitted) return;
+        
+        const modalName = ((document.getElementById('cert-name') || {}).value || '').trim();
+        const modalEmail = ((document.getElementById('cert-email') || {}).value || '').trim().toLowerCase();
+        const modalRole = ((document.getElementById('cert-role') || {}).value || '').trim();
+        const modalDistrict = ((document.getElementById('cert-district') || {}).value || '').trim();
+        const modalClub = ((document.getElementById('cert-club') || {}).value || '').trim();
+
+        if (!modalName || !isValidEmail(modalEmail)) {
+            alert("Name and valid email are required.");
+            return;
+        }
+
+        const nameEl = document.getElementById('learner-name');
+        if (nameEl) nameEl.value = modalName;
+        const emailEl = document.getElementById('learner-email');
+        if (emailEl) emailEl.value = modalEmail;
+        const roleEl = document.getElementById('learner-role');
+        if (roleEl) roleEl.value = modalRole;
+        const districtEl = document.getElementById('learner-district');
+        if (districtEl) districtEl.value = modalDistrict;
+        const clubEl = document.getElementById('club-name');
+        if (clubEl) clubEl.value = modalClub;
+        
+        const btn = document.getElementById('ws-cert-submit');
+        const originalText = btn.textContent;
+        btn.textContent = 'Submitting...';
+        btn.classList.add('ws-btn-loading');
+        btn.disabled = true;
+        
+        try {
+            let fb = await waitForLearnFirebase();
+            let user = await ensureAnonymousUser(fb);
+            
+            const payload = {
+                uid: user.uid,
+                name: modalName,
+                email: modalEmail,
+                role: modalRole,
+                district: modalDistrict,
+                clubName: modalClub,
+                clubBase: state.clubBase || '',
+                mode: state.mode,
+                roomCode: state.roomCode || null,
+                completedAt: state.completedAt
+            };
+            
+            // Call the HTTPS Callable Cloud Function instead of writing to RTDB directly
+            const submitCertFunc = window.learnFirebase.httpsCallable(window.learnFirebase.functions, 'submitCertificate');
+            await submitCertFunc(payload);
+            
+            if (state.mode === 'live' && state.roomCode) {
+                await fb.update(participantPath(fb, user.uid), { certificateSubmitted: true });
+            }
+            
+            state.certificateSubmitted = true;
+            persistSoon();
+            
+            document.getElementById('ws-cert-form').hidden = true;
+            document.getElementById('ws-cert-success').hidden = false;
+            
+            const bannerBtn = document.querySelector('#complete-banner #btn-banner-cert');
+            if (bannerBtn) {
+                bannerBtn.textContent = 'View Certificate Status';
+            }
+            
+        } catch (err) {
+            console.error("Submit error", err);
+            // Firebase Callable Functions return the error message thrown by HttpsError
+            alert(err.message || "Failed to submit. Please try again.");
+        } finally {
+            btn.textContent = originalText;
+            btn.classList.remove('ws-btn-loading');
+            btn.disabled = false;
+        }
+    }
+
     function showCelebration() {
         const overlay = document.getElementById('ws-celebrate');
         if (!overlay) return;
@@ -1117,19 +1235,25 @@
 
     function canLeaveSetup() {
         const name = ((document.getElementById('learner-name') || {}).value || '').trim();
-        if (!name || !state.clubBase) return false;
+        const email = ((document.getElementById('learner-email') || {}).value || '').trim();
+        if (!name || !state.clubBase || !isValidEmail(email)) return false;
         if (state.mode === 'live') {
-            const email = ((document.getElementById('learner-email') || {}).value || '').trim();
             const district = ((document.getElementById('learner-district') || {}).value || '').trim();
             const club = ((document.getElementById('club-name') || {}).value || '').trim();
-            return isValidEmail(email) && Boolean(district && club);
+            return Boolean(district && club);
         }
         return true;
     }
 
     function updateNav() {
         const banner = document.getElementById('complete-banner');
-        if (banner) banner.hidden = !state.groupsPassed.final;
+        if (banner) {
+            banner.hidden = !state.groupsPassed.final;
+            const btn = banner.querySelector('#btn-banner-cert');
+            if (btn) {
+                btn.textContent = state.certificateSubmitted ? 'View Certificate Status' : 'Claim your certificate';
+            }
+        }
         const prev = document.getElementById('btn-prev');
         const next = document.getElementById('btn-next');
         const hint = document.getElementById('nav-hint');
@@ -1146,7 +1270,7 @@
             } else {
                 hint.textContent = canLeaveSetup()
                     ? 'Continue when you are ready.'
-                    : 'Enter your name and select a club base to continue.';
+                    : 'Enter your name, email, and select a club base to continue.';
             }
             return;
         }
@@ -1489,6 +1613,30 @@
     if (celebrate) {
         celebrate.addEventListener('click', (e) => {
             if (e.target === celebrate) hideCelebration();
+        });
+    }
+
+    const certModal = document.getElementById('ws-certificate-modal');
+    if (certModal) {
+        certModal.addEventListener('click', (e) => {
+            if (e.target === certModal) hideCertificateModal();
+        });
+    }
+    const certCancel = document.getElementById('ws-cert-cancel');
+    if (certCancel) certCancel.addEventListener('click', hideCertificateModal);
+    const certSubmit = document.getElementById('ws-cert-submit');
+    if (certSubmit) certSubmit.addEventListener('click', submitCertificate);
+    const certCloseSuccess = document.getElementById('ws-cert-close-success');
+    if (certCloseSuccess) certCloseSuccess.addEventListener('click', hideCertificateModal);
+
+    const bannerBtn = document.querySelector('#complete-banner #btn-banner-cert');
+    if (bannerBtn) {
+        bannerBtn.addEventListener('click', () => {
+            if (state.certificateSubmitted) {
+                window.open('https://certify.rsamdio.org/clubinvoicebasics/', '_blank');
+            } else {
+                openCertificateModal();
+            }
         });
     }
 

@@ -572,7 +572,7 @@
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js';
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js';
         import { getFirestore, collection, query, orderBy, limit, getDocs, where, doc, getDoc, deleteDoc, updateDoc, setDoc, addDoc, getCountFromServer, startAfter } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js';
-        import { getDatabase, ref, set, remove } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js';
+        import { getDatabase, ref, set, remove, get, query as rtdbQuery, orderByChild, equalTo, limitToLast } from 'https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js';
         import { firebaseConfig } from './firebase-config.js';
 
         // Initialize Firebase
@@ -589,6 +589,11 @@
         window.firebaseRtdbRef = ref;
         window.firebaseRtdbSet = set;
         window.firebaseRtdbRemove = remove;
+        window.firebaseRtdbGet = get;
+        window.firebaseRtdbQuery = rtdbQuery;
+        window.firebaseOrderByChild = orderByChild;
+        window.firebaseEqualTo = equalTo;
+        window.firebaseLimitToLast = limitToLast;
         window.firebaseProvider = provider;
         window.firebaseSignIn = signInWithPopup;
         window.firebaseSignOut = signOut;
@@ -718,7 +723,7 @@
             </div>
 
             <!-- Comprehensive Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <!-- Total Users -->
                 <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
                     <div class="flex items-center">
@@ -769,6 +774,22 @@
                     </div>
                 </div>
 
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-500">Total Completions</div>
+                            <div id="total-completions" class="text-2xl font-bold text-purple-600">-</div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- Navigation Tabs -->
@@ -792,6 +813,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                             <span class="text-lg font-semibold">Workshop Hosts</span>
+                        </button>
+                        <button id="completions-tab" class="tab-button flex items-center space-x-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span class="text-lg font-semibold">Learn Completions</span>
                         </button>
                     </nav>
                 </div>
@@ -1035,6 +1062,35 @@
                 </div>
             </div>
         </div>
+
+            <div id="completions-content" class="tab-content hidden">
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8 mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Search Completion by Email</h3>
+                    <p class="text-gray-600 text-sm mb-4">Enter an email to check if a user has completed the Learn module.</p>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input
+                            type="email"
+                            id="completion-email-search"
+                            placeholder="Enter user email address..."
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        >
+                        <button type="button" id="search-completion-btn" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg">
+                            Search
+                        </button>
+                    </div>
+                    <div id="completion-search-result" class="mt-6 hidden"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">Recent Completions</h2>
+                        <button type="button" id="refresh-completions-btn" class="btn-secondary px-4 py-2">
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="completions-table-container"></div>
+                </div>
+            </div>
     </div>
 
     <!-- Simple Fast Confirmation Dialog -->
@@ -1195,9 +1251,17 @@
             }
         }
 
-
-
-        // Optimized statistics loading with count queries
+        async function getCompletionsCount() {
+            try {
+                // Read exact count from the registry
+                const countRef = window.firebaseRtdbRef(window.firebaseRtdb, '/stats/completionsCount');
+                const snapshot = await window.firebaseRtdbGet(countRef);
+                return snapshot.exists() ? snapshot.val() : 0;
+            } catch (error) {
+                console.error('Error fetching completions count:', error);
+                return 0;
+            }
+        }        // Optimized statistics loading with count queries
         async function loadDashboardStatistics() {
             try {
                 // Check cache first
@@ -1205,16 +1269,18 @@
                     (Date.now() - firestoreCache.stats.lastFetched) < firestoreCache.stats.cacheDuration) {
                     return firestoreCache.stats.data;
                 }
-                const [usersCount, adminsCount, hostsCount] = await Promise.all([
+                const [usersCount, adminsCount, hostsCount, completionsCount] = await Promise.all([
                     getUsersCount(),
                     getAdminsCount(),
-                    getWorkshopHostsCount()
+                    getWorkshopHostsCount(),
+                    getCompletionsCount()
                 ]);
 
                 const stats = {
                     totalUsers: usersCount,
                     totalAdmins: adminsCount,
-                    totalWorkshopHosts: hostsCount
+                    totalWorkshopHosts: hostsCount,
+                    totalCompletions: completionsCount
                 };
 
                 // Cache the statistics
@@ -1235,6 +1301,7 @@
                 updateElement('total-users', stats.totalUsers);
                 updateElement('total-admins', stats.totalAdmins);
                 updateElement('total-workshop-hosts', stats.totalWorkshopHosts);
+                updateElement('total-completions', stats.totalCompletions !== undefined ? stats.totalCompletions : '-');
             } catch (error) {
                 // Silent error handling
             }
@@ -2537,6 +2604,165 @@
             }
         }
 
+        // ==========================================
+        // Completions Logic
+        // ==========================================
+        let allCompletionsData = [];
+        let rtdbCompletionsCache = { data: null, lastFetched: 0, cacheDuration: 300000 };
+
+        async function loadAllCompletions() {
+            try {
+                if (rtdbCompletionsCache.data && (Date.now() - rtdbCompletionsCache.lastFetched) < rtdbCompletionsCache.cacheDuration) {
+                    allCompletionsData = rtdbCompletionsCache.data;
+                    return;
+                }
+                const completionsRef = window.firebaseRtdbRef(window.firebaseRtdb, 'completions');
+                // Limit to last 20 completions for the dashboard table
+                const q = window.firebaseRtdbQuery(
+                    completionsRef, 
+                    window.firebaseOrderByChild('submittedAt'), 
+                    window.firebaseLimitToLast(20)
+                );
+                
+                const snap = await window.firebaseRtdbGet(q);
+                
+                allCompletionsData = [];
+                if (snap.exists()) {
+                    const data = snap.val();
+                    Object.keys(data).forEach(uid => {
+                        allCompletionsData.push({ id: uid, ...data[uid] });
+                    });
+                }
+                
+                // Sort by submittedAt descending
+                allCompletionsData.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+                rtdbCompletionsCache.data = allCompletionsData;
+                rtdbCompletionsCache.lastFetched = Date.now();
+            } catch (error) {
+                console.error('Error fetching completions:', error);
+                allCompletionsData = [];
+            }
+        }
+
+        async function loadRecentCompletions() {
+            const container = document.getElementById('completions-table-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Loading completions...</p>
+                    </div>
+                `;
+            }
+            rtdbCompletionsCache.data = null; // force refresh
+            await loadAllCompletions();
+            displayCompletions();
+        }
+
+        function displayCompletions() {
+            const container = document.getElementById('completions-table-container');
+            if (!container) return;
+            
+            if (!allCompletionsData.length) {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No completions yet</h3>
+                        <p class="text-gray-500">Users who complete the Learn module will appear here.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name & Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Club / District</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${allCompletionsData.map((comp) => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(comp.submittedAt)}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">${escapeHTML(comp.name)}</div>
+                                        <div class="text-sm text-gray-500">${escapeHTML(comp.email)}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">${escapeHTML(comp.clubName || 'N/A')}</div>
+                                        <div class="text-sm text-gray-500">Dist. ${escapeHTML(comp.district || 'N/A')} &middot; ${escapeHTML(comp.clubBase || 'N/A')}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${escapeHTML(comp.role || 'N/A')}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        ${comp.webhookStatus === 'delivered' 
+                                            ? '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Delivered</span>'
+                                            : '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function searchCompletionByEmail(email) {
+            const resultBox = document.getElementById('completion-search-result');
+            if (!resultBox) return;
+            
+            resultBox.innerHTML = '<div class="text-gray-500">Searching...</div>';
+            resultBox.classList.remove('hidden');
+            
+            try {
+                // Perform a direct query to RTDB to ensure we find users even if they aren't in the recent 100
+                const completionsRef = window.firebaseRtdbRef(window.firebaseRtdb, 'completions');
+                const q = window.firebaseRtdbQuery(
+                    completionsRef,
+                    window.firebaseOrderByChild('email'),
+                    window.firebaseEqualTo(email.toLowerCase())
+                );
+                
+                const snap = await window.firebaseRtdbGet(q);
+                
+                if (snap.exists()) {
+                    const data = snap.val();
+                    const firstMatchId = Object.keys(data)[0];
+                    const found = data[firstMatchId];
+                    
+                    resultBox.innerHTML = `
+                        <div class="p-4 rounded-lg border bg-green-50 border-green-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-medium text-gray-900">${escapeHTML(found.name)} has completed the module.</div>
+                                    <div class="text-sm text-gray-600">Completed at ${formatDate(found.submittedAt)}</div>
+                                </div>
+                                <div>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Certificate Issued
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultBox.innerHTML = `
+                        <div class="p-4 rounded-lg border bg-yellow-50 border-yellow-200">
+                            <div class="text-sm text-yellow-800">No completion found for <strong>${escapeHTML(email)}</strong>.</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error searching completions:', error);
+                resultBox.innerHTML = `<div class="text-sm text-red-600">Error searching completions.</div>`;
+            }
+        }
+
         async function searchWorkshopHostByEmail(email) {
             if (!email || !email.trim()) {
                 showNotification('Please enter a valid email address', 'error');
@@ -2702,6 +2928,8 @@
                     displayWorkshopHosts();
                     showNotification('Could not load workshop hosts. Deploy the latest Firestore rules, then refresh.', 'error');
                 }
+            } else if (tabName === 'completions') {
+                loadRecentCompletions();
             }
         }
 
@@ -2751,13 +2979,18 @@
                 refreshAdminsBtn: document.getElementById('refresh-admins-btn'),
                 searchHostBtn: document.getElementById('search-host-btn'),
                 hostEmailInput: document.getElementById('host-email-search'),
-                refreshHostsBtn: document.getElementById('refresh-hosts-btn')
+                refreshHostsBtn: document.getElementById('refresh-hosts-btn'),
+                completionsTab: document.getElementById('completions-tab'),
+                searchCompletionBtn: document.getElementById('search-completion-btn'),
+                completionEmailInput: document.getElementById('completion-email-search'),
+                refreshCompletionsBtn: document.getElementById('refresh-completions-btn')
             };
             
             // Tab switching
             if (elements.usersTab) elements.usersTab.addEventListener('click', () => switchTab('users'));
             if (elements.adminsTab) elements.adminsTab.addEventListener('click', () => switchTab('admins'));
             if (elements.hostsTab) elements.hostsTab.addEventListener('click', () => switchTab('hosts'));
+            if (elements.completionsTab) elements.completionsTab.addEventListener('click', () => switchTab('completions'));
 
             // Search functionality
             if (elements.searchBtn && elements.emailInput) {
@@ -2815,16 +3048,29 @@
             }
             if (elements.refreshHostsBtn) {
                 elements.refreshHostsBtn.addEventListener('click', async () => {
-                    try {
-                        clearCache('hosts');
-                        await loadAllWorkshopHosts();
-                        displayWorkshopHosts();
-                        const stats = await loadDashboardStatistics();
-                        updateStatisticsDisplay(stats);
-                        showNotification('Workshop hosts refreshed.', 'success');
-                    } catch (error) {
-                        showNotification('Failed to refresh workshop hosts.', 'error');
+                    clearCache('hosts');
+                    await loadAllWorkshopHosts();
+                    displayWorkshopHosts();
+                });
+            }
+
+            if (elements.searchCompletionBtn && elements.completionEmailInput) {
+                elements.searchCompletionBtn.addEventListener('click', () => {
+                    const email = elements.completionEmailInput.value.trim();
+                    if (email) searchCompletionByEmail(email);
+                });
+                elements.completionEmailInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const email = e.target.value.trim();
+                        if (email) searchCompletionByEmail(email);
                     }
+                });
+            }
+
+            if (elements.refreshCompletionsBtn) {
+                elements.refreshCompletionsBtn.addEventListener('click', () => {
+                    loadRecentCompletions();
                 });
             }
 

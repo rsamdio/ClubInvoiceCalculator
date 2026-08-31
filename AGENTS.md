@@ -15,7 +15,7 @@ Static web app for **Rotaract South Asia MDIO (RSAMDIO)** that calculates club m
 | Stack | Vanilla JS, HTML, CSS — **no npm / bundler** |
 | Backend | Firebase Auth (Google + Anonymous for live join) + Firestore + RTDB (`asia-southeast1`) |
 | UI | Tailwind CSS (CDN) + `styles.css` / `learn/worksheet.css` |
-| Hosting | Firebase Hosting (`_redirects` handles Netlify → primary domain) |
+| Hosting | Netlify |
 
 ## Repository layout
 
@@ -37,7 +37,7 @@ ClubInvoiceCalculator/
 │   └── security.js         # Validation + sanitization (window.SecurityUtils, FormValidator)
 ├── pdf-worker.js           # Web Worker PDF generation (jsPDF + autoTable)
 ├── firebase-config.js      # Firebase config (ESM export; includes databaseURL)
-├── firebase.json           # Hosting, Firestore, and RTDB deploy config
+├── firebase.json           # Firestore, Functions, and RTDB deploy config
 ├── database.rules.json     # RTDB rules for rooms / hostRooms / host flags
 ├── firestore.rules         # users, admins, workshopHosts
 ├── styles.css              # Custom CSS (buttons, cards, dropdowns, tables)
@@ -201,8 +201,10 @@ Production HTML should reference `.min.js` / `styles.min.css` (see `README.md`).
 Deploy (this project only: `clubinvoicecalculator`):
 
 ```bash
-firebase deploy --only hosting,database,firestore:rules --project clubinvoicecalculator
+firebase deploy --only database,firestore:rules,functions --project clubinvoicecalculator
 ```
+
+Note: The front-end is deployed via Netlify. Do not deploy `hosting` to Firebase.
 
 Hosting alone is not enough for live rooms. Do not deploy this repo to other Firebase projects.
 

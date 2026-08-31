@@ -1,0 +1,13 @@
+{
+  "name": "clubinvoicecalculator-functions",
+  "description": "Cloud Functions for Rotaract Club Invoice Basics",
+  "dependencies": {
+    "firebase-admin": "^12.1.0",
+    "firebase-functions": "^5.0.1"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "private": true
+}

@@ -46,7 +46,7 @@ ClubInvoiceCalculator/
 │   └── security.js         # Validation / sanitization (also mirrored in app.js)
 ├── pdf-worker.js           # PDF generation worker
 ├── firebase-config.js      # Client Firebase config (includes RTDB URL)
-├── firebase.json           # Hosting + Firestore + RTDB
+├── firebase.json           # Firestore + RTDB + Functions
 ├── database.rules.json     # Live-session RTDB rules
 ├── firestore.rules         # users, admins, workshopHosts
 ├── styles.css              # Custom styles
@@ -76,10 +76,9 @@ ClubInvoiceCalculator/
    Update `firebase-config.js` (keep `databaseURL` on the asia-southeast1 RTDB), enable Google Authentication, Anonymous Authentication (live `/learn` join), Firestore, and Realtime Database. Deploy rules from this repo:
 
    ```bash
-   firebase deploy --only hosting,database,firestore:rules --project clubinvoicecalculator
+   firebase deploy --only database,firestore:rules,functions --project clubinvoicecalculator
    ```
-
-   Production is Firebase Hosting on `dues.rsamdio.org`. `_redirects` still sends the Netlify subdomain there.
+   *Note: The frontend is hosted on Netlify, so you do not need to deploy `hosting` via Firebase CLI.*
 
 4. **After editing JS or CSS**
    ```bash
