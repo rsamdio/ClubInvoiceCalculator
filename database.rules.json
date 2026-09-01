@@ -37,6 +37,9 @@
         }
       }
     },
+    "stats": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true"
+    },
     "completions": {
       ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       ".indexOn": ["email", "district", "webhookStatus", "submittedAt"],
