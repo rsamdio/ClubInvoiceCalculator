@@ -1,7 +1,9 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 
-admin.initializeApp();
+admin.initializeApp({
+  databaseURL: "https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app"
+});
 
 exports.submitCertificate = onCall(
   {
