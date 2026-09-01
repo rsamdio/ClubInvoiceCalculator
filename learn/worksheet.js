@@ -1144,6 +1144,11 @@
             document.getElementById('ws-cert-form').hidden = true;
             document.getElementById('ws-cert-success').hidden = false;
             
+            const certTitle = document.getElementById('ws-cert-title');
+            if (certTitle) certTitle.textContent = "You're All Set!";
+            const certBody = document.getElementById('ws-cert-body');
+            if (certBody) certBody.textContent = "Your details have been successfully submitted. You can now claim your certificate on Rotaract Certify, or close this dialog to review the worksheet stages and refresh your memory.";
+            
             const bannerBtn = document.querySelector('#complete-banner #btn-banner-cert');
             if (bannerBtn) {
                 bannerBtn.textContent = 'View Certificate Status';
