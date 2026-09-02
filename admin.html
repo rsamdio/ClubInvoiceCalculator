@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https://ui-avatars.com https://*.googleusercontent.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com https://ssl.gstatic.com https://www.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com https://www.recaptcha.net; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com; frame-src 'self' https://dues.rsamdio.org https://clubinvoicecalculator.firebaseapp.com/ https://accounts.google.com https://www.google.com https://www.recaptcha.net https://www.gstatic.com; base-uri 'self'; form-action 'self'; object-src 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://www.gstatic.com https://ssl.gstatic.com https://*.gstatic.com https://www.googleapis.com https://apis.google.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://www.gstatic.com https://ssl.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app https://*.firebasedatabase.app https://*.firebaseio.com wss://clubinvoicecalculator-default-rtdb.asia-southeast1.firebasedatabase.app wss://*.firebasedatabase.app wss://*.firebaseio.com https://asia-southeast1-clubinvoicecalculator.cloudfunctions.net; frame-src 'self' https://dues.rsamdio.org https://clubinvoicecalculator.firebaseapp.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://gstatic.com https://www.gstatic.com https://ssl.gstatic.com https://*.gstatic.com; child-src 'self' blob: https://dues.rsamdio.org https://clubinvoicecalculator.firebaseapp.com https://accounts.google.com https://www.google.com https://www.recaptcha.net https://gstatic.com https://www.gstatic.com https://ssl.gstatic.com https://*.gstatic.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(), interest-cohort=()">
@@ -85,16 +85,27 @@
         }
         .tab-button {
             padding: 0.875rem 1.5rem;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             font-weight: 600;
-            transition: all 0.15s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid transparent;
             font-size: 0.875rem;
+            outline: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tab-button:focus {
+            outline: none;
+        }
+        .tab-button:focus-visible {
+            outline: 2px solid #6366f1;
+            outline-offset: 2px;
         }
         .tab-button.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+            border-color: transparent;
+            box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
         }
         .tab-button:not(.active) {
             background: white;
@@ -103,7 +114,9 @@
         }
         .tab-button:not(.active):hover {
             background: #f9fafb;
+            color: #374151;
             border-color: #d1d5db;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
         }
         .table-container {
             background: white;
@@ -706,16 +719,24 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold text-red-800 mb-3">Access Denied</h2>
-            <p class="text-red-600 mb-6 text-lg">You don't have admin privileges to access this dashboard.</p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button id="go-home-btn" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold shadow-lg border border-transparent bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:-translate-y-0.5">
+            <h2 id="access-denied-title" class="text-2xl font-bold text-red-800 mb-2">Access Denied</h2>
+            <p id="access-denied-message" class="text-red-600 mb-2 text-lg">You don't have admin privileges to access this dashboard.</p>
+            <p id="access-denied-email" class="text-sm font-medium text-gray-600 mb-6 hidden"></p>
+            <div class="flex flex-wrap gap-4 justify-center">
+                <button id="retry-admin-btn" type="button" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold shadow-lg border border-transparent bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300 transition-transform transform hover:-translate-y-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Retry Access Check</span>
+                </button>
+                <button id="switch-account-btn" type="button" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-gray-700 font-semibold shadow border border-gray-300 bg-white hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-200 transition-transform transform hover:-translate-y-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span>Sign Out / Switch Account</span>
+                </button>
+                <button id="go-home-btn" type="button" class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold shadow-lg border border-transparent bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition-transform transform hover:-translate-y-0.5">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                     <span>Go to Home Page</span>
                 </button>
-
             </div>
         </div>
 
@@ -803,8 +824,8 @@
 
             <!-- Navigation Tabs -->
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 mb-8">
-                <div class="p-4 sm:p-6 overflow-hidden">
-                    <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto pb-2 -mb-2 hide-scrollbar" aria-label="Tabs">
+                <div class="p-4 sm:p-6">
+                    <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto py-2 -my-2 px-1 -mx-1 hide-scrollbar" aria-label="Tabs">
                         <button id="users-tab" class="tab-button active flex items-center space-x-2 sm:space-x-3 whitespace-nowrap flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -1091,11 +1112,22 @@
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-bold text-gray-800">Recent Completions</h2>
-                        <button type="button" id="refresh-completions-btn" class="btn-secondary px-4 py-2">
-                            Refresh
-                        </button>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Recent Completions</h2>
+                            <p class="text-xs text-gray-500 mt-0.5">Showing the latest Learn worksheet completions</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="export-completions-btn" class="inline-flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-medium rounded-lg text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Export All (CSV)</span>
+                            </button>
+                            <button type="button" id="refresh-completions-btn" class="btn-secondary px-4 py-2">
+                                Refresh
+                            </button>
+                        </div>
                     </div>
                     <div id="completions-table-container"></div>
                 </div>
@@ -1544,7 +1576,8 @@
         }
 
         async function checkAdminAccess(userEmail) {
-            document.getElementById('admin-access-check').classList.remove('hidden');
+            const checkEl = document.getElementById('admin-access-check');
+            if (checkEl) checkEl.classList.remove('hidden');
             
             try {
                 // Check if user is admin using UID-based document ID
@@ -1553,15 +1586,28 @@
                 if (adminDoc.exists()) {
                     isAdmin = true;
                     showDashboard();
+
+                    // Ensure RTDB admin mirror is set so RTDB completions and stats reads succeed
+                    if (window.firebaseRtdb && window.firebaseRtdbRef && window.firebaseRtdbSet) {
+                        try {
+                            const rtdbAdminRef = window.firebaseRtdbRef(window.firebaseRtdb, `admins/${currentUser.uid}`);
+                            await window.firebaseRtdbSet(rtdbAdminRef, true);
+                        } catch (rtdbErr) {
+                            console.warn('Could not mirror admin status to RTDB:', rtdbErr);
+                        }
+                    }
+
                     loadDashboardData();
                 } else {
                     isAdmin = false;
-                    showAccessDenied();
+                    showAccessDenied(false, userEmail || (currentUser ? currentUser.email : ''));
                 }
             } catch (error) {
-                showAccessDenied();
+                console.error('Admin access check error:', error);
+                isAdmin = false;
+                showAccessDenied(true, userEmail || (currentUser ? currentUser.email : ''), error);
             } finally {
-                document.getElementById('admin-access-check').classList.add('hidden');
+                if (checkEl) checkEl.classList.add('hidden');
             }
         }
 
@@ -1575,8 +1621,34 @@
             document.getElementById('access-denied').classList.add('hidden');
         }
 
-        function showAccessDenied() {
-            document.getElementById('access-denied').classList.remove('hidden');
+        function showAccessDenied(isError = false, userEmail = '', error = null) {
+            const accessDeniedEl = document.getElementById('access-denied');
+            if (!accessDeniedEl) return;
+            
+            const titleEl = document.getElementById('access-denied-title');
+            const messageEl = document.getElementById('access-denied-message');
+            const emailEl = document.getElementById('access-denied-email');
+            
+            const emailToShow = userEmail || (currentUser ? currentUser.email : '');
+            if (emailEl) {
+                if (emailToShow) {
+                    emailEl.textContent = `Signed in as: ${emailToShow}`;
+                    emailEl.classList.remove('hidden');
+                } else {
+                    emailEl.textContent = '';
+                    emailEl.classList.add('hidden');
+                }
+            }
+
+            if (isError) {
+                if (titleEl) titleEl.textContent = 'Verification Error';
+                if (messageEl) messageEl.textContent = 'Could not verify administrator permissions due to a network or authentication error. Please retry or sign in again.';
+            } else {
+                if (titleEl) titleEl.textContent = 'Access Denied';
+                if (messageEl) messageEl.textContent = "You don't have admin privileges to access this dashboard.";
+            }
+
+            accessDeniedEl.classList.remove('hidden');
         }
 
         function goToHome() {
@@ -2721,6 +2793,128 @@
             `;
         }
 
+        // Sanitize field to prevent CSV Formula Injection (CWE-1236) and format properly
+        function sanitizeCsvField(value) {
+            if (value === null || value === undefined) return '""';
+            let str = String(value).trim();
+            // Prevent spreadsheet formula injection (=, +, -, @, tab, return)
+            if (/^[=+\-@\t\r]/.test(str)) {
+                str = "'" + str;
+            }
+            // Double quote escaping and flatten carriage returns/newlines to preserve rows
+            str = str.replace(/"/g, '""').replace(/[\r\n]+/g, ' ');
+            return `"${str}"`;
+        }
+
+        async function exportAllCompletionsAsCSV() {
+            const exportBtn = document.getElementById('export-completions-btn');
+            const originalBtnHtml = exportBtn ? exportBtn.innerHTML : '';
+            
+            try {
+                if (exportBtn) {
+                    exportBtn.disabled = true;
+                    exportBtn.innerHTML = `
+                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Exporting...</span>
+                    `;
+                }
+                showNotification('Fetching all completion records from database...', 'info');
+
+                if (!window.firebaseRtdb || !window.firebaseRtdbRef || !window.firebaseRtdbGet) {
+                    throw new Error('Database connection unavailable');
+                }
+
+                // Query all completions node from RTDB (unlimited)
+                const completionsRef = window.firebaseRtdbRef(window.firebaseRtdb, 'completions');
+                const snap = await window.firebaseRtdbGet(completionsRef);
+
+                if (!snap.exists()) {
+                    showNotification('No completion records found to export.', 'warning');
+                    return;
+                }
+
+                const data = snap.val();
+                const records = [];
+                Object.keys(data).forEach(uid => {
+                    records.push({ id: uid, ...data[uid] });
+                });
+
+                if (records.length === 0) {
+                    showNotification('No completion records found to export.', 'warning');
+                    return;
+                }
+
+                // Sort by submittedAt descending (newest first)
+                records.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+
+                const headers = [
+                    'Submission Date (UTC)',
+                    'Submission Timestamp',
+                    'Full Name',
+                    'Email Address',
+                    'Role',
+                    'Club Name',
+                    'District',
+                    'Club Base',
+                    'Learning Mode',
+                    'Room Code',
+                    'Completion Date (UTC)',
+                    'Webhook Status',
+                    'User ID'
+                ];
+
+                const csvRows = [headers.map(sanitizeCsvField).join(',')];
+
+                records.forEach(rec => {
+                    const dateStr = rec.submittedAt ? new Date(rec.submittedAt).toISOString().replace('T', ' ').substring(0, 19) : (rec.completedAt ? new Date(rec.completedAt).toISOString().replace('T', ' ').substring(0, 19) : 'N/A');
+                    const compDateStr = rec.completedAt ? new Date(rec.completedAt).toISOString().replace('T', ' ').substring(0, 19) : 'N/A';
+                    const row = [
+                        dateStr,
+                        rec.submittedAt || '',
+                        rec.name || '',
+                        rec.email || '',
+                        rec.role || '',
+                        rec.clubName || '',
+                        rec.district || '',
+                        rec.clubBase || '',
+                        rec.mode || '',
+                        rec.roomCode || '',
+                        compDateStr,
+                        rec.webhookStatus || '',
+                        rec.id || rec.uid || ''
+                    ];
+                    csvRows.push(row.map(sanitizeCsvField).join(','));
+                });
+
+                // Prepend UTF-8 Byte Order Mark (\uFEFF) for Excel compatibility
+                const csvContent = '\uFEFF' + csvRows.join('\r\n');
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const downloadLink = document.createElement('a');
+                const nowStamp = new Date().toISOString().slice(0, 10);
+                downloadLink.href = url;
+                downloadLink.download = `rotaract-learn-completions-${nowStamp}.csv`;
+                downloadLink.style.display = 'none';
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                URL.revokeObjectURL(url);
+
+                showNotification(`Successfully exported ${records.length} completion${records.length === 1 ? '' : 's'}!`, 'success');
+            } catch (error) {
+                console.error('Error exporting completions:', error);
+                showNotification('Failed to export completions. Please check connection and try again.', 'error');
+            } finally {
+                if (exportBtn) {
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = originalBtnHtml;
+                }
+            }
+        }
+
         async function searchCompletionByEmail(email) {
             const resultBox = document.getElementById('completion-search-result');
             if (!resultBox) return;
@@ -3081,6 +3275,23 @@
                 elements.refreshCompletionsBtn.addEventListener('click', () => {
                     loadRecentCompletions();
                 });
+            }
+
+            const exportCompletionsBtn = document.getElementById('export-completions-btn');
+            if (exportCompletionsBtn) {
+                exportCompletionsBtn.addEventListener('click', exportAllCompletionsAsCSV);
+            }
+
+            const retryAdminBtn = document.getElementById('retry-admin-btn');
+            if (retryAdminBtn) {
+                retryAdminBtn.addEventListener('click', () => {
+                    checkAdminAccess(currentUser ? currentUser.email : null);
+                });
+            }
+
+            const switchAccountBtn = document.getElementById('switch-account-btn');
+            if (switchAccountBtn) {
+                switchAccountBtn.addEventListener('click', handleLogout);
             }
 
             if (elements.refreshAdminsBtn) elements.refreshAdminsBtn.addEventListener('click', async () => {

@@ -41,11 +41,10 @@ ClubInvoiceCalculator/
 ├── database.rules.json     # RTDB rules for rooms / hostRooms / host flags
 ├── firestore.rules         # users, admins, workshopHosts
 ├── styles.css              # Custom CSS (buttons, cards, dropdowns, tables)
-├── build_minify.py         # Generates *.min.css and *.min.js (calculator only)
-├── firestore.indexes.json  # Firestore composite indexes for admin queries
 ├── privacy.html / terms.html
+├── netlify.toml            # Single source of truth for Netlify redirects, headers, CSP, and caching
 ├── vendor/                 # Local libs (jspdf; xlsx/papaparse/autotable referenced but may be missing)
-└── _redirects              # Netlify redirect to dues.rsamdio.org
+└── build_minify.py         # Generates *.min.css and *.min.js (calculator only)
 ```
 
 ## Architecture
@@ -153,9 +152,9 @@ Tax and local currency are applied in `updateTotal()` using `taxPercentage` and 
 3. **Bulk import:** CSV/XLSX → lazy-load PapaParse/XLSX → `validateMemberData()` → preview → `addBulkMembers()`.
 4. **Cloud sync:** Manual Save → `getCurrentData()` → `saveUserData()` / `loadUserData()` with local-vs-cloud conflict dialog.
 5. **PDF:** Inline in `index.html` → worker message → `logInvoiceSummary()` on success.
-6. **Admin:** Sign in → check `admins/{uid}` → search users by email, view roster/invoices, promote admins, invite/delete workshop hosts.
+6. **Admin:** Sign in → check Firestore `admins/{uid}` → auto-mirror `admins/{uid}: true` to RTDB → search users by email, view roster/invoices, promote admins, invite/delete workshop hosts, view Learn completions, and export all completions as CSV with formula injection sanitization.
 7. **Learn (self-paced):** `/learn/` → localStorage `rsamdio-learn-worksheet-v1` → eight stages; no email, no sign-in.
-8. **Learn (live):** participant enters 6-digit code → Anonymous Auth → writes `rooms/{CODE}/participants/{uid}`. Host at `/learn/host.html` signs in with Google (admin or `workshopHosts/{uid}`) → two-step console (all sessions → this session).
+8. **Learn (live):** participant enters 6-digit code → Anonymous Auth → writes `rooms/{CODE}/participants/{uid}`. Host at `/learn/host.html` signs in with Google (admin or `workshopHosts/{uid}`) → two-step console (all sessions → this session). Denied view includes retry and account switch controls.
 
 ## Public API (`window.appFunctions`)
 

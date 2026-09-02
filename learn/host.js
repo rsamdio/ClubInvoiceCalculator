@@ -1040,6 +1040,24 @@
             }
             await fb.signOut(fb.auth);
         });
+        const btnHostDeniedRetry = document.getElementById('btn-host-denied-retry');
+        if (btnHostDeniedRetry) {
+            btnHostDeniedRetry.addEventListener('click', () => {
+                if (currentUser) checkHostAccess(currentUser);
+            });
+        }
+        const btnHostDeniedSignout = document.getElementById('btn-host-denied-signout');
+        if (btnHostDeniedSignout) {
+            btnHostDeniedSignout.addEventListener('click', async () => {
+                const fb = await waitForHostFirebase();
+                stopParticipantsWatch();
+                if (roomsUnsub) {
+                    roomsUnsub();
+                    roomsUnsub = null;
+                }
+                await fb.signOut(fb.auth);
+            });
+        }
         ui.newSession.addEventListener('click', createSession);
         if (ui.stepList) ui.stepList.addEventListener('click', goToSessionList);
         if (ui.stepSession) {
