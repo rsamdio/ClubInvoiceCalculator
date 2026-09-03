@@ -225,7 +225,7 @@
         <section class="ws-stage" data-stage="0" hidden>
             <p class="ws-stage-label">Stage 1 of 8</p>
             <h2>Who is filling this worksheet?</h2>
-            <p id="lead-setup" class="ws-lead">We will use your name and club type in the questions that follow.</p>
+            <p id="lead-setup" class="ws-lead">We’ll use your name and club type in the questions that follow.</p>
 
             <div class="ws-stack">
                 <div class="ws-card">
@@ -257,7 +257,7 @@
 
                 <div class="ws-card">
                     <p class="ws-card-title">Choose your club base</p>
-                    <p class="ws-card-help">University-based and community-based clubs pay different annual RI dues. Pick yours once. Every later number uses this.</p>
+                    <p class="ws-card-help">University-based and community-based clubs pay different annual RI dues. Select your club type once. All later calculations use this selection.</p>
             <div class="ws-choice-row" role="radiogroup" aria-label="Club base">
                 <button type="button" class="ws-choice" data-base="university">
                     <span class="ws-choice-title">Institution / University-Based</span>
@@ -277,10 +277,10 @@
         <section class="ws-stage" data-stage="1" hidden>
             <p class="ws-stage-label">Stage 2 of 8</p>
             <h2>What are you paying for?</h2>
-            <p id="lead-invoice" class="ws-lead">A January invoice covers one Rotary year. You are paying for that calendar year, not for random months.</p>
+            <p id="lead-invoice" class="ws-lead">A January invoice covers the full calendar year, January through December. You are paying for that calendar year, not for a Rotary Year (July–June).</p>
 
             <div class="ws-callout">
-                If the invoice is dated January 2027, which months does that payment cover? Pick the start and the end.
+                If the invoice is dated <strong>January 2027</strong>, which months does the payment cover? Select the start and end months.
             </div>
 
             <div class="ws-stack">
@@ -424,8 +424,8 @@
         <section class="ws-stage" data-stage="2" hidden>
             <p class="ws-stage-label">Stage 3 of 8</p>
             <h2>How many months count?</h2>
-            <p id="lead-months" class="ws-lead">For a <strong>January 2027</strong> invoice, Pro Rata Dues covers months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.</p>
-            <p class="ws-hint-static">If someone joins on the 1st, that month counts. If they join later in the month, start from the next month.</p>
+            <p id="lead-months" class="ws-lead">For a <strong>January 2027</strong> invoice, Pro Rata Dues cover applicable months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.</p>
+            <p class="ws-hint-static">If someone joins on the 1st, that month counts. If they join after the 1st, start counting from the next month.</p>
 
             <div class="ws-month-list">
                 <article class="ws-month-card">
@@ -524,8 +524,8 @@
         <section class="ws-stage" data-stage="3" hidden>
             <p class="ws-stage-label">Stage 4 of 8</p>
             <h2>Annual and per-month dues (USD)</h2>
-            <p id="lead-usd" class="ws-lead">You chose <strong id="chosen-base-label">your club base</strong>. Enter only those rates. Every money amount on this worksheet must be rounded to two decimals.</p>
-            <p class="ws-hint-static">Monthly dues are your annual USD divided by 12, then rounded to the nearest cent. Enter exactly two decimals, not the long division result. Later stages reuse this rounded figure, so a wrong cent here makes the final invoice wrong.</p>
+            <p id="lead-usd" class="ws-lead">You chose <strong id="chosen-base-label">your club base</strong>. Enter only those rates. Round every money amount on this worksheet to two decimal places.</p>
+            <p class="ws-hint-static">Monthly dues are your annual dues divided by 12, then rounded to two decimal places. Enter exactly two decimals, not the unrounded result. Later stages reuse this rounded figure, so an incorrect value here will make the final invoice incorrect.</p>
 
             <div class="ws-card">
                 <p class="ws-card-title">USD rates</p>
@@ -550,8 +550,8 @@
         <section class="ws-stage" data-stage="4" hidden>
             <p class="ws-stage-label">Stage 5 of 8</p>
             <h2>Convert to local currency</h2>
-            <p id="lead-inr" class="ws-lead">Congratulations. You got the USD rates right. This worksheet uses a sample rate of <strong>$1 = 96</strong> in local currency. Multiply your rounded USD amounts by 96.</p>
-            <p class="ws-hint-static">Use the two-decimal USD figures from the last stage. Annual local currency is annual USD times 96. Monthly local currency is the rounded monthly USD times 96. Keep two decimals again.</p>
+            <p id="lead-inr" class="ws-lead">Congratulations. You got the USD rates right. This worksheet uses a sample exchange rate of <strong>$1 = 96</strong> in local currency. Multiply each rounded USD amount by 96 to calculate the local currency amount.</p>
+            <p class="ws-hint-static">Use the two-decimal USD figures from the previous stage. Annual local currency is the annual USD amount multiplied by 96. Monthly local currency is the rounded monthly USD amount multiplied by 96. Round both amounts to two decimal places.</p>
 
             <div class="ws-card">
                 <p class="ws-card-title">Local-currency amounts</p>
@@ -576,8 +576,8 @@
         <section class="ws-stage" data-stage="5" hidden>
             <p class="ws-stage-label">Stage 6 of 8</p>
             <h2>Sample roster for the Jan 2027 invoice</h2>
-            <p id="lead-roster" class="ws-lead">Here are five members. Who is still <strong>active on 1 January 2027</strong>? How many <strong>2026 months</strong> of Pro Rata Dues apply?</p>
-            <p class="ws-hint-static">A leave date before 1 Jan 2027 means they are not active on the invoice date. A join before the prior year usually has no Pro Rata Dues months on this invoice, since they would have been billed as Active member in the previous invoice (Jan 2026 Invoice).</p>
+            <p id="lead-roster" class="ws-lead">Here are five members. Who is still <strong>active as of 1 January 2027</strong>, and how many months of <strong>2026 Pro Rata Dues</strong> apply to each?</p>
+            <p class="ws-hint-static">A leave date before 1 January 2027 means the member is not active on the invoice date. A member who joined before the January 2026 invoice has no Pro Rata Dues months on the January 2027 invoice, as they were billed as an Active member on the January 2026 invoice.</p>
 
             <div class="ws-stack">
                 <article class="ws-card">
@@ -684,8 +684,8 @@
         <section class="ws-stage" data-stage="6" hidden>
             <p class="ws-stage-label">Stage 7 of 8</p>
             <h2>Individual dues in local currency</h2>
-            <p id="lead-dues" class="ws-lead">Use the rounded annual and monthly local-currency amounts you already worked out. Active members get the annual amount for 2027. Pro Rata Dues are the monthly amount × that member’s unbilled 2026 months (months not billed on the previous January invoice). Keep two decimals.</p>
-            <p id="hint-dues" class="ws-hint-static">Each card already shows that member’s unbilled 2026 months. Those months were not on the Jan 2026 invoice, so they appear as Pro Rata Dues here. Annual is only if they are active on 1 January 2027. Pro Rata can still apply if they left later in 2026. Keep two decimals.</p>
+            <p id="lead-dues" class="ws-lead">Use the rounded annual and monthly local-currency amounts from the previous stage. Active members are charged the 2027 annual amount. Pro Rata Dues = monthly amount × unbilled 2026 months (months not billed on the previous January invoice). Keep two decimals.</p>
+            <p id="hint-dues" class="ws-hint-static">Each member card displays their unbilled 2026 months. Those months were not billed on the January 2026 invoice, so they appear as Pro Rata Dues here. Annual dues apply only if the member is active on 1 January 2027. Pro Rata Dues can still apply if a member left during 2026. Keep two decimal places.</p>
 
             <div class="ws-stack">
                 <article class="ws-card">
@@ -777,8 +777,8 @@
         <section class="ws-stage" data-stage="7" hidden>
             <p class="ws-stage-label">Stage 8 of 8</p>
             <h2>Final table (Jan 2027 invoice)</h2>
-            <p id="lead-final" class="ws-lead">This is the same layout as the club invoice. Fill quantity, unit price, and total on each line. For this sample, local tax is 18%.</p>
-            <p id="hint-final" class="ws-hint-static">Use your roster totals and the local-currency rates you already checked. Quantity times unit price equals the line total. For this sample, tax is 18% of each matching dues line, not 18% of the grand total. Previous balance is a carryover from earlier invoices: unpaid dues add to the bill; a credit or overpayment reduces it. This sample club has none, so enter 0.</p>
+            <p id="lead-final" class="ws-lead">This uses the same layout as the club invoice. Fill in the quantity, unit price, and total for each line. For this sample, the local tax rate is 18%.</p>
+            <p id="hint-final" class="ws-hint-static">Use your roster totals and the local-currency rates from the previous stages. Quantity × unit price = line total. For this sample, tax is 18% of each applicable dues line, not 18% of the grand total. Previous balance carries over from earlier invoices: unpaid dues add to the bill, while credits or overpayments reduce it. This sample club has no previous balance, so enter 0.</p>
 
             <div class="ws-invoice-wrap">
                 <table class="ws-invoice-sheet">

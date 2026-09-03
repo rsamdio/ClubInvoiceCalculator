@@ -1300,9 +1300,19 @@
                 return snapshot.exists() ? snapshot.val() : 0;
             } catch (error) {
                 console.error('Error fetching completions count:', error);
-                return 0;
+                return '-';
             }
-        }        // Optimized statistics loading with count queries
+        }
+
+        // Lightweight promise timeout utility
+        function withTimeout(promise, ms, fallbackValue) {
+            return Promise.race([
+                promise,
+                new Promise((resolve) => setTimeout(() => resolve(fallbackValue), ms))
+            ]);
+        }
+
+        // Optimized statistics loading with resilient timeouts and progressive updates
         async function loadDashboardStatistics() {
             try {
                 // Check cache first
@@ -1310,18 +1320,50 @@
                     (Date.now() - firestoreCache.stats.lastFetched) < firestoreCache.stats.cacheDuration) {
                     return firestoreCache.stats.data;
                 }
-                const [usersCount, adminsCount, hostsCount, completionsCount] = await Promise.all([
-                    getUsersCount(),
-                    getAdminsCount(),
-                    getWorkshopHostsCount(),
-                    getCompletionsCount()
+
+                const TIMEOUT_MS = 4000;
+
+                // Fire queries concurrently with individual timeouts and progressive DOM updates
+                const usersPromise = withTimeout(getUsersCount(), TIMEOUT_MS, 0)
+                    .catch(() => 0)
+                    .then((count) => {
+                        updateElement('total-users', count);
+                        return count;
+                    });
+
+                const adminsPromise = withTimeout(getAdminsCount(), TIMEOUT_MS, 0)
+                    .catch(() => 0)
+                    .then((count) => {
+                        updateElement('total-admins', count);
+                        return count;
+                    });
+
+                const hostsPromise = withTimeout(getWorkshopHostsCount(), TIMEOUT_MS, 0)
+                    .catch(() => 0)
+                    .then((count) => {
+                        updateElement('total-workshop-hosts', count);
+                        return count;
+                    });
+
+                const completionsPromise = withTimeout(getCompletionsCount(), TIMEOUT_MS, '-')
+                    .catch(() => '-')
+                    .then((count) => {
+                        updateElement('total-completions', count !== undefined && count !== null ? count : '-');
+                        return count;
+                    });
+
+                const results = await Promise.allSettled([
+                    usersPromise,
+                    adminsPromise,
+                    hostsPromise,
+                    completionsPromise
                 ]);
 
                 const stats = {
-                    totalUsers: usersCount,
-                    totalAdmins: adminsCount,
-                    totalWorkshopHosts: hostsCount,
-                    totalCompletions: completionsCount
+                    totalUsers: results[0].status === 'fulfilled' ? results[0].value : 0,
+                    totalAdmins: results[1].status === 'fulfilled' ? results[1].value : 0,
+                    totalWorkshopHosts: results[2].status === 'fulfilled' ? results[2].value : 0,
+                    totalCompletions: results[3].status === 'fulfilled' ? results[3].value : '-'
                 };
 
                 // Cache the statistics
@@ -1331,7 +1373,7 @@
 
                 return stats;
             } catch (error) {
-                return { totalUsers: 0, totalAdmins: 0, totalWorkshopHosts: 0 };
+                return { totalUsers: 0, totalAdmins: 0, totalWorkshopHosts: 0, totalCompletions: '-' };
             }
         }
 
@@ -1580,20 +1622,37 @@
             if (checkEl) checkEl.classList.remove('hidden');
             
             try {
-                // Check if user is admin using UID-based document ID
-                const adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDB, 'admins', currentUser.uid));
+                // Check if user is admin using UID-based document ID with resilient token refresh fallback
+                let adminDoc;
+                try {
+                    adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDB, 'admins', currentUser.uid));
+                } catch (firstErr) {
+                    // Stale / expired token fallback: force a fresh ID token and retry once
+                    if (currentUser && typeof currentUser.getIdToken === 'function') {
+                        try {
+                            await currentUser.getIdToken(true);
+                            adminDoc = await window.firebaseGetDoc(window.firebaseDoc(window.firebaseDB, 'admins', currentUser.uid));
+                        } catch (retryErr) {
+                            throw firstErr;
+                        }
+                    } else {
+                        throw firstErr;
+                    }
+                }
                 
-                if (adminDoc.exists()) {
+                if (adminDoc && adminDoc.exists()) {
                     isAdmin = true;
                     showDashboard();
 
-                    // Ensure RTDB admin mirror is set so RTDB completions and stats reads succeed
+                    // Non-blocking RTDB admin mirror (executes in background without blocking UI or spinner)
                     if (window.firebaseRtdb && window.firebaseRtdbRef && window.firebaseRtdbSet) {
                         try {
                             const rtdbAdminRef = window.firebaseRtdbRef(window.firebaseRtdb, `admins/${currentUser.uid}`);
-                            await window.firebaseRtdbSet(rtdbAdminRef, true);
-                        } catch (rtdbErr) {
-                            console.warn('Could not mirror admin status to RTDB:', rtdbErr);
+                            window.firebaseRtdbSet(rtdbAdminRef, true).catch((rtdbErr) => {
+                                console.warn('Non-blocking RTDB admin mirror note:', rtdbErr && rtdbErr.message);
+                            });
+                        } catch (rtdbInitErr) {
+                            // Non-critical background mirror
                         }
                     }
 

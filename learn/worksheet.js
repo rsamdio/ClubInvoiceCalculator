@@ -37,88 +37,88 @@
     let liveWriteTimer = null;
 
     const HINTS = {
-        'invoice-2026-start-month': 'A January invoice starts at the beginning of that year. Which month is that?',
-        'invoice-2026-start-year': 'A January 2026 invoice pays for which year?',
-        'invoice-2026-end-month': 'A January invoice covers the full year. Which month does that year end on?',
-        'invoice-2026-end-year': 'Does this invoice stay inside 2026, or run into another year?',
-        'invoice-2027-start-month': 'Same pattern as the 2026 invoice. Which month does the year start on?',
-        'invoice-2027-start-year': 'A January 2027 invoice pays for which year?',
-        'invoice-2027-end-month': 'A January invoice covers the full year. Which month does that year end on?',
-        'invoice-2027-end-year': 'Does this invoice stay inside 2027, or run into another year?',
-        'months-july': 'They joined on the 1st, so July counts. How many months are left in 2026 from July?',
-        'months-aug': 'They joined after the 1st. Start from the next month, then count to December.',
-        'months-oct': 'They joined after 1 October. Which is the first month that counts?',
-        'annual-usd': 'University-based clubs are $5. Community-based clubs are $8. Use the type you picked in Setup.',
-        'month-usd': 'Divide the annual USD rate by 12, then round to the nearest cent. Enter exactly two decimals, not the long division result.',
-        'annual-inr': 'Annual USD times 96. Use the rounded annual USD, then keep two decimals.',
-        'month-inr': 'Monthly USD times 96. Use the rounded monthly USD from the last stage, not 5/12 or 8/12 left unrounded.',
-        'm1-active': 'Were they still a member on 1 January 2027?',
-        'm1-months': 'They joined 10 Feb 2026, after the 1st. What is the first countable month? Then count through December 2026.',
-        'm2-active': 'Are they still a member on the invoice date?',
-        'm2-months': 'They joined on 1 July, so July counts. How many months to December?',
-        'm3-active': 'A late-December join is still on the roster on 1 Jan. Are they active on the invoice date?',
-        'm3-months': 'They joined 30 Dec, after the 1st. Is there a next month still inside 2026?',
-        'm4-active': 'They joined in 2024 and never left. Are they active on 1 Jan 2027?',
-        'm4-months': 'Pro Rata Dues on a January 2027 invoice is about 2026 months. Did this person join in 2026?',
-        'm5-active': 'Compare the leave date with 1 January 2027.',
-        'm5-months': 'They left on 1 July 2026. Count months from their effective start through the month they left.',
-        'total-active': 'Count only the members you marked Yes.',
-        'total-months': 'Add the five month numbers. Include zeros.',
-        'a1': 'If they are active on 1 Jan 2027, annual dues are your annual local-currency amount. If not, it is 0.',
+        'invoice-2026-start-month': 'A January invoice starts at the beginning of the year. Which month is that?',
+        'invoice-2026-start-year': 'A January 2026 invoice covers which calendar year?',
+        'invoice-2026-end-month': 'A January invoice covers the full calendar year. Which month does that year end?',
+        'invoice-2026-end-year': 'Does this invoice cover only 2026, or does it extend into another year?',
+        'invoice-2027-start-month': 'A January invoice starts at the beginning of that year. Which month is that?',
+        'invoice-2027-start-year': 'A January 2027 invoice covers which calendar year?',
+        'invoice-2027-end-month': 'A January invoice covers the full calendar year. Which month does that year end?',
+        'invoice-2027-end-year': 'Does this invoice cover only 2027, or does it extend into another year?',
+        'months-july': 'They joined on 1 July, so July counts. How many months remain in 2026, including July?',
+        'months-aug': 'They joined after the 1st. Start counting from the next month through December.',
+        'months-oct': 'They joined after 1 October. What is the first month that counts?',
+        'annual-usd': 'Annual dues are $5 per member for University-based clubs and $8 per member for Community-based clubs. Use the club type you selected in Setup.',
+        'month-usd': 'Divide the annual dues by 12, then round to two decimal places. Enter exactly two decimals, not the unrounded result.',
+        'annual-inr': 'Multiply the rounded annual USD amount by 96, then round the result to two decimal places.',
+        'month-inr': 'Multiply the rounded monthly USD amount from the previous stage by 96. Do not use an unrounded calculation such as 5/12 or 8/12.',
+        'm1-active': 'Were they an active member on 1 January 2027?',
+        'm1-months': 'They joined on 10 February 2026, after the 1st. What is the first countable month? Then count the applicable months through December 2026.',
+        'm2-active': 'Are they an active member on the invoice date?',
+        'm2-months': 'They joined on 1 July, so July counts. How many countable months are there through December?',
+        'm3-active': 'A late-December join is still on the roster on 1 January. Are they an active member on the invoice date?',
+        'm3-months': 'They joined on 30 December, after the 1st. Is there a subsequent month within 2026 to count?',
+        'm4-active': 'They joined in 2024 and have never left. Are they an active member on 1 January 2027?',
+        'm4-months': 'Pro Rata Dues on a January 2027 invoice are based on 2026 months. Did this person join in 2026?',
+        'm5-active': 'Compare the leave date with 1 January 2027 to determine whether the member was active on the invoice date.',
+        'm5-months': 'The member left on 1 July 2026. Count the applicable months from their effective start through July 2026.',
+        'total-active': 'Count only the members you marked “Yes”.',
+        'total-months': 'Add the five month values together.',
+        'a1': 'If the member is active on 1 January 2027, enter the annual local-currency amount. If not, enter 0.',
         'a2': 'Same rule as Member 1. Are they active on 1 Jan 2027?',
         'a3': 'Same rule. Active on 1 Jan 2027 gets the annual dues amount.',
         'a4': 'Same rule. They joined long before 2026. Are they active on 1 Jan 2027?',
-        'a5': 'If they had already left before 1 Jan 2027, do they get annual dues on this invoice?',
-        'p1': 'Rounded monthly local-currency amount times this member\'s unbilled 2026 months. Keep two decimals.',
-        'p2': 'Rounded monthly local-currency amount times this member\'s unbilled 2026 months. Keep two decimals.',
-        'p3': 'Rounded monthly local-currency amount times their unbilled 2026 months. What were their months?',
-        'p4': 'Rounded monthly local-currency amount times their unbilled 2026 months. What were their months?',
-        'p5': 'They can still have Pro Rata Dues for unbilled 2026 months even if they are not active on 1 Jan 2027. Monthly amount × their months.',
-        'qty-members': 'This should match total active members.',
-        'unit-annual': 'Unit price is Annual Dues per member in local currency.',
-        'tot-annual': 'Active members times the Annual Dues local-currency amount.',
-        'qty-months': 'This should match total Pro Rata Dues months.',
-        'unit-prorata': 'Unit price is Pro Rata Dues per month in local currency.',
-        'tot-prorata': 'Total months times the monthly local-currency amount.',
+        'a5': 'If they left before 1 January 2027, do they get annual dues on this invoice?',
+        'p1': 'Multiply the rounded monthly local-currency amount by the member’s unbilled 2026 months. Keep two decimals.',
+        'p2': 'Multiply the rounded monthly local-currency amount by the member’s unbilled 2026 months. Keep two decimals.',
+        'p3': 'Multiply the rounded monthly local-currency amount by their unbilled 2026 months. How many months did they have?',
+        'p4': 'Multiply the rounded monthly local-currency amount by their unbilled 2026 months. How many months did they have?',
+        'p5': 'They can still have Pro Rata Dues for unbilled 2026 months even if they are not active on 1 January 2027. Monthly amount × their unbilled months.',
+        'qty-members': 'This should match the total number of active members.',
+        'unit-annual': 'Unit price is the annual dues per member in local currency.',
+        'tot-annual': 'Active members × annual dues per member in local currency.',
+        'qty-months': 'This should match the total Pro Rata Dues months.',
+        'unit-prorata': 'Unit price is the monthly Pro Rata Dues amount in local currency.',
+        'tot-prorata': 'Total months × monthly Pro Rata Dues amount in local currency.',
         'qty-tax-m': 'Tax on Annual Dues uses the same member quantity.',
-        'unit-tax-a': 'This sample\'s 18% of the Annual Dues unit price. Round to two decimals.',
-        'tot-tax-a': 'This sample\'s 18% of the Annual Dues total. Round to two decimals.',
+        'unit-tax-a': 'For this sample, tax is 18% of the Annual Dues unit price. Round to two decimal places.',
+        'tot-tax-a': 'For this sample, tax is 18% of the Annual Dues total. Round to two decimal places.',
         'qty-tax-mo': 'Tax on Pro Rata Dues uses the same month quantity.',
-        'unit-tax-p': 'This sample\'s 18% of the monthly local-currency unit price. Round to two decimals. The raw 18% often has extra digits.',
-        'tot-tax-p': 'This sample\'s 18% of the Pro Rata Dues total. Round to two decimals.',
-        'grand': 'Add the four already-rounded money totals: Rotaract Dues, Pro Rata, and both local-tax lines.',
-        'prev-bal': 'Previous balance is a carryover from earlier invoices. Unpaid dues increase what the club owes; a credit or overpayment reduces the bill. This sample has none, so enter 0.',
-        'club-bal': 'Jan-Dec charges plus previous balance.'
+        'unit-tax-p': 'For this sample, tax is 18% of the monthly local-currency unit price. Round to two decimal places, as the raw 18% calculation may have extra digits.',
+        'tot-tax-p': 'For this sample, tax is 18% of the Pro Rata Dues total. Round to two decimal places.',
+        'grand': 'Add the four already-rounded amounts: Rotaract Dues, Pro Rata Dues, and both local-tax lines.',
+        'prev-bal': 'Previous balance carries over from earlier invoices. Unpaid dues increase the amount owed. Credits or overpayments reduce the bill. This sample has no previous balance, so enter 0.',
+        'club-bal': 'January–December charges plus previous balance.'
     };
 
     const GROUP_REFLECT = {
         invoice: {
-            ok: 'You got the invoice year right. A January invoice pays for that full calendar year, January through December.',
-            off: 'A January invoice buys one full calendar year. Check the highlighted dropdowns: start month, start year, end month, and end year.'
+            ok: 'You got the invoice year right. A January invoice covers the full calendar year, January through December.',
+            off: 'A January invoice covers one full calendar year. Check the highlighted dropdowns: start month, start year, end month, and end year.'
         },
         months: {
             ok: 'You got the month counts right. They match the 1st-of-month rule.',
-            off: 'Check who joined on the 1st versus after the 1st. Count only remaining months inside 2026.'
+            off: 'Check who joined on the 1st and who joined after the 1st. Count only the remaining months in 2026.'
         },
         'usd-rates': {
-            ok: 'You got the USD rates right, rounded to two decimals. Carry these exact figures to the next stage.',
-            off: 'Stay with the club type you picked. Annual first, then annual divided by 12. Round to the nearest cent. Extra digits or a different rounding will not pass.'
+            ok: 'You got the USD rates right, rounded to two decimal places. Carry these exact figures to the next stage.',
+            off: 'Stay with the club type you selected. Use the annual dues first, then divide by 12 and round to two decimal places. Enter exactly two decimals. Extra digits or different rounding will not pass.'
         },
         inr: {
-            ok: 'You got the local-currency conversion right. That matches $1 = 96, using your rounded USD figures.',
-            off: 'Multiply the rounded USD figures by 96. Do not multiply the unrounded 5/12 or 8/12. Keep two decimals.'
+            ok: 'You got the local-currency conversion right. Your amounts correctly reflect the $1 = 96 exchange rate using your rounded USD figures.',
+            off: 'Multiply the rounded USD figures by 96. Do not use the unrounded 5/12 or 8/12 calculations. Round the result to two decimal places.'
         },
         roster: {
-            ok: 'You got the roster right. Active flags and month totals line up for this sample club.',
-            off: 'Walk each member once more. Still here on 1 Jan 2027? Then recount 2026 months. Member 3 and Member 5 trip people up most often.'
+            ok: 'You got the roster right. The active flags and month totals are correct for this sample club.',
+            off: 'Review each member once more. Were they still active on 1 January 2027? Then recount their applicable 2026 months. Pay special attention to Members 3 and 5, as they are the most common sources of errors.'
         },
         'member-dues': {
-            ok: 'You got the per-member amounts right. Take these onto the invoice table next.',
-            off: 'Annual is all or nothing on 1 Jan 2027. Pro Rata Dues is the monthly local-currency amount × unbilled 2026 months from the previous invoice. Keep two decimals on every amount.'
+            ok: 'You got the per-member amounts right. Now carry these amounts into the invoice table.',
+            off: 'Annual dues are all or nothing based on active status on 1 January 2027. Pro Rata Dues = monthly local-currency amount × unbilled 2026 months from the previous invoice. Keep two decimals for every amount.'
         },
         final: {
-            ok: 'You built the invoice correctly. You can now explain this table to a club.',
-            off: 'Use the same lines as the invoice: Members for Rotaract Dues, Months for Pro Rata, then this sample\'s 18% local tax on each. Add the four totals. Previous balance is a carryover (unpaid adds; credit reduces). This sample is 0, so club balance matches Jan-Dec charges.'
+            ok: 'You built the invoice correctly. You can now confidently explain this table to a club.',
+            off: 'Use the same lines as the invoice: Members for Rotaract Dues, Months for Pro Rata Dues, then 18% local tax on each. Add the four totals. Previous balance carries over from earlier invoices: unpaid balances add to the amount owed, while credits reduce it. This sample has a previous balance of 0, so the club balance matches the January–December charges.'
         }
     };
 
@@ -356,7 +356,7 @@
                 fb.hidden = false;
                 fb.className = 'ws-field-feedback is-off';
                 fb.textContent = result.unrounded
-                    ? 'Enter the exact two-decimal amount. Extra digits will throw off every later total.'
+                    ? 'Enter the exact amount to two decimal places. Extra digits will throw off every later total.'
                     : (HINTS[key] || 'Reflect on this one and try again.');
             }
         }
@@ -396,11 +396,11 @@
             } else {
                 reflect.className = 'ws-reflect is-off';
                 if (anyEmpty) {
-                    reflect.textContent = 'Fill every dropdown and field in this stage, then check again.';
+                    reflect.textContent = 'Fill in every dropdown and field in this stage, then check your entries again.';
                 } else if (groupId === 'invoice' && wrongCount) {
                     reflect.textContent = wrongCount === 1
-                        ? 'One selection is off. Read the note under the highlighted dropdown and try again.'
-                        : wrongCount + ' selections are off. Read the notes under the highlighted dropdowns and try again.';
+                        ? 'One selection is incorrect. Read the note under the highlighted dropdown and try again.'
+                        : wrongCount + ' selections are incorrect. Read the notes under the highlighted dropdowns and try again.';
                 } else {
                     reflect.textContent = GROUP_REFLECT[groupId].off;
                 }
@@ -739,25 +739,25 @@
         if (setup) {
             setup.textContent = state.mode === 'live'
                 ? 'Your host can see your name, email, and club. Your answers stay private.'
-                : 'We will use your name and club type in the questions that follow.';
+                : 'We’ll use your name and club type in the questions that follow.';
         }
 
         const invoice = document.getElementById('lead-invoice');
         if (invoice) {
             invoice.textContent = (name ? name + ', ' : '') +
-                'a January invoice covers one Rotary year. You are paying for that calendar year, not for random months.';
+                'a January invoice covers the full calendar year, January through December. You are paying for that calendar year, not for a Rotary Year (July–June).';
         }
 
         const months = document.getElementById('lead-months');
         if (months) {
             months.innerHTML = (prefix || '') +
-                'for a <strong>January 2027</strong> invoice, Pro Rata Dues covers months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.';
+                'for a <strong>January 2027</strong> invoice, Pro Rata Dues cover applicable months in <em>2026</em> after the member joined. Count from the <strong>1st of each month</strong>.';
         }
 
         const usd = document.getElementById('lead-usd');
         if (usd) {
             usd.innerHTML = (prefix || '') + 'for ' + escapeText(club) +
-                ', enter only those rates. Every money amount must be rounded to two decimals. You chose <strong id="chosen-base-label">' +
+                ', enter only those rates. Round every money amount on this worksheet to two decimal places. You chose <strong id="chosen-base-label">' +
                 escapeText(clubShortLabel()) + '</strong>.';
         }
 
@@ -773,14 +773,14 @@
                     '</strong> per month. Now convert them at <strong>$1 = 96</strong> in local currency.';
             } else {
                 inr.innerHTML = (prefix || '') +
-                    'this worksheet uses a sample rate of <strong>$1 = 96</strong> in local currency. Multiply your rounded USD amounts by 96. Do not pick a different rate.';
+                    'this worksheet uses a sample exchange rate of <strong>$1 = 96</strong> in local currency. Multiply each rounded USD amount by 96 to calculate the local currency amount. Do not pick a different rate.';
             }
         }
 
         const roster = document.getElementById('lead-roster');
         if (roster) {
             roster.innerHTML = (prefix || '') +
-                'here are five members. Who is still <strong>active on 1 January 2027</strong>? How many <strong>2026 months</strong> of Pro Rata Dues apply?';
+                'here are five members. Who is still <strong>active as of 1 January 2027</strong>, and how many months of <strong>2026 Pro Rata Dues</strong> apply to each?';
         }
 
         const dues = document.getElementById('lead-dues');
@@ -791,18 +791,18 @@
                 dues.innerHTML = cheer +
                     'you got the local-currency rates right: <strong>' + annual +
                     '</strong> annual and <strong>' + monthly +
-                    '</strong> per month. Active members get <strong>' + annual +
-                    '</strong> for 2027. Pro Rata Dues are <strong>' + monthly +
+                    '</strong> per month. Active members are charged <strong>' + annual +
+                    '</strong> for 2027. Pro Rata Dues = <strong>' + monthly +
                     '</strong> × that member\'s unbilled 2026 months.';
             } else {
                 dues.innerHTML = (prefix || '') +
-                    'use the rounded annual and monthly local-currency amounts you already worked out. Active members get the annual amount for 2027. Pro Rata Dues are the monthly amount × that member\'s unbilled 2026 months (months not billed on the previous January invoice). Keep two decimals.';
+                    'use the rounded annual and monthly local-currency amounts from the previous stage. Active members are charged the 2027 annual amount. Pro Rata Dues = monthly amount × unbilled 2026 months (months not billed on the previous January invoice). Keep two decimals.';
             }
         }
 
         const hintDues = document.getElementById('hint-dues');
         if (hintDues) {
-            hintDues.innerHTML = 'Each card already shows that member\'s unbilled 2026 months. Those months were not on the Jan 2026 invoice, so they appear as Pro Rata Dues here. Annual is only if they are active on 1 January 2027. Pro Rata can still apply if they left later in 2026. Keep two decimals.';
+            hintDues.innerHTML = 'Each member card displays their unbilled 2026 months. Those months were not billed on the January 2026 invoice, so they appear as Pro Rata Dues here. Annual dues apply only if the member is active on 1 January 2027. Pro Rata Dues can still apply if a member left during 2026. Keep two decimal places.';
         }
 
         const fin = document.getElementById('lead-final');
@@ -818,19 +818,19 @@
                     ' active members</strong> and <strong>' + monthsTotal +
                     ' months</strong> of Pro Rata Dues. Annual Dues are <strong>' + annual +
                     '</strong> and the Pro Rata unit price is <strong>' + monthly +
-                    '</strong>. For this sample, local tax is <strong>18%</strong>.';
+                    '</strong>. For this sample, the local tax rate is <strong>18%</strong>.';
             } else {
                 fin.innerHTML = (prefix || '') +
-                    'this is the same layout as the club invoice. Fill quantity, unit price, and total on each line. For this sample, local tax is 18%.';
+                    'this uses the same layout as the club invoice. Fill in the quantity, unit price, and total for each line. For this sample, the local tax rate is 18%.';
             }
         }
         if (hintFinal && rates) {
             hintFinal.innerHTML = 'Rotaract Dues quantity is the <strong>' + rates['total-active'].value +
                 ' active members</strong>. Pro Rata quantity is the <strong>' + rates['total-months'].value +
-                ' unbilled 2026 months</strong>. Unit prices are the Annual Dues and monthly amounts you already got right. For this sample, tax is 18% of each matching dues line, not 18% of the grand total. Previous balance is a carryover from earlier invoices: unpaid dues add to the bill; a credit or overpayment reduces it. This sample club has none, so enter 0.';
+                ' unbilled 2026 months</strong>. Unit prices are the Annual Dues and monthly amounts from previous stages. Quantity × unit price = line total. For this sample, tax is 18% of each applicable dues line, not 18% of the grand total. Previous balance carries over from earlier invoices: unpaid dues add to the bill, while credits or overpayments reduce it. This sample club has no previous balance, so enter 0.';
         }
         if (hintFinal && !rates) {
-            hintFinal.innerHTML = 'Use your roster totals and the local-currency rates you already checked. Quantity times unit price equals the line total. For this sample, tax is 18% of each matching dues line, not 18% of the grand total. Previous balance is a carryover from earlier invoices: unpaid dues add to the bill; a credit or overpayment reduces it. This sample club has none, so enter 0.';
+            hintFinal.innerHTML = 'Use your roster totals and the local-currency rates from the previous stages. Quantity × unit price = line total. For this sample, tax is 18% of each applicable dues line, not 18% of the grand total. Previous balance carries over from earlier invoices: unpaid dues add to the bill, while credits or overpayments reduce it. This sample club has no previous balance, so enter 0.';
         }
     }
 
@@ -1147,7 +1147,7 @@
             const certTitle = document.getElementById('ws-cert-title');
             if (certTitle) certTitle.textContent = "You're All Set!";
             const certBody = document.getElementById('ws-cert-body');
-            if (certBody) certBody.textContent = "Your details have been successfully submitted. You can now claim your certificate on Rotaract Certify, or close this dialog to review the worksheet stages and refresh your memory.";
+            if (certBody) certBody.textContent = "Your details have been submitted successfully. You can now claim your certificate on Rotaract Certify, or close this dialog to review the worksheet stages and refresh your memory.";
             
             const bannerBtn = document.querySelector('#complete-banner #btn-banner-cert');
             if (bannerBtn) {
@@ -1174,8 +1174,8 @@
         if (title) title.textContent = name ? ('Congratulations, ' + name) : 'Congratulations';
         if (body) {
             body.textContent = state.mode === 'live'
-                ? 'You finished all eight stages. You can stay in the room. Your host can see that you finished.'
-                : 'You finished all eight stages: invoice year, months, rates, local currency, the roster, member dues, tax, and totals. Try the live calculator with your own club next.';
+                ? 'You finished all eight stages. You can stay in the room. Your host can see that you’ve finished.'
+                : 'You finished all eight stages: invoice year, months, rates, local currency, roster, member dues, tax, and totals. Next, try the live calculator with your own club.';
         }
         overlay.hidden = false;
         const closeBtn = document.getElementById('ws-celebrate-close');
@@ -1268,14 +1268,20 @@
 
         if (state.stage === 0) {
             next.disabled = !canLeaveSetup();
+            const name = ((document.getElementById('learner-name') || {}).value || '').trim();
+            const email = ((document.getElementById('learner-email') || {}).value || '').trim();
             if (state.mode === 'live') {
                 hint.textContent = canLeaveSetup()
                     ? 'Continue when you are ready.'
-                    : 'Enter your name, email, district, club, and club base to continue.';
+                    : (!state.clubBase && name && isValidEmail(email)
+                        ? 'Select your club base: institution-based or community-based.'
+                        : 'Enter your name, email, district, club, and club base to continue.');
             } else {
                 hint.textContent = canLeaveSetup()
                     ? 'Continue when you are ready.'
-                    : 'Enter your name, email, and select a club base to continue.';
+                    : (!state.clubBase && name && isValidEmail(email)
+                        ? 'Select your club base: institution-based or community-based.'
+                        : 'Enter your name, email, and select a club base to continue.');
             }
             return;
         }
@@ -1294,10 +1300,10 @@
             next.disabled = !state.groupsPassed[g];
             hint.textContent = state.groupsPassed[g]
                 ? 'Looks good. Continue when you are ready.'
-                : 'Check your answers on this stage before continuing.';
+                : 'Check your answers for this stage before continuing.';
         } else {
             hint.textContent = state.groupsPassed.final
-                ? 'You can revisit earlier stages anytime.'
+                ? 'You can revisit any earlier stage at any time.'
                 : 'Check the final table when you are ready.';
         }
     }
