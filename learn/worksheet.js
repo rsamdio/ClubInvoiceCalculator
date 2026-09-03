@@ -691,9 +691,9 @@
                 fields: collectFields()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-            setSaveStatus('Progress saved on this phone.');
+            setSaveStatus('Progress saved on this device.');
         } catch (err) {
-            setSaveStatus('Could not save on this phone.');
+            setSaveStatus('Could not save on this device.');
         }
     }
 
@@ -856,7 +856,7 @@
         setView('worksheet');
         applyPersonalization();
         showStage(state.stage || 0);
-        setSaveStatus('Progress saved on this phone.');
+        setSaveStatus('Progress saved on this device.');
     }
 
     function showJoinPanel() {
@@ -904,7 +904,7 @@
         const resumeStage = Math.min(Number(data.stage) || 0, STAGES.length - 1);
         state.stage = resumeStage;
         enterSelfPaced();
-        setSaveStatus('Restored from this phone.');
+        setSaveStatus('Restored from this device.');
         return true;
     }
 
@@ -1188,7 +1188,7 @@
             : '';
         const ok = await showLearnDialog({
             title: 'Start over?',
-            message: 'This clears what you typed on this phone.' + liveNote,
+            message: 'This clears what you typed on this device.' + liveNote,
             confirmLabel: 'Start over',
             cancelLabel: 'Cancel',
             danger: true
