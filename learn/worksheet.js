@@ -1658,3 +1658,341 @@
         setView('landing');
     }
 })();
+
+/* ============================================================
+   WORKSHEET CALCULATOR — standalone IIFE
+   Implements all audit fixes from the implementation plan.
+   No globals exposed. Fully encapsulated.
+   ============================================================ */
+(function () {
+    'use strict';
+
+    // ── State ────────────────────────────────────────────────
+    var calc = {
+        displayValue: '0',    // string shown on screen
+        previousValue: 0,     // number stored before operator
+        currentOp: null,      // 'add'|'subtract'|'multiply'|'divide'|null
+        historyText: '',      // secondary expression display
+        waitingForOperand: false, // replace display on next digit
+        isOpen: false         // tracks widget visibility (Bug 5)
+    };
+
+    // ── DOM refs (resolved once after DOMContentLoaded) ──────
+    var elFab, elWidget, elClose, elDisplay, elHistory, elCopyBtn, elKeypad;
+    var copyTimer = null;
+
+    // ── Math helper ──────────────────────────────────────────
+    // Strips floating-point noise: 0.1+0.2 => 0.3, not 0.30000000000000004
+    function sanitize(n) {
+        return Math.round(n * 1e10) / 1e10;
+    }
+
+    // ── Display update ───────────────────────────────────────
+    function render() {
+        if (!elDisplay) return;
+        elDisplay.textContent = calc.displayValue;
+        elDisplay.classList.toggle('is-error', calc.displayValue === 'Error');
+        if (elHistory) elHistory.textContent = calc.historyText;
+        // Highlight active operator on keypad
+        if (elKeypad) {
+            var ops = elKeypad.querySelectorAll('.ws-calc-op');
+            ops.forEach(function (btn) {
+                var active = calc.waitingForOperand && calc.currentOp === btn.dataset.calc;
+                btn.classList.toggle('is-active', active);
+            });
+        }
+    }
+
+    // ── Core calculator methods ───────────────────────────────
+
+    function inputDigit(digit) {
+        if (calc.displayValue === 'Error') { clearAll(); }
+        if (calc.waitingForOperand) {
+            calc.displayValue = String(digit);
+            calc.waitingForOperand = false;
+        } else {
+            // Prevent overflow: cap at 12 characters
+            if (calc.displayValue.replace('-', '').replace('.', '').length >= 12) return;
+            calc.displayValue = (calc.displayValue === '0')
+                ? String(digit)
+                : calc.displayValue + String(digit);
+        }
+        render();
+    }
+
+    function inputDecimal() {
+        if (calc.displayValue === 'Error') { clearAll(); }
+        if (calc.waitingForOperand) {
+            calc.displayValue = '0.';
+            calc.waitingForOperand = false;
+            render();
+            return;
+        }
+        // Bug 8 fix: guard against duplicate decimal point
+        if (calc.displayValue.indexOf('.') !== -1) return;
+        calc.displayValue += '.';
+        render();
+    }
+
+    function evaluate() {
+        // Returns result number or null if nothing to evaluate
+        var prev = calc.previousValue;
+        var curr = parseFloat(calc.displayValue);
+        if (isNaN(curr)) return null;
+        var result;
+        switch (calc.currentOp) {
+            case 'add':      result = sanitize(prev + curr); break;
+            case 'subtract': result = sanitize(prev - curr); break;
+            case 'multiply': result = sanitize(prev * curr); break;
+            case 'divide':
+                // Division by zero guard
+                if (curr === 0) {
+                    calc.displayValue = 'Error';
+                    calc.historyText = '';
+                    calc.previousValue = 0;
+                    calc.currentOp = null;
+                    calc.waitingForOperand = false;
+                    render();
+                    return null;
+                }
+                result = sanitize(prev / curr);
+                break;
+            default:
+                return parseFloat(calc.displayValue);
+        }
+        return result;
+    }
+
+    function handleOperator(op) {
+        if (calc.displayValue === 'Error') { clearAll(); return; }
+        var curr = parseFloat(calc.displayValue);
+        if (calc.currentOp && !calc.waitingForOperand) {
+            // Chain: finish previous operation first
+            var result = evaluate();
+            if (result === null) return;
+            calc.historyText = String(result) + ' ' + opSymbol(op);
+            calc.displayValue = String(result);
+            calc.previousValue = result;
+        } else {
+            calc.historyText = String(curr) + ' ' + opSymbol(op);
+            calc.previousValue = curr;
+        }
+        calc.currentOp = op;
+        calc.waitingForOperand = true;
+        render();
+    }
+
+    function handleEquals() {
+        if (calc.displayValue === 'Error') { clearAll(); return; }
+        if (!calc.currentOp) return;
+        var curr = parseFloat(calc.displayValue);
+        calc.historyText = calc.historyText + ' ' + calc.displayValue + ' =';
+        var result = evaluate();
+        if (result === null) return;
+        calc.displayValue = String(result);
+        calc.previousValue = 0;
+        calc.currentOp = null;
+        calc.waitingForOperand = false;
+        render();
+    }
+
+    function handlePercent() {
+        if (calc.displayValue === 'Error') { clearAll(); return; }
+        var curr = parseFloat(calc.displayValue);
+        var result;
+        // Bug 6 fix: mode-aware percent
+        // If an operator is pending (e.g. 3072 × 18 %), compute previousValue × (curr/100)
+        if (calc.currentOp !== null && calc.previousValue !== 0) {
+            result = sanitize(calc.previousValue * (curr / 100));
+            calc.historyText = String(calc.previousValue) + ' ' + opSymbol(calc.currentOp) + ' ' + String(curr) + '% =';
+            calc.displayValue = String(result);
+            calc.previousValue = 0;
+            calc.currentOp = null;
+            calc.waitingForOperand = false;
+        } else {
+            // Standalone: just divide by 100
+            result = sanitize(curr / 100);
+            calc.displayValue = String(result);
+            calc.waitingForOperand = false;
+        }
+        render();
+    }
+
+    function handleNegate() {
+        if (calc.displayValue === 'Error') { clearAll(); return; }
+        if (calc.displayValue === '0') return;
+        calc.displayValue = String(parseFloat(calc.displayValue) * -1);
+        render();
+    }
+
+    function handleBackspace() {
+        if (calc.displayValue === 'Error') { clearAll(); return; }
+        if (calc.waitingForOperand) return;
+        var next = calc.displayValue.slice(0, -1);
+        calc.displayValue = (next === '' || next === '-') ? '0' : next;
+        render();
+    }
+
+    function clearAll() {
+        calc.displayValue = '0';
+        calc.previousValue = 0;
+        calc.currentOp = null;
+        calc.historyText = '';
+        calc.waitingForOperand = false;
+        render();
+    }
+
+    // ── Copy result (Bug 7 fix: clipboard API + execCommand fallback) ──
+    function copyResult() {
+        var value = calc.displayValue;
+        if (value === 'Error') return;
+
+        function showCopied() {
+            if (!elCopyBtn) return;
+            clearTimeout(copyTimer);
+            elCopyBtn.textContent = 'Copied!';
+            elCopyBtn.classList.add('is-copied');
+            copyTimer = setTimeout(function () {
+                elCopyBtn.textContent = 'Copy';
+                elCopyBtn.classList.remove('is-copied');
+            }, 1500);
+        }
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(value).then(showCopied).catch(function () {
+                fallbackCopy(value, showCopied);
+            });
+        } else {
+            fallbackCopy(value, showCopied);
+        }
+    }
+
+    function fallbackCopy(text, callback) {
+        try {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            if (callback) callback();
+        } catch (e) { /* silent fail */ }
+    }
+
+    // ── Widget open/close (Bug 3 fix: class toggle, not hidden attribute) ──
+    function toggle(show) {
+        calc.isOpen = show;
+        if (!elWidget || !elFab) return;
+        elWidget.classList.toggle('ws-calc-widget--open', show);
+        elFab.setAttribute('aria-expanded', show ? 'true' : 'false');
+
+        // Bug 5 fix: use named function reference to allow proper removeEventListener
+        if (show) {
+            document.addEventListener('keydown', onKey);
+        } else {
+            document.removeEventListener('keydown', onKey);
+        }
+    }
+
+    // ── Keyboard handler (named, not anonymous — Bug 5 fix) ──────────────
+    function onKey(e) {
+        if (!calc.isOpen) return;
+        // Don't intercept when a worksheet input has focus
+        var tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+        var key = e.key;
+        if (/^[0-9]$/.test(key)) { e.preventDefault(); inputDigit(parseInt(key, 10)); return; }
+        switch (key) {
+            case '.': case ',':    e.preventDefault(); inputDecimal(); break;
+            case '+':              e.preventDefault(); handleOperator('add'); break;
+            case '-':              e.preventDefault(); handleOperator('subtract'); break;
+            case '*':              e.preventDefault(); handleOperator('multiply'); break;
+            case '/':              e.preventDefault(); handleOperator('divide'); break;
+            case 'Enter': case '=': e.preventDefault(); handleEquals(); break;
+            case 'Backspace':      e.preventDefault(); handleBackspace(); break;
+            case 'Escape':         e.preventDefault(); toggle(false); break;
+            case 'Delete':         e.preventDefault(); clearAll(); break;
+            case '%':              e.preventDefault(); handlePercent(); break;
+        }
+    }
+
+    // ── Operator symbol helper ────────────────────────────────
+    function opSymbol(op) {
+        return { add: '+', subtract: '−', multiply: '×', divide: '÷' }[op] || op;
+    }
+
+    // ── Handle keypad button presses ─────────────────────────
+    function handleKeypadAction(action) {
+        if (/^[0-9]$/.test(action)) {
+            inputDigit(parseInt(action, 10));
+        } else {
+            switch (action) {
+                case 'decimal':   inputDecimal(); break;
+                case 'add':
+                case 'subtract':
+                case 'multiply':
+                case 'divide':    handleOperator(action); break;
+                case 'equals':    handleEquals(); break;
+                case 'percent':   handlePercent(); break;
+                case 'negate':    handleNegate(); break;
+                case 'backspace': handleBackspace(); break;
+                case 'clear':     clearAll(); break;
+            }
+        }
+    }
+
+    // ── Initialise ───────────────────────────────────────────
+    function init() {
+        elFab    = document.getElementById('btn-calc-fab');
+        elWidget = document.getElementById('ws-calc-widget');
+        elClose  = document.getElementById('btn-calc-close');
+        elDisplay = document.getElementById('calc-display');
+        elHistory = document.getElementById('calc-history');
+        elCopyBtn = document.getElementById('btn-calc-copy');
+        elKeypad  = elWidget ? elWidget.querySelector('.ws-calc-keypad') : null;
+
+        if (!elFab || !elWidget) return; // elements not present on this page
+
+        // FAB click → open
+        elFab.addEventListener('click', function () {
+            toggle(!calc.isOpen);
+        });
+
+        // Close button → close
+        if (elClose) {
+            elClose.addEventListener('click', function () {
+                toggle(false);
+            });
+        }
+
+        // Copy button
+        if (elCopyBtn) {
+            elCopyBtn.addEventListener('click', copyResult);
+        }
+
+        // Keypad — single delegated listener for all keys
+        if (elKeypad) {
+            elKeypad.addEventListener('click', function (e) {
+                var btn = e.target && e.target.closest ? e.target.closest('[data-calc]') : null;
+                if (btn) handleKeypadAction(btn.dataset.calc);
+            });
+        }
+
+        // Close widget on outside click
+        document.addEventListener('click', function (e) {
+            if (!calc.isOpen) return;
+            if (elWidget.contains(e.target) || elFab.contains(e.target)) return;
+            toggle(false);
+        }, true);
+
+        render();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}());

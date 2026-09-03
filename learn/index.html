@@ -1017,6 +1017,64 @@
             httpsCallable
         };
     </script>
+    <!-- Native Worksheet Calculator -->
+    <button type="button" id="btn-calc-fab" class="ws-calc-fab" aria-label="Open calculator" aria-expanded="false" title="Calculator">
+        <svg class="ws-calc-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2"/>
+            <line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/>
+            <line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/>
+            <line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/>
+            <line x1="14" y1="18" x2="16" y2="18"/>
+        </svg>
+        <span class="ws-calc-fab-label">Calc</span>
+    </button>
+
+    <div id="ws-calc-widget" class="ws-calc-widget" role="dialog" aria-label="Worksheet calculator" aria-modal="false">
+        <div class="ws-calc-header">
+            <div class="ws-calc-title">
+                <svg viewBox="0 0 20 20" fill="currentColor" class="ws-calc-title-icon" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2 1 1 0 000-2zm-2-3a1 1 0 11-2 0 1 1 0 012 0zm-2 3a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/>
+                </svg>
+                <span>Calculator</span>
+            </div>
+            <button type="button" id="btn-calc-close" class="ws-calc-close-btn" aria-label="Close calculator">&times;</button>
+        </div>
+        <div class="ws-calc-screen">
+            <div id="calc-history" class="ws-calc-history" aria-live="polite" aria-label="Calculation history"></div>
+            <div class="ws-calc-result-row">
+                <span id="calc-display" class="ws-calc-display" aria-live="polite" aria-label="Calculator display">0</span>
+                <button type="button" id="btn-calc-copy" class="ws-calc-copy-btn" title="Copy result to clipboard">Copy</button>
+            </div>
+        </div>
+        <div class="ws-calc-keypad" role="group" aria-label="Calculator keys">
+            <button type="button" class="ws-calc-key ws-calc-fn" data-calc="clear" aria-label="Clear all">AC</button>
+            <button type="button" class="ws-calc-key ws-calc-fn" data-calc="backspace" aria-label="Backspace">&#9003;</button>
+            <button type="button" class="ws-calc-key ws-calc-fn" data-calc="negate" aria-label="Negate">&plusmn;</button>
+            <button type="button" class="ws-calc-key ws-calc-op" data-calc="divide" aria-label="Divide">&divide;</button>
+
+            <button type="button" class="ws-calc-key" data-calc="7">7</button>
+            <button type="button" class="ws-calc-key" data-calc="8">8</button>
+            <button type="button" class="ws-calc-key" data-calc="9">9</button>
+            <button type="button" class="ws-calc-key ws-calc-op" data-calc="multiply" aria-label="Multiply">&times;</button>
+
+            <button type="button" class="ws-calc-key" data-calc="4">4</button>
+            <button type="button" class="ws-calc-key" data-calc="5">5</button>
+            <button type="button" class="ws-calc-key" data-calc="6">6</button>
+            <button type="button" class="ws-calc-key ws-calc-op" data-calc="subtract" aria-label="Subtract">&minus;</button>
+
+            <button type="button" class="ws-calc-key" data-calc="1">1</button>
+            <button type="button" class="ws-calc-key" data-calc="2">2</button>
+            <button type="button" class="ws-calc-key" data-calc="3">3</button>
+            <button type="button" class="ws-calc-key ws-calc-op" data-calc="add" aria-label="Add">&plus;</button>
+
+            <button type="button" class="ws-calc-key ws-calc-fn" data-calc="percent" aria-label="Percent">%</button>
+            <button type="button" class="ws-calc-key ws-calc-zero" data-calc="0">0</button>
+            <button type="button" class="ws-calc-key" data-calc="decimal" aria-label="Decimal point">.</button>
+            <button type="button" class="ws-calc-key ws-calc-equals" data-calc="equals" aria-label="Equals">=</button>
+        </div>
+    </div>
+    <!-- End Native Worksheet Calculator -->
+
     <script src="worksheet.js" defer></script>
 </body>
 </html>
