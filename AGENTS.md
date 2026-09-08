@@ -181,7 +181,23 @@ HTML inline scripts depend on this object — do not rename or remove exports wi
 | Custom styling | `styles.css` + Tailwind classes in HTML; learn uses `worksheet.css` |
 | Firebase project | `firebase-config.js` (must keep `databaseURL` on asia-southeast1) |
 | Firestore indexes | `firestore.indexes.json` |
-| SEO / GEO | `index.html`, `learn/index.html`, `faq.html`, `how-ri-dues-work.html`, `sitemap.xml`, `robots.txt`, `llms.txt` |
+| SEO / GEO / IndexNow | `index.html`, `learn/index.html`, `faq.html`, `how-ri-dues-work.html`, `sitemap.xml`, `robots.txt`, `llms.txt`, `scripts/submit-indexnow.mjs`, `fc66e32136887908af4a8222ec18b665.txt` |
+
+## IndexNow integration
+
+The site uses the [IndexNow protocol](https://www.indexnow.org/documentation) to instantly notify search engines (Microsoft Bing, Yandex, Seznam, Naver, Yep) when pages are updated.
+
+- **Verification key file:** `fc66e32136887908af4a8222ec18b665.txt` at repository root (`https://dues.rsamdio.org/fc66e32136887908af4a8222ec18b665.txt`).
+- **Submission script:** `scripts/submit-indexnow.mjs`
+- **Commands:**
+  ```bash
+  node scripts/submit-indexnow.mjs              # Submits all canonical URLs
+  node scripts/submit-indexnow.mjs --dry-run    # Inspect payload without submitting
+  node scripts/submit-indexnow.mjs --force      # Bypass remote key pre-check
+  node scripts/submit-indexnow.mjs --url=<url>  # Submit a single URL
+  ```
+- **Safety rules:** Internal and non-indexed pages (`/admin.html`, `/learn/host.html`) are filtered out automatically.
+
 
 ## Build and deploy
 

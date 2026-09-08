@@ -54,7 +54,9 @@ ClubInvoiceCalculator/
 ├── firestore.indexes.json  # Composite indexes for admin queries
 ├── vendor/                 # Local libs (jspdf, xlsx, papaparse, autotable)
 ├── privacy.html / terms.html
-└── _redirects              # Netlify → dues.rsamdio.org
+├── fc66e32136887908af4a8222ec18b665.txt # IndexNow verification key
+└── scripts/
+    └── submit-indexnow.mjs # Instant search engine submission (Bing, Yandex)
 ```
 
 ## Quick start
@@ -87,6 +89,12 @@ ClubInvoiceCalculator/
    Regenerates `styles.min.css`, `app.min.js`, `modules/*.min.js`, and `pdf-worker.min.js`.
 
    **Note:** `index.html` may mix minified and unminified script tags (for example `styles.min.css` + `app.js`). Confirm script/stylesheet references before a production deploy.
+
+5. **Notify search engines (IndexNow)**
+   After deploying changes to Netlify, push updated URLs to Microsoft Bing, Yandex, etc.:
+   ```bash
+   node scripts/submit-indexnow.mjs
+   ```
 
 ## Usage
 
