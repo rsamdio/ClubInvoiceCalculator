@@ -58,6 +58,7 @@ const KEY_LOCATION = `${SITE_BASE}/${KEY_FILENAME}`;
 const args = process.argv.slice(2);
 const isDryRun = args.includes("--dry-run");
 const isForce = args.includes("--force");
+const isBuild = args.includes("--build");
 
 // Extract --url argument (--url=https://... or --url https://...)
 let targetUrl = null;
@@ -194,16 +195,31 @@ async function main() {
   console.log(`[IndexNow] Target Host: ${HOST}`);
   console.log(`[IndexNow] Key File:    ${KEY_LOCATION}`);
 
+  // Build mode check (Netlify sets CONTEXT=production for live site deploys)
+  if (isBuild) {
+    const isProduction = process.env.CONTEXT === "production" || process.env.INDEXNOW_SUBMIT === "1";
+    if (!isProduction) {
+      console.log(`[IndexNow] Build mode: skipping submission (CONTEXT=${process.env.CONTEXT || "local"}). Set INDEXNOW_SUBMIT=1 to force.`);
+      process.exit(0);
+    }
+  }
+
   // Remote key verification check
   if (!isDryRun && !isForce) {
     const keyIsLive = await checkRemoteKey();
     if (!keyIsLive) {
-      console.warn(`\n[IndexNow] Notice: Key file not yet verified live at:`);
-      console.warn(`           ${KEY_LOCATION}`);
-      console.warn(`[IndexNow] If you recently added ${KEY_FILENAME}, deploy to Netlify first.`);
-      console.warn(`[IndexNow] To submit anyway before the key check succeeds, pass --force:\n`);
-      console.warn(`           node scripts/submit-indexnow.mjs --force\n`);
-      process.exit(1);
+      if (isBuild) {
+        console.log(`[IndexNow] Notice: Key file not yet verified live at ${KEY_LOCATION}.`);
+        console.log(`[IndexNow] Skipping build-time submission until after the deploy goes live.`);
+        process.exit(0);
+      } else {
+        console.warn(`\n[IndexNow] Notice: Key file not yet verified live at:`);
+        console.warn(`           ${KEY_LOCATION}`);
+        console.warn(`[IndexNow] If you recently added ${KEY_FILENAME}, deploy to Netlify first.`);
+        console.warn(`[IndexNow] To submit anyway before the key check succeeds, pass --force:\n`);
+        console.warn(`           node scripts/submit-indexnow.mjs --force\n`);
+        process.exit(1);
+      }
     }
   }
 
@@ -211,6 +227,7 @@ async function main() {
   const urls = await discoverUrls();
   if (!urls || urls.length === 0) {
     console.error("[IndexNow] No URLs found to submit.");
+    if (isBuild) process.exit(0);
     process.exit(1);
   }
 
@@ -232,6 +249,8 @@ async function main() {
     console.log(`\n[IndexNow] Dry run complete. ${urls.length} URLs ready for submission.`);
   } else if (allSuccess) {
     console.log(`[IndexNow] Submission complete.`);
+  } else if (isBuild) {
+    console.log(`[IndexNow] Build finished with submission warnings (non-fatal).`);
   } else {
     process.exit(1);
   }
@@ -239,5 +258,5 @@ async function main() {
 
 main().catch((err) => {
   console.error("[IndexNow] Unexpected error:", err);
-  process.exit(1);
+  if (!isBuild) process.exit(1);
 });
